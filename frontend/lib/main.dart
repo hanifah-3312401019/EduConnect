@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'guru/dashboard_guru.dart';
-import 'guru/permohonan_izin.dart'; 
+import 'guru/permohonan_izin.dart';
 import 'guru/absensi.dart';
 import 'guru/pengumuman.dart';
+import 'orangtua/dashboard_orangtua.dart';
+import 'orangtua/pembayaran.dart';
+import 'auth/splash_screen.dart';
+import 'auth/login.dart';
 
 void main() {
-  runApp(EduConnectApp());
+  runApp(const EduConnectApp());
 }
 
 class EduConnectApp extends StatelessWidget {
+  const EduConnectApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,6 +27,7 @@ class EduConnectApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF465940),
           primary: const Color(0xFF465940),
+          brightness: Brightness.light,
         ),
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
@@ -50,12 +57,24 @@ class EduConnectApp extends StatelessWidget {
           ),
         ),
       ),
-      home: DashboardGuru(), // Diubah dari LoginPage() ke DashboardGuru()
+
+      // 🟢 Halaman pertama saat aplikasi dibuka
+      home: const SplashScreen(),
+
+      // 🧭 Daftar semua rute aplikasi
       routes: {
-        '/guru/dashboard': (context) => DashboardGuru(),
-        '/guru/permohonan-izin': (context) => const PermohonanIzin(), 
+        // --- AUTH ---
+        '/login': (context) => const LoginPage(),
+
+        // --- GURU ---
+        '/guru/dashboard': (context) => const DashboardGuru(),
+        '/guru/permohonan-izin': (context) => const PermohonanIzin(),
         '/guru/absensi': (context) => const Absensi(),
         '/guru/pengumuman': (context) => const Pengumuman(),
+
+        // --- ORANG TUA ---
+        '/dashboard': (context) => const DashboardPage(),
+        '/pembayaran': (context) => const RincianPembayaranPage(),
       },
     );
   }
