@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/auth/login.dart';
 import 'jadwal.dart';
-import 'pembayaran.dart'; 
-import 'pengumuman.dart';
+import 'pembayaran.dart';
 import 'profil.dart';
+import 'pengumuman.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
@@ -17,43 +16,34 @@ class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    // Navigasi ke halaman sesuai tab
+    setState(() => _selectedIndex = index);
     switch (index) {
+      case 0:
+        break;
       case 1:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const JadwalPage()),
+          MaterialPageRoute(builder: (context) => JadwalPage()),
         );
         break;
       case 2:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const PengumumanPage()),
+          MaterialPageRoute(builder: (context) => PengumumanPage()),
         );
         break;
       case 3:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const RincianPembayaranPage()),
+          MaterialPageRoute(builder: (context) => RincianPembayaranPage()),
         );
         break;
       case 4:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const ProfilPage()),
+          MaterialPageRoute(builder: (context) => ProfilPage()),
         );
         break;
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Navigasi ke tab ${index + 1}'),
-            duration: const Duration(milliseconds: 800),
-          ),
-        );
     }
   }
 
@@ -62,13 +52,15 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: const Icon(Icons.menu, color: Colors.black87),
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: greenColor),
+        centerTitle: true,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.school, color: greenColor),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             const Text(
               "EduConnect",
               style: TextStyle(
@@ -80,7 +72,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black87),
+            icon: Icon(Icons.notifications_none, color: greenColor),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Tidak ada notifikasi baru')),
@@ -88,6 +80,61 @@ class _DashboardPageState extends State<DashboardPage> {
             },
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),
+        ),
+      ),
+      drawer: Drawer(
+        backgroundColor: backgroundColor,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: greenColor),
+              child: const Center(
+                child: Text(
+                  "EduConnect Menu",
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ),
+            _drawerItem(Icons.home, "Halaman Utama", () {}),
+            _drawerItem(Icons.calendar_month, "Jadwal", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => JadwalPage()),
+              );
+            }),
+            _drawerItem(Icons.campaign, "Pengumuman", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PengumumanPage()),
+              );
+            }),
+            _drawerItem(Icons.payment, "Pembayaran", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RincianPembayaranPage(),
+                ),
+              );
+            }),
+            _drawerItem(Icons.person, "Profil", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfilPage()),
+              );
+            }),
+            const Divider(),
+            _drawerItem(Icons.logout, "Keluar", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()),
+              );
+            }, color: Colors.red),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -98,7 +145,9 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 24),
             _buildAnnouncementSection(),
             const SizedBox(height: 24),
-            _buildScheduleSection(),
+            _buildScheduleSectionToday(),
+            const SizedBox(height: 20),
+            _buildScheduleSectionTomorrow(),
           ],
         ),
       ),
@@ -109,14 +158,42 @@ class _DashboardPageState extends State<DashboardPage> {
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
         type: BottomNavigationBarType.fixed,
+        iconSize: 22,
+        selectedFontSize: 12,
+        unselectedFontSize: 11,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Halaman Utama'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Jadwal'),
-          BottomNavigationBarItem(icon: Icon(Icons.announcement), label: 'Pengumuman'),
-          BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Pembayaran'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Halaman Utama',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Jadwal',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.campaign),
+            label: 'Pengumuman',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payment),
+            label: 'Pembayaran',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
+    );
+  }
+
+  Widget _drawerItem(
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    Color? color,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color ?? greenColor),
+      title: Text(title, style: TextStyle(color: color ?? Colors.black87)),
+      onTap: onTap,
     );
   }
 
@@ -135,20 +212,41 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           const Text(
             "Kehadiran Anak",
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _attendanceItem(Icons.check_circle, "Hadir", "22", Colors.white),
-              _attendanceItem(Icons.timer, "Izin", "3", Colors.white),
-              _attendanceItem(Icons.cancel, "Alfa", "0", Colors.white),
-              _attendanceItem(Icons.favorite, "Sakit", "2", Colors.white),
+              _attendanceItem(Icons.check_circle, "Hadir", "22"),
+              _attendanceItem(Icons.timer, "Izin", "3"),
+              _attendanceItem(Icons.cancel, "Alfa", "0"),
+              _attendanceItem(Icons.favorite, "Sakit", "2"),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _attendanceItem(IconData icon, String title, String count) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 28),
+        const SizedBox(height: 4),
+        Text(title, style: const TextStyle(color: Colors.white, fontSize: 13)),
+        Text(
+          count,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 
@@ -159,41 +257,112 @@ class _DashboardPageState extends State<DashboardPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("Pengumuman", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            const Text(
+              "Pengumuman",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
             GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PengumumanPage()),
-                );
-              },
-              child: Text("Lihat Semua", style: TextStyle(color: Colors.grey[600])),
+              onTap: () {},
+              child: Text(
+                "Lihat Semua",
+                style: TextStyle(color: Colors.grey[600]),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        _announcementCard("Rapat Orang Tua Siswa", "Jadwal rapat akan dilaksanakan...", "5 jam lalu"),
-        _announcementCard("Libur Nasional", "Sekolah libur pada tanggal...", "7 hari lalu"),
+        _announcementCard(
+          "Rapat Orang Tua Siswa",
+          "Jadwal rapat akan dilaksanakan...",
+          "5 jam lalu",
+        ),
+        _announcementCard(
+          "Libur Nasional",
+          "Sekolah libur pada tanggal...",
+          "7 hari lalu",
+        ),
       ],
     );
   }
 
-  Widget _buildScheduleSection() {
+  Widget _announcementCard(String title, String subtitle, String time) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.campaign, color: Color(0xFF465940), size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          Text(time, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleSectionToday() {
+    return _scheduleSection(
+      title: "Jadwal Hari Ini",
+      buttonText: "Kalender",
+      items: const [
+        ["Matematika", "08:00 - 08:45"],
+        ["Bahasa Indonesia", "08:45 - 09:30"],
+        ["Olahraga", "10:00 - 10:45"],
+        ["Agama", "10:45 - 11:30"],
+      ],
+    );
+  }
+
+  Widget _buildScheduleSectionTomorrow() {
+    return _scheduleSection(
+      title: "Jadwal Besok",
+      buttonText: "Lihat Selengkapnya",
+      items: const [
+        ["Biologi", "08:00 - 08:45"],
+        ["Bahasa Inggris", "08:45 - 09:30"],
+      ],
+    );
+  }
+
+  Widget _scheduleSection({
+    required String title,
+    required String buttonText,
+    required List<List<String>> items,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("Jadwal Hari Ini", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
             GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const JadwalPage()),
-                );
-              },
-              child: Text("Kalender", style: TextStyle(color: Colors.grey[600])),
+              onTap: () {},
+              child: Text(
+                buttonText,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
             ),
           ],
         ),
@@ -204,65 +373,18 @@ class _DashboardPageState extends State<DashboardPage> {
             color: greenColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: const [
-              BoxShadow(color: Colors.black12, offset: Offset(0, 3), blurRadius: 6),
+              BoxShadow(
+                color: Colors.black12,
+                offset: Offset(0, 3),
+                blurRadius: 6,
+              ),
             ],
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _scheduleItem("Matematika", "08:00 - 08:45"),
-              _scheduleItem("Bahasa Indonesia", "08:45 - 09:30"),
-              _scheduleItem("Olahraga", "10:00 - 10:45"),
-              _scheduleItem("Agama", "10:45 - 11:30"),
-            ],
+            children: items.map((e) => _scheduleItem(e[0], e[1])).toList(),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _attendanceItem(IconData icon, String title, String count, Color color) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(height: 4),
-        Text(title, style: TextStyle(color: color, fontSize: 13)),
-        Text(count, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
-  Widget _announcementCard(String title, String subtitle, String time) {
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Membuka detail: $title')),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.campaign, color: Color(0xFF465940), size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                ],
-              ),
-            ),
-            Text(time, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-          ],
-        ),
-      ),
     );
   }
 
@@ -272,7 +394,13 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(subject, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+          Text(
+            subject,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           Text(time, style: const TextStyle(color: Colors.white70)),
         ],
       ),

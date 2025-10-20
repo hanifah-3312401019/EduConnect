@@ -3,6 +3,7 @@ import 'dashboard_orangtua.dart';
 import 'jadwal.dart';
 import 'profil.dart';
 import 'pengumuman.dart';
+import 'package:frontend/auth/login.dart'; // untuk tombol keluar
 
 class RincianPembayaranPage extends StatefulWidget {
   const RincianPembayaranPage({super.key});
@@ -37,6 +38,19 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
   late String selectedMonth;
   late String selectedYear;
 
+  final Map<String, List<_PaymentItem>> paymentData = {
+    'Oktober 2025': [
+      _PaymentItem('SPP Bulanan', 'Rp. 500.000'),
+      _PaymentItem('Catering', 'Rp. 200.000'),
+      _PaymentItem('Ekstrakurikuler', 'Rp. 150.000'),
+    ],
+    'September 2025': [
+      _PaymentItem('SPP Bulanan', 'Rp. 500.000'),
+      _PaymentItem('Catering', 'Rp. 180.000'),
+      _PaymentItem('Ekstrakurikuler', 'Rp. 150.000'),
+    ],
+  };
+
   @override
   void initState() {
     super.initState();
@@ -46,29 +60,25 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
+    setState(() => _selectedIndex = index);
     Widget? targetPage;
     switch (index) {
       case 0:
-        targetPage = const DashboardPage();
+        targetPage = DashboardPage();
         break;
       case 1:
-        targetPage = const JadwalPage();
+        targetPage = JadwalPage();
         break;
       case 2:
-        targetPage = const PengumumanPage(); // PASTIKAN CLASS INI ADA
+        targetPage = PengumumanPage();
         break;
       case 3:
-        targetPage = const RincianPembayaranPage();
+        targetPage = RincianPembayaranPage();
         break;
       case 4:
-        targetPage = const ProfilPage();
+        targetPage = ProfilPage();
         break;
     }
-
     if (targetPage != null && targetPage.runtimeType != runtimeType) {
       Navigator.pushReplacement(
         context,
@@ -82,111 +92,216 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
 
   @override
   Widget build(BuildContext context) {
-    const greenColor = Color(0xFF465940);
-    const backgroundColor = Color(0xFFFDFBF0);
+    final Color greenColor = const Color(0xFF465940);
+    final Color backgroundColor = const Color(0xFFFDFBF0);
+
+    String key = '$selectedMonth $selectedYear';
+    List<_PaymentItem> items =
+        paymentData[key] ??
+        [
+          _PaymentItem('SPP Bulanan', 'Rp. 500.000'),
+          _PaymentItem('Catering', 'Rp. 200.000'),
+          _PaymentItem('Ekstrakurikuler', 'Rp. 150.000'),
+        ];
+    paymentData.putIfAbsent(key, () => items);
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: greenColor,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          "Rincian Pembayaran",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: backgroundColor,
         elevation: 0,
+        iconTheme: IconThemeData(color: greenColor),
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.school, color: greenColor),
+            const SizedBox(width: 6),
+            const Text(
+              "EduConnect",
+              style: TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications_none, color: greenColor),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tidak ada notifikasi baru')),
+              );
+            },
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),
+        ),
+      ),
+      drawer: Drawer(
+        backgroundColor: backgroundColor,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: greenColor),
+              child: const Center(
+                child: Text(
+                  "EduConnect Menu",
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ),
+            _drawerItem(Icons.home, "Halaman Utama", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => DashboardPage()),
+              );
+            }),
+            _drawerItem(Icons.calendar_month, "Jadwal", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => JadwalPage()),
+              );
+            }),
+            _drawerItem(Icons.campaign, "Pengumuman", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => PengumumanPage()),
+              );
+            }),
+            _drawerItem(
+              Icons.payment,
+              "Pembayaran",
+              () {},
+            ), // tetap di page ini
+            _drawerItem(Icons.person, "Profil", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => ProfilPage()),
+              );
+            }),
+            const Divider(),
+            _drawerItem(Icons.logout, "Keluar", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => LoginPage()),
+              );
+            }, color: Colors.red),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // === FILTER BULAN / TAHUN (Dropdown) ===
-            Align(
-              alignment: Alignment.centerRight,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Dropdown Bulan
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedMonth,
-                        icon: const Icon(
-                          Icons.arrow_drop_down,
-                          color: greenColor,
-                        ),
-                        items: months.map((month) {
-                          return DropdownMenuItem(
-                            value: month,
-                            child: Text(
-                              month,
-                              style: const TextStyle(color: greenColor),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => selectedMonth = value);
-                          }
-                        },
-                      ),
-                    ),
+            // Judul & Filter
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Rincian Pembayaran",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF465940),
                   ),
-                  const SizedBox(width: 10),
-                  // Dropdown Tahun
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedYear,
-                        icon: const Icon(
-                          Icons.arrow_drop_down,
-                          color: greenColor,
-                        ),
-                        items: years.map((year) {
-                          return DropdownMenuItem(
-                            value: year,
-                            child: Text(
-                              year,
-                              style: const TextStyle(color: greenColor),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => selectedYear = value);
-                          }
-                        },
-                      ),
-                    ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                ],
-              ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade400),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 3,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Color(0xFF465940),
+                      ),
+                      const SizedBox(width: 4),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedMonth,
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: Color(0xFF465940),
+                            size: 18,
+                          ),
+                          items: months
+                              .map(
+                                (month) => DropdownMenuItem(
+                                  value: month,
+                                  child: Text(
+                                    month,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null)
+                              setState(() => selectedMonth = value);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedYear,
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: Color(0xFF465940),
+                            size: 18,
+                          ),
+                          items: years
+                              .map(
+                                (year) => DropdownMenuItem(
+                                  value: year,
+                                  child: Text(
+                                    year,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null)
+                              setState(() => selectedYear = value);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-
-            // === KARTU PEMBAYARAN ===
-            _buildPaymentCard("$selectedMonth $selectedYear", [
-              _PaymentItem("SPP Bulanan", "Rp. 500.000"),
-              _PaymentItem("Catering", "Rp. 200.000"),
-              _PaymentItem("Ekstrakurikuler", "Rp. 150.000"),
-            ], "Rp. 850.000"),
-
+            const SizedBox(height: 16),
+            // Kartu Pembayaran
+            _buildPaymentCard(
+              '$selectedMonth $selectedYear',
+              items,
+              'Rp. 850.000',
+            ),
             const SizedBox(height: 30),
-
-            // === TATA CARA PEMBAYARAN ===
+            // Tata Cara Pembayaran
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
@@ -200,13 +315,13 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.menu_book, color: greenColor),
+                      Icon(Icons.credit_card, color: Color(0xFF465940)),
                       SizedBox(width: 6),
                       Text(
                         "Tata Cara Pembayaran",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: greenColor,
+                          color: Color(0xFF465940),
                         ),
                       ),
                     ],
@@ -227,7 +342,6 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -252,12 +366,22 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
             icon: Icon(Icons.payment),
             label: 'Pembayaran',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person), 
-            label: 'Profil'
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
+    );
+  }
+
+  Widget _drawerItem(
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    Color? color,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color ?? const Color(0xFF465940)),
+      title: Text(title, style: TextStyle(color: color ?? Colors.black87)),
+      onTap: onTap,
     );
   }
 
@@ -309,7 +433,6 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
                 ),
               ),
               Text(
@@ -317,7 +440,6 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
                 ),
               ),
             ],
@@ -331,5 +453,5 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
 class _PaymentItem {
   final String nama;
   final String nominal;
-  const _PaymentItem(this.nama, this.nominal); // TAMBAHKAN CONST
+  _PaymentItem(this.nama, this.nominal);
 }

@@ -4,6 +4,11 @@ import 'guru/permohonan_izin.dart';
 import 'guru/absensi.dart';
 import 'guru/pengumuman.dart';
 import 'orangtua/dashboard_orangtua.dart';
+import 'orangtua/jadwal.dart';
+import 'orangtua/profil.dart';
+import 'orangtua/pengumuman.dart';
+import 'orangtua/edit_profil_anak.dart';
+import 'orangtua/edit_profil_orangtua.dart';
 import 'orangtua/pembayaran.dart';
 import 'auth/splash_screen.dart';
 import 'auth/login.dart';
@@ -47,14 +52,8 @@ class EduConnectApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: Color(0xFF465940),
           ),
-          bodyLarge: TextStyle(
-            fontSize: 16,
-            color: Colors.black87,
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 14,
-            color: Colors.black54,
-          ),
+          bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
+          bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
         ),
       ),
 
@@ -73,8 +72,13 @@ class EduConnectApp extends StatelessWidget {
         '/guru/pengumuman': (context) => const Pengumuman(),
 
         // --- ORANG TUA ---
-        '/dashboard': (context) => const DashboardPage(),
-        '/pembayaran': (context) => const RincianPembayaranPage(),
+        '/dashboard': (context) => DashboardPage(),
+        '/pembayaran': (context) => RincianPembayaranPage(),
+        '/jadwal': (context) => JadwalPage(),
+        '/profil': (context) => ProfilPage(),
+        '/pengumuman': (context) => PengumumanPage(),
+        '/edit_profil_anak': (context) => EditAnakPage(),
+        '/edit_profil_orangtua': (context) => EditOrangTuaPage(),
       },
     );
   }
