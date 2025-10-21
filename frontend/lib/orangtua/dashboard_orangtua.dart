@@ -4,6 +4,8 @@ import 'jadwal.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
 import 'pengumuman.dart';
+import 'agenda.dart';
+
 
 class DashboardPage extends StatefulWidget {
   @override
@@ -106,6 +108,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 MaterialPageRoute(builder: (context) => JadwalPage()),
               );
             }),
+            _drawerItem(Icons.event_note, "Agenda", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AgendaPage()),
+                );
+              }),
             _drawerItem(Icons.campaign, "Pengumuman", () {
               Navigator.push(
                 context,

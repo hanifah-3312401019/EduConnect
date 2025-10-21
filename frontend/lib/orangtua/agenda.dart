@@ -5,37 +5,43 @@ import 'pembayaran.dart';
 import 'profil.dart';
 import 'package:frontend/auth/login.dart';
 
-class PengumumanPage extends StatefulWidget {
-  const PengumumanPage({super.key});
+class AgendaPage extends StatefulWidget {
+  const AgendaPage({super.key});
 
   @override
-  State<PengumumanPage> createState() => _PengumumanPageState();
+  State<AgendaPage> createState() => _AgendaPageState();
 }
 
-class _PengumumanPageState extends State<PengumumanPage> {
-  int _selectedIndex = 2;
+class _AgendaPageState extends State<AgendaPage> {
+  int _selectedIndex = 1;
   String _selectedKategori = 'Semua';
 
-  final List<String> _kategoriList = ['Semua', 'Umum', 'Kelas', 'Personal'];
+  final List<String> _kategoriList = ['Semua', 'Sekolah', 'Kelas', 'Ekstrakurikuler'];
 
-  final List<Map<String, String>> _pengumuman = [
+  final List<Map<String, String>> _agendaList = [
     {
-      'judul': 'Libur Nasional',
-      'kategori': 'Umum',
-      'deskripsi':
-          'Setelah siswa mengikuti ujian sekolah, maka pembelajaran akan diliburkan dari tanggal 25 Desember 2025 - 25 Januari 2025',
+      'judul': 'Rapat Wali Murid',
+      'tanggal': '18 Juni 2025',
+      'waktu': '08.00 - 10.00',
+      'kategori': 'Sekolah',
+    },
+    {
+      'judul': 'Latihan Menari',
+      'tanggal': '02 September 2025',
+      'waktu': '10.00 - 13.00',
+      'kategori': 'Ekstrakurikuler',
     },
     {
       'judul': 'Ujian Akhir Semester',
+      'tanggal': '10 November 2025',
+      'waktu': '08.00 - 12.00',
       'kategori': 'Kelas',
-      'deskripsi':
-          'Siswa kelas 5 akan mengikuti ujian sesuai dengan jadwal, oleh karena itu siswa diminta untuk membawa kartu ujian yang sudah diberikan.',
     },
     {
-      'judul': 'Informasi Pembayaran',
-      'kategori': 'Personal',
-      'deskripsi':
-          'Mohon segera melunasi pembayaran SPP sesuai dengan rincian pembayaran yang dapat dilihat pada halaman pembayaran dibawah ini.',
+      'judul': 'Natal Sekolah',
+      'tanggal': '12 Desember 2025',
+      'waktu': '08.00 - 15.00',
+      'kategori': 'Sekolah',
     },
   ];
 
@@ -48,9 +54,9 @@ class _PengumumanPageState extends State<PengumumanPage> {
         targetPage = DashboardPage();
         break;
       case 1:
-        targetPage = JadwalPage();
         break;
       case 2:
+        targetPage = JadwalPage();
         break;
       case 3:
         targetPage = RincianPembayaranPage();
@@ -73,8 +79,8 @@ class _PengumumanPageState extends State<PengumumanPage> {
     const Color backgroundColor = Color(0xFFFDFBF0);
 
     final filteredList = _selectedKategori == 'Semua'
-        ? _pengumuman
-        : _pengumuman
+        ? _agendaList
+        : _agendaList
             .where((item) => item['kategori'] == _selectedKategori)
             .toList();
 
@@ -119,9 +125,9 @@ class _PengumumanPageState extends State<PengumumanPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(color: greenColor),
-              child: const Center(
+            const DrawerHeader(
+              decoration: BoxDecoration(color: greenColor),
+              child: Center(
                 child: Text(
                   "EduConnect Menu",
                   style: TextStyle(color: Colors.white, fontSize: 18),
@@ -134,6 +140,7 @@ class _PengumumanPageState extends State<PengumumanPage> {
                 MaterialPageRoute(builder: (_) => DashboardPage()),
               );
             }),
+            _drawerItem(Icons.event, "Agenda", () {}),
             _drawerItem(Icons.calendar_month, "Jadwal", () {
               Navigator.pushReplacement(
                 context,
@@ -174,7 +181,7 @@ class _PengumumanPageState extends State<PengumumanPage> {
                   const Icon(Icons.campaign, color: greenColor),
                   const SizedBox(width: 8),
                   const Text(
-                    "Pengumuman :",
+                    "Agenda",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -192,10 +199,8 @@ class _PengumumanPageState extends State<PengumumanPage> {
                       child: DropdownButton<String>(
                         value: _selectedKategori,
                         dropdownColor: greenColor,
-                        icon:
-                            const Icon(Icons.arrow_drop_down, color: Colors.white),
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 14),
+                        icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
                         items: _kategoriList.map((String kategori) {
                           return DropdownMenuItem<String>(
                             value: kategori,
@@ -239,43 +244,29 @@ class _PengumumanPageState extends State<PengumumanPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item['judul']!,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFDFBF0),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  item['kategori']!,
-                                  style: const TextStyle(
-                                    color: greenColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
                           Text(
-                            item['deskripsi']!,
+                            item['judul']!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item['tanggal']!,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item['waktu']!,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
-                              height: 1.4,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -302,18 +293,21 @@ class _PengumumanPageState extends State<PengumumanPage> {
             label: 'Halaman Utama',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Jadwal',
+            icon: Icon(Icons.event),
+            label: 'Agenda',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.campaign),
-            label: 'Pengumuman',
+            icon: Icon(Icons.calendar_month),
+            label: 'Jadwal',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.payment),
             label: 'Pembayaran',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profil',
+          ),
         ],
       ),
     );

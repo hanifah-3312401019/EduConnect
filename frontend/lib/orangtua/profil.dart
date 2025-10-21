@@ -5,6 +5,7 @@ import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'edit_profil_orangtua.dart';
 import 'edit_profil_anak.dart';
+import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
 
 class ProfilPage extends StatelessWidget {
@@ -104,6 +105,12 @@ class ProfilPage extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => JadwalPage()),
               );
             }),
+            _drawerItem(Icons.event_note, "Agenda", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AgendaPage()),
+                );
+              }),
             _drawerItem(Icons.campaign, "Pengumuman", () {
               Navigator.pushReplacement(
                 context,

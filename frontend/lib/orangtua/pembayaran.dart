@@ -3,7 +3,8 @@ import 'dashboard_orangtua.dart';
 import 'jadwal.dart';
 import 'profil.dart';
 import 'pengumuman.dart';
-import 'package:frontend/auth/login.dart'; // untuk tombol keluar
+import 'agenda.dart';
+import 'package:frontend/auth/login.dart'; 
 
 class RincianPembayaranPage extends StatefulWidget {
   const RincianPembayaranPage({super.key});
@@ -167,6 +168,12 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                 MaterialPageRoute(builder: (_) => JadwalPage()),
               );
             }),
+            _drawerItem(Icons.event_note, "Agenda", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AgendaPage()),
+                );
+              }),
             _drawerItem(Icons.campaign, "Pengumuman", () {
               Navigator.pushReplacement(
                 context,

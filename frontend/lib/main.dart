@@ -10,6 +10,7 @@ import 'orangtua/pengumuman.dart';
 import 'orangtua/edit_profil_anak.dart';
 import 'orangtua/edit_profil_orangtua.dart';
 import 'orangtua/pembayaran.dart';
+import 'orangtua/agenda.dart';
 import 'auth/splash_screen.dart';
 import 'auth/login.dart';
 
@@ -79,6 +80,7 @@ class EduConnectApp extends StatelessWidget {
         '/pengumuman': (context) => PengumumanPage(),
         '/edit_profil_anak': (context) => EditAnakPage(),
         '/edit_profil_orangtua': (context) => EditOrangTuaPage(),
+        '/agenda': (context) => const AgendaPage(),
       },
     );
   }

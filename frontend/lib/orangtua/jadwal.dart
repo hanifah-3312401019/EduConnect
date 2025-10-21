@@ -4,6 +4,7 @@ import 'package:frontend/auth/login.dart';
 import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
+import 'agenda.dart';
 
 class JadwalPage extends StatefulWidget {
   const JadwalPage({super.key});
@@ -107,7 +108,18 @@ class _JadwalPageState extends State<JadwalPage> {
                 MaterialPageRoute(builder: (_) => DashboardPage()),
               );
             }),
-            _drawerItem(Icons.calendar_month, "Jadwal", () {}),
+            _drawerItem(Icons.calendar_month, "Jadwal", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => JadwalPage()),
+              );
+            }),
+            _drawerItem(Icons.event_note, "Agenda", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AgendaPage()),
+                );
+              }),
             _drawerItem(Icons.campaign, "Pengumuman", () {
               Navigator.pushReplacement(
                 context,
