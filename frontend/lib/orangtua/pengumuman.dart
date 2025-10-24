@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dashboard_orangtua.dart';
+import 'perizinan.dart';
 import 'jadwal.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
+import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
 
 class PengumumanPage extends StatefulWidget {
@@ -134,13 +136,30 @@ class _PengumumanPageState extends State<PengumumanPage> {
                 MaterialPageRoute(builder: (_) => DashboardPage()),
               );
             }),
+            _drawerItem(Icons.home, "Permohonan Izin", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => PerizinanPage()),
+              );
+            }),
             _drawerItem(Icons.calendar_month, "Jadwal", () {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => JadwalPage()),
               );
             }),
-            _drawerItem(Icons.campaign, "Pengumuman", () {}),
+            _drawerItem(Icons.event_note, "Agenda", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AgendaPage()),
+                );
+              }),
+            _drawerItem(Icons.campaign, "Pengumuman", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => PengumumanPage()),
+              );
+            }),
             _drawerItem(Icons.payment, "Pembayaran", () {
               Navigator.pushReplacement(
                 context,

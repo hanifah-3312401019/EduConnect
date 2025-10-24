@@ -6,6 +6,7 @@ import 'pembayaran.dart';
 import 'edit_profil_orangtua.dart';
 import 'edit_profil_anak.dart';
 import 'agenda.dart';
+import 'perizinan.dart';
 import 'package:frontend/auth/login.dart';
 
 class ProfilPage extends StatelessWidget {
@@ -97,6 +98,12 @@ class ProfilPage extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => DashboardPage()),
+              );
+            }),
+            _drawerItem(Icons.home, "Perizinan", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => PerizinanPage()),
               );
             }),
             _drawerItem(Icons.calendar_month, "Jadwal", () {

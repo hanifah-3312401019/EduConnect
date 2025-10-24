@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dashboard_orangtua.dart';
-import 'package:frontend/auth/login.dart';
+import 'perizinan.dart';
 import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
 import 'agenda.dart';
+import 'package:frontend/auth/login.dart';
 
 class JadwalPage extends StatefulWidget {
   const JadwalPage({super.key});
@@ -106,6 +107,12 @@ class _JadwalPageState extends State<JadwalPage> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => DashboardPage()),
+              );
+            }),
+            _drawerItem(Icons.home, "Permohonan Izin", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => PerizinanPage()),
               );
             }),
             _drawerItem(Icons.calendar_month, "Jadwal", () {

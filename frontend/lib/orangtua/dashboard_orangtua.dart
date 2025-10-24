@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/auth/login.dart';
+import 'perizinan.dart';
 import 'jadwal.dart';
+import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
-import 'pengumuman.dart';
 import 'agenda.dart';
-
+import 'package:frontend/auth/login.dart';
 
 class DashboardPage extends StatefulWidget {
   @override
@@ -101,11 +101,22 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
             ),
-            _drawerItem(Icons.home, "Halaman Utama", () {}),
-            _drawerItem(Icons.calendar_month, "Jadwal", () {
-              Navigator.push(
+            _drawerItem(Icons.home, "Halaman Utama", () {
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => JadwalPage()),
+                MaterialPageRoute(builder: (_) => DashboardPage()),
+              );
+            }),
+            _drawerItem(Icons.home, "Permohonan Izin", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => PerizinanPage()),
+              );
+            }),
+            _drawerItem(Icons.calendar_month, "Jadwal", () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => JadwalPage()),
               );
             }),
             _drawerItem(Icons.event_note, "Agenda", () {

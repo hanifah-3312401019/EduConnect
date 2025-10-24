@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/orangtua/perizinan.dart';
 import 'guru/dashboard_guru.dart';
 import 'guru/permohonan_izin.dart';
 import 'guru/absensi.dart';
@@ -7,6 +8,7 @@ import 'orangtua/dashboard_orangtua.dart';
 import 'orangtua/jadwal.dart';
 import 'orangtua/profil.dart';
 import 'orangtua/pengumuman.dart';
+import 'orangtua/perizinan.dart';
 import 'orangtua/edit_profil_anak.dart';
 import 'orangtua/edit_profil_orangtua.dart';
 import 'orangtua/pembayaran.dart';
@@ -81,6 +83,7 @@ class EduConnectApp extends StatelessWidget {
         '/edit_profil_anak': (context) => EditAnakPage(),
         '/edit_profil_orangtua': (context) => EditOrangTuaPage(),
         '/agenda': (context) => const AgendaPage(),
+        '/perizinan': (context) => const PerizinanPage(),
       },
     );
   }
