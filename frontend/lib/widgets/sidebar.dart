@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../guru/permohonan_izin.dart';
-import '../guru/absensi.dart';  
-import '../guru/pengumuman.dart'; 
+import '../guru/absensi.dart';
+import '../guru/pengumuman.dart';
+import '../guru/agenda.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key});
@@ -19,11 +20,11 @@ class Sidebar extends StatelessWidget {
             // Profile Section
             _buildProfileSection(),
             const SizedBox(height: 20),
-            
+
             // Navigation Menu
             _buildNavigationMenu(context),
             const Spacer(),
-            
+
             // Logout Button
             _buildLogoutButton(context),
           ],
@@ -39,11 +40,7 @@ class Sidebar extends StatelessWidget {
         CircleAvatar(
           radius: 30,
           backgroundColor: Colors.white,
-          child: Icon(
-            Icons.person,
-            size: 30,
-            color: Color(0xFF465940),
-          ),
+          child: Icon(Icons.person, size: 30, color: Color(0xFF465940)),
         ),
         SizedBox(height: 12),
         Text(
@@ -71,10 +68,13 @@ class Sidebar extends StatelessWidget {
           );
         }),
         _buildMenuTile(context, 'Agenda', Icons.calendar_today, () {
-          _showComingSoon(context, 'Agenda');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const Agenda()),
+          );
         }),
+
         _buildMenuTile(context, 'Pengumuman', Icons.announcement, () {
-          // UBAH INI: Navigasi ke halaman Pengumuman
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const Pengumuman()),
@@ -90,15 +90,17 @@ class Sidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuTile(BuildContext context, String title, IconData icon, VoidCallback onTap) {
+  Widget _buildMenuTile(
+    BuildContext context,
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       leading: Icon(icon, color: Colors.white, size: 20),
       title: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 14),
       ),
       onTap: () {
         // Tutup drawer dulu
@@ -125,9 +127,7 @@ class Sidebar extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF465940),
           padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Text('Keluar'),
       ),

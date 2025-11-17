@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/sidebar.dart';
-import '../widgets/mobile_permohonan_izin.dart';  // dari widgets/
-import '../widgets/web_permohonan_izin.dart';     // dari widgets/
+import '../widgets/mobile_permohonan_izin.dart';
+import '../widgets/web_permohonan_izin.dart';
 
 class PermohonanIzin extends StatelessWidget {
   const PermohonanIzin({super.key});
@@ -13,10 +13,7 @@ class PermohonanIzin extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Permohonan Izin',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF465940),
         elevation: 0,
@@ -31,9 +28,7 @@ class PermohonanIzin extends StatelessWidget {
         ),
       ),
       drawer: const Sidebar(),
-      body: const SafeArea(
-        child: ResponsivePermohonanIzin(),
-      ),
+      body: const SafeArea(child: ResponsivePermohonanIzin()),
     );
   }
 }

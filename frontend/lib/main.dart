@@ -4,6 +4,7 @@ import 'guru/dashboard_guru.dart';
 import 'guru/permohonan_izin.dart';
 import 'guru/absensi.dart';
 import 'guru/pengumuman.dart';
+import 'guru/agenda.dart';
 import 'orangtua/dashboard_orangtua.dart';
 import 'orangtua/jadwal.dart';
 import 'orangtua/profil.dart';
@@ -60,21 +61,17 @@ class EduConnectApp extends StatelessWidget {
         ),
       ),
 
-      // 🟢 Halaman pertama saat aplikasi dibuka
-      home: const SplashScreen(),
+      // 🟢 Halaman pertama langsung Dashboard Guru
+      home: const DashboardGuru(),
 
       // 🧭 Daftar semua rute aplikasi
       routes: {
-        // --- AUTH ---
         '/login': (context) => const LoginPage(),
-
-        // --- GURU ---
         '/guru/dashboard': (context) => const DashboardGuru(),
         '/guru/permohonan-izin': (context) => const PermohonanIzin(),
         '/guru/absensi': (context) => const Absensi(),
         '/guru/pengumuman': (context) => const Pengumuman(),
-
-        // --- ORANG TUA ---
+        '/guru/agenda': (context) => const Agenda(),
         '/dashboard': (context) => DashboardPage(),
         '/pembayaran': (context) => RincianPembayaranPage(),
         '/jadwal': (context) => JadwalPage(),

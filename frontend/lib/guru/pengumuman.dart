@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/sidebar.dart';
 import 'package:intl/intl.dart';
 
 class Pengumuman extends StatefulWidget {
@@ -13,14 +14,16 @@ class _PengumumanState extends State<Pengumuman> {
     PengumumanItem(
       id: 1,
       judul: "Libur Lebaran",
-      isi: "Libur Lebaran akan dilaksanakan mulai tanggal 10-04-2024 sampai tanggal 20-04-2025",
+      isi:
+          "Libur Lebaran akan dilaksanakan mulai tanggal 10-04-2024 sampai tanggal 20-04-2025",
       tujuan: "Semua Siswa dan Guru",
       tanggal: DateTime(2024, 4, 10),
     ),
     PengumumanItem(
       id: 2,
       judul: "Pengambilan Rapot",
-      isi: "Pengambilan rapot semester genap akan dilaksanakan pada tanggal 15-05-2025",
+      isi:
+          "Pengambilan rapot semester genap akan dilaksanakan pada tanggal 15-05-2025",
       tujuan: "Semua Siswa dan Orang Tua",
       tanggal: DateTime(2025, 5, 15),
     ),
@@ -75,7 +78,9 @@ class _PengumumanState extends State<Pengumuman> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Pengumuman'),
-        content: const Text('Apakah Anda yakin ingin menghapus pengumuman ini?'),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus pengumuman ini?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -100,16 +105,18 @@ class _PengumumanState extends State<Pengumuman> {
         _isiController.text.isEmpty ||
         _tujuanController.text.isEmpty ||
         _selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field harus diisi')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
       return;
     }
 
     setState(() {
       if (_editingPengumuman != null) {
         // Edit existing
-        final index = _pengumumanList.indexWhere((p) => p.id == _editingPengumuman!.id);
+        final index = _pengumumanList.indexWhere(
+          (p) => p.id == _editingPengumuman!.id,
+        );
         if (index != -1) {
           _pengumumanList[index] = PengumumanItem(
             id: _editingPengumuman!.id,
@@ -123,7 +130,8 @@ class _PengumumanState extends State<Pengumuman> {
         // Add new
         final newId = _pengumumanList.isEmpty
             ? 1
-            : _pengumumanList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
+            : _pengumumanList.map((p) => p.id).reduce((a, b) => a > b ? a : b) +
+                  1;
         _pengumumanList.add(
           PengumumanItem(
             id: newId,
@@ -157,9 +165,7 @@ class _PengumumanState extends State<Pengumuman> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDFBF0),
-      appBar: AppBar(
-        title: const Text('Pengumuman'),
-      ),
+      appBar: AppBar(title: const Text('Pengumuman')),
       body: Column(
         children: [
           Expanded(
@@ -187,16 +193,15 @@ class _PengumumanState extends State<Pengumuman> {
       return const Center(
         child: Text(
           'Belum ada pengumuman',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-          ),
+          style: TextStyle(fontSize: 16, color: Colors.black54),
         ),
       );
     }
 
     return Column(
-      children: _pengumumanList.map((pengumuman) => _buildAnnouncementCard(pengumuman)).toList(),
+      children: _pengumumanList
+          .map((pengumuman) => _buildAnnouncementCard(pengumuman))
+          .toList(),
     );
   }
 
@@ -224,16 +229,13 @@ class _PengumumanState extends State<Pengumuman> {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              pengumuman.isi,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            Text(pengumuman.isi, style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 8),
             Text(
               'Tujuan: ${pengumuman.tujuan}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 12),
             Row(
@@ -298,7 +300,9 @@ class _PengumumanState extends State<Pengumuman> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _editingPengumuman == null ? 'Tambah Pengumuman Baru' : 'Edit Pengumuman',
+              _editingPengumuman == null
+                  ? 'Tambah Pengumuman Baru'
+                  : 'Edit Pengumuman',
               style: Theme.of(context).textTheme.displayMedium,
             ),
             const SizedBox(height: 20),
@@ -376,9 +380,7 @@ class _PengumumanState extends State<Pengumuman> {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 12,
@@ -423,7 +425,9 @@ class _PengumumanState extends State<Pengumuman> {
                       ? _formatDate(_selectedDate!)
                       : 'Pilih tanggal',
                   style: TextStyle(
-                    color: _selectedDate != null ? Colors.black : Colors.grey.shade600,
+                    color: _selectedDate != null
+                        ? Colors.black
+                        : Colors.grey.shade600,
                   ),
                 ),
               ],
