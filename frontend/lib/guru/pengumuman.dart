@@ -21,8 +21,13 @@ class _PengumumanState extends State<Pengumuman> {
   final _judulController = TextEditingController();
   final _isiController = TextEditingController();
   String _selectedTujuan = "Umum";
+  String? _selectedSiswa;
   DateTime? _selectedDate;
   final List<String> _tujuanOptions = ["Umum", "Perkelas", "Personal"];
+  final List<String> _siswaOptions = [
+    "Siti Nurhalis", "Farhan Abas", "Rafi Ahmad", "Anmay Musa", 
+    "Rasya Likhan", "Yogi Yaya", "Yupis Yupi", "Rasya Zeyfarsyah", "Raffa Zeyfarsyah"
+  ];
 
   @override
   void dispose() {
@@ -42,6 +47,7 @@ class _PengumumanState extends State<Pengumuman> {
     _judulController.clear();
     _isiController.clear();
     _selectedTujuan = "Umum";
+    _selectedSiswa = null;
     _selectedDate = null;
     _editingPengumuman = null;
   }
@@ -51,9 +57,17 @@ class _PengumumanState extends State<Pengumuman> {
       _editingPengumuman = pengumuman;
       _judulController.text = pengumuman.judul;
       _isiController.text = pengumuman.isi;
-      _selectedTujuan = pengumuman.tujuan;
       _selectedDate = pengumuman.tanggal;
       _showForm = true;
+
+      // Handle tujuan untuk pengumuman yang sudah ada
+      if (pengumuman.tujuan.startsWith("Personal - ")) {
+        _selectedTujuan = "Personal";
+        _selectedSiswa = pengumuman.tujuan.replaceAll("Personal - ", "");
+      } else {
+        _selectedTujuan = pengumuman.tujuan;
+        _selectedSiswa = null;
+      }
     });
   }
 
@@ -83,15 +97,22 @@ class _PengumumanState extends State<Pengumuman> {
       return;
     }
 
+    if (_selectedTujuan == "Personal" && _selectedSiswa == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih siswa untuk tujuan Personal')));
+      return;
+    }
+
     setState(() {
       if (_editingPengumuman != null) {
         final index = _pengumumanList.indexWhere((p) => p.id == _editingPengumuman!.id);
         if (index != -1) {
-          _pengumumanList[index] = PengumumanItem(_editingPengumuman!.id, _judulController.text, _isiController.text, _selectedTujuan, _selectedDate!);
+          final tujuanDisplay = _selectedTujuan == "Personal" ? "Personal - $_selectedSiswa" : _selectedTujuan;
+          _pengumumanList[index] = PengumumanItem(_editingPengumuman!.id, _judulController.text, _isiController.text, tujuanDisplay, _selectedDate!);
         }
       } else {
         final newId = _pengumumanList.isEmpty ? 1 : _pengumumanList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-        _pengumumanList.add(PengumumanItem(newId, _judulController.text, _isiController.text, _selectedTujuan, _selectedDate!));
+        final tujuanDisplay = _selectedTujuan == "Personal" ? "Personal - $_selectedSiswa" : _selectedTujuan;
+        _pengumumanList.add(PengumumanItem(newId, _judulController.text, _isiController.text, tujuanDisplay, _selectedDate!));
       }
       _showForm = false;
       _resetForm();
@@ -203,8 +224,13 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
   final _judulController = TextEditingController();
   final _isiController = TextEditingController();
   String _selectedTujuan = "Umum";
+  String? _selectedSiswa;
   DateTime? _selectedDate;
   final List<String> _tujuanOptions = ["Umum", "Perkelas", "Personal"];
+  final List<String> _siswaOptions = [
+    "Siti Nurhalis", "Farhan Abas", "Rafi Ahmad", "Anmay Musa", 
+    "Rasya Likhan", "Yogi Yaya", "Yupis Yupi", "Rasya Zeyfarsyah", "Raffa Zeyfarsyah"
+  ];
 
   @override
   void dispose() {
@@ -224,6 +250,7 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     _judulController.clear();
     _isiController.clear();
     _selectedTujuan = "Umum";
+    _selectedSiswa = null;
     _selectedDate = null;
     _editingPengumuman = null;
   }
@@ -233,9 +260,17 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       _editingPengumuman = pengumuman;
       _judulController.text = pengumuman.judul;
       _isiController.text = pengumuman.isi;
-      _selectedTujuan = pengumuman.tujuan;
       _selectedDate = pengumuman.tanggal;
       _showForm = true;
+
+      // Handle tujuan untuk pengumuman yang sudah ada
+      if (pengumuman.tujuan.startsWith("Personal - ")) {
+        _selectedTujuan = "Personal";
+        _selectedSiswa = pengumuman.tujuan.replaceAll("Personal - ", "");
+      } else {
+        _selectedTujuan = pengumuman.tujuan;
+        _selectedSiswa = null;
+      }
     });
   }
 
@@ -265,15 +300,22 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       return;
     }
 
+    if (_selectedTujuan == "Personal" && _selectedSiswa == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih siswa untuk tujuan Personal')));
+      return;
+    }
+
     setState(() {
       if (_editingPengumuman != null) {
         final index = _pengumumanList.indexWhere((p) => p.id == _editingPengumuman!.id);
         if (index != -1) {
-          _pengumumanList[index] = PengumumanItem(_editingPengumuman!.id, _judulController.text, _isiController.text, _selectedTujuan, _selectedDate!);
+          final tujuanDisplay = _selectedTujuan == "Personal" ? "Personal - $_selectedSiswa" : _selectedTujuan;
+          _pengumumanList[index] = PengumumanItem(_editingPengumuman!.id, _judulController.text, _isiController.text, tujuanDisplay, _selectedDate!);
         }
       } else {
         final newId = _pengumumanList.isEmpty ? 1 : _pengumumanList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-        _pengumumanList.add(PengumumanItem(newId, _judulController.text, _isiController.text, _selectedTujuan, _selectedDate!));
+        final tujuanDisplay = _selectedTujuan == "Personal" ? "Personal - $_selectedSiswa" : _selectedTujuan;
+        _pengumumanList.add(PengumumanItem(newId, _judulController.text, _isiController.text, tujuanDisplay, _selectedDate!));
       }
       _showForm = false;
       _resetForm();
@@ -333,7 +375,10 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
         const SizedBox(height: 8),
         Text(pengumuman.isi, style: const TextStyle(fontSize: 16, color: Colors.black87)),
         const SizedBox(height: 8),
-        Text('Tujuan: ${pengumuman.tujuan}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+        Text(
+          'Tujuan: ${pengumuman.tujuan}', 
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)
+        ),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: ElevatedButton(
@@ -364,6 +409,10 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
         _buildFormField(controller: _isiController, label: 'Isi Pengumuman', hint: 'Masukkan isi pengumuman', maxLines: 4),
         const SizedBox(height: 16),
         _buildTujuanDropdown(),
+        if (_selectedTujuan == "Personal") ...[
+          const SizedBox(height: 16),
+          _buildSiswaDropdown(),
+        ],
         const SizedBox(height: 16),
         _buildDateField(),
         const SizedBox(height: 20),
@@ -416,7 +465,36 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
             value: _selectedTujuan,
             isExpanded: true,
             items: _tujuanOptions.map((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(color: Colors.black87)))).toList(),
-            onChanged: (String? newValue) => setState(() => _selectedTujuan = newValue!),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedTujuan = newValue!;
+                if (_selectedTujuan != "Personal") {
+                  _selectedSiswa = null;
+                }
+              });
+            },
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildSiswaDropdown() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Pilih Siswa', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 4),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedSiswa,
+            isExpanded: true,
+            hint: const Text('Pilih siswa...', style: TextStyle(color: Colors.black54)),
+            items: _siswaOptions.map((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(color: Colors.black87)))).toList(),
+            onChanged: (String? newValue) => setState(() => _selectedSiswa = newValue),
           ),
         ),
       ),
@@ -458,7 +536,7 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     PengumumanItem(2, "Pengambilan Rapot", "Pengambilan rapot semester genap akan dilaksanakan pada tanggal 15-05-2025", "Umum", DateTime(2025, 5, 15)),
     PengumumanItem(3, "Ujian Semester Genap", "Ujian semester genap akan dilaksanakan mulai tanggal 1-06-2025. Seluruh siswa diharapkan mempersiapkan diri dengan baik.", "Perkelas", DateTime(2025, 6, 1)),
     PengumumanItem(4, "Pembagian Buku LKS", "Pembagian buku LKS semester depan akan dilaksanakan pada tanggal 25-05-2025. Harap mengambil di perpustakaan.", "Perkelas", DateTime(2025, 5, 25)),
-    PengumumanItem(5, "Workshop Pendidikan Karakter", "Workshop pendidikan karakter untuk guru akan dilaksanakan pada tanggal 30-05-2025. Diwajibkan untuk semua guru.", "Personal", DateTime(2025, 5, 30)),
+    PengumumanItem(5, "Workshop Pendidikan Karakter", "Workshop pendidikan karakter untuk guru akan dilaksanakan pada tanggal 30-05-2025. Diwajibkan untuk semua guru.", "Personal - Siti Nurhalis", DateTime(2025, 5, 30)),
     PengumumanItem(6, "Perpisahan Kelas 6", "Acara perpisahan untuk siswa kelas 6 akan dilaksanakan pada tanggal 20-06-2025. Mari kita siapkan acara yang berkesan.", "Umum", DateTime(2025, 6, 20)),
   ];
 
@@ -467,8 +545,13 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
   final _judulController = TextEditingController();
   final _isiController = TextEditingController();
   String _selectedTujuan = "Umum";
+  String? _selectedSiswa;
   DateTime? _selectedDate;
   final List<String> _tujuanOptions = ["Umum", "Perkelas", "Personal"];
+  final List<String> _siswaOptions = [
+    "Siti Nurhalis", "Farhan Abas", "Rafi Ahmad", "Anmay Musa", 
+    "Rasya Likhan", "Yogi Yaya", "Yupis Yupi", "Rasya Zeyfarsyah", "Raffa Zeyfarsyah"
+  ];
 
   @override
   void dispose() {
@@ -488,6 +571,7 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     _judulController.clear();
     _isiController.clear();
     _selectedTujuan = "Umum";
+    _selectedSiswa = null;
     _selectedDate = null;
     _editingPengumuman = null;
   }
@@ -497,9 +581,17 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
       _editingPengumuman = pengumuman;
       _judulController.text = pengumuman.judul;
       _isiController.text = pengumuman.isi;
-      _selectedTujuan = pengumuman.tujuan;
       _selectedDate = pengumuman.tanggal;
       _showForm = true;
+
+      // Handle tujuan untuk pengumuman yang sudah ada
+      if (pengumuman.tujuan.startsWith("Personal - ")) {
+        _selectedTujuan = "Personal";
+        _selectedSiswa = pengumuman.tujuan.replaceAll("Personal - ", "");
+      } else {
+        _selectedTujuan = pengumuman.tujuan;
+        _selectedSiswa = null;
+      }
     });
   }
 
@@ -529,15 +621,22 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
       return;
     }
 
+    if (_selectedTujuan == "Personal" && _selectedSiswa == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih siswa untuk tujuan Personal')));
+      return;
+    }
+
     setState(() {
       if (_editingPengumuman != null) {
         final index = _pengumumanList.indexWhere((p) => p.id == _editingPengumuman!.id);
         if (index != -1) {
-          _pengumumanList[index] = PengumumanItem(_editingPengumuman!.id, _judulController.text, _isiController.text, _selectedTujuan, _selectedDate!);
+          final tujuanDisplay = _selectedTujuan == "Personal" ? "Personal - $_selectedSiswa" : _selectedTujuan;
+          _pengumumanList[index] = PengumumanItem(_editingPengumuman!.id, _judulController.text, _isiController.text, tujuanDisplay, _selectedDate!);
         }
       } else {
         final newId = _pengumumanList.isEmpty ? 1 : _pengumumanList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-        _pengumumanList.add(PengumumanItem(newId, _judulController.text, _isiController.text, _selectedTujuan, _selectedDate!));
+        final tujuanDisplay = _selectedTujuan == "Personal" ? "Personal - $_selectedSiswa" : _selectedTujuan;
+        _pengumumanList.add(PengumumanItem(newId, _judulController.text, _isiController.text, tujuanDisplay, _selectedDate!));
       }
       _showForm = false;
       _resetForm();
@@ -597,7 +696,10 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
         const SizedBox(height: 12),
         Text(pengumuman.isi, style: const TextStyle(fontSize: 18, color: Colors.black87)),
         const SizedBox(height: 12),
-        Text('Tujuan: ${pengumuman.tujuan}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87)),
+        Text(
+          'Tujuan: ${pengumuman.tujuan}', 
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87)
+        ),
         const SizedBox(height: 16),
         Row(children: [
           ElevatedButton(
@@ -628,6 +730,10 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
         _buildFormField(controller: _isiController, label: 'Isi Pengumuman', hint: 'Masukkan isi pengumuman', maxLines: 5),
         const SizedBox(height: 20),
         _buildTujuanDropdown(),
+        if (_selectedTujuan == "Personal") ...[
+          const SizedBox(height: 20),
+          _buildSiswaDropdown(),
+        ],
         const SizedBox(height: 20),
         _buildDateField(),
         const SizedBox(height: 24),
@@ -680,7 +786,36 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
             value: _selectedTujuan,
             isExpanded: true,
             items: _tujuanOptions.map((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(fontSize: 16, color: Colors.black87)))).toList(),
-            onChanged: (String? newValue) => setState(() => _selectedTujuan = newValue!),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedTujuan = newValue!;
+                if (_selectedTujuan != "Personal") {
+                  _selectedSiswa = null;
+                }
+              });
+            },
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildSiswaDropdown() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Pilih Siswa', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 8),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedSiswa,
+            isExpanded: true,
+            hint: const Text('Pilih siswa...', style: TextStyle(fontSize: 16, color: Colors.black54)),
+            items: _siswaOptions.map((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(fontSize: 16, color: Colors.black87)))).toList(),
+            onChanged: (String? newValue) => setState(() => _selectedSiswa = newValue),
           ),
         ),
       ),
