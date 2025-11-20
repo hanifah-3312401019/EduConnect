@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
+        Schema::create('orang_tuas', function (Blueprint $table) {
+            $table->id('OrangTua_Id');
+            $table->string('Nama');
+            $table->string('Email')->unique();
+            $table->string('Kata_Sandi');
+            $table->string('No_Telepon')->nullable();
+            $table->string('Alamat')->nullable();
             $table->timestamps();
         });
     }
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('orang_tuas');
     }
 };

@@ -61,8 +61,8 @@ class EduConnectApp extends StatelessWidget {
         ),
       ),
 
-      // 🟢 Halaman pertama langsung Dashboard Guru
-      home: const DashboardGuru(),
+      // 🟢 Halaman pertama langsung SplashScreen
+      home: const SplashScreen(),
 
       // 🧭 Daftar semua rute aplikasi
       routes: {

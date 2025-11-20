@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_text_field.dart';
 import '../utils/constants.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:frontend/env/api_base_url.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,17 +20,50 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  void _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      return;
+void _login() async {
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+
+  if (email.isEmpty || password.isEmpty) return;
+
+  setState(() => _isLoading = true);
+
+  final baseUrl = ApiConfig.baseUrl;
+
+  final response = await http.post(
+    Uri.parse("$baseUrl/api/login"),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({
+      "Email": email,
+      "Kata_Sandi": password,
+    }),
+  );
+
+  setState(() => _isLoading = false);
+
+  if (response.statusCode == 200) { // jika status code 200 → login berhasil
+    final data = jsonDecode(response.body);
+
+    final role = data['role'];
+    final token = data['token']; // menerima role & token dari backend
+
+    if (role == "guru") {
+      Navigator.pushReplacementNamed(context, '/guru/dashboard');
+    } 
+    else if (role == "orangtua") {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } 
+    else if (role == "admin") {
+      Navigator.pushReplacementNamed(context, '/admin/dashboard');
     }
 
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    
-    Navigator.pushReplacementNamed(context, '/dashboard');
+  } else {
+    // jika login gagal
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Email atau kata sandi salah")),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
