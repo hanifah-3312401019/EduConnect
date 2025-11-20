@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dashboard_orangtua.dart';
-import 'perizinan.dart';
 import 'jadwal.dart';
 import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
 import 'package:frontend/auth/login.dart';
+
+// import sidebar reusable
+import 'package:frontend/widgets/sidebarOrangtua.dart';
 
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
@@ -48,30 +50,34 @@ class _AgendaPageState extends State<AgendaPage> {
   ];
 
   void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-
-    Widget? targetPage;
+    setState(() => _selectedIndex = index);
     switch (index) {
       case 0:
-        targetPage = DashboardPage();
         break;
       case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => JadwalPage()),
+        );
         break;
       case 2:
-        targetPage = JadwalPage();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PengumumanPage()),
+        );
         break;
       case 3:
-        targetPage = RincianPembayaranPage();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RincianPembayaranPage()),
+        );
         break;
       case 4:
-        targetPage = ProfilPage();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ProfilPage()),
+        );
         break;
-    }
-    if (targetPage != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => targetPage!),
-      );
     }
   }
 
@@ -88,6 +94,10 @@ class _AgendaPageState extends State<AgendaPage> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
+
+      // 🔥 sidebar pakai file reusable
+      drawer: const sidebarOrangtua(),
+
       appBar: AppBar(
         backgroundColor: backgroundColor,
         elevation: 0,
@@ -122,72 +132,7 @@ class _AgendaPageState extends State<AgendaPage> {
           child: Container(color: Colors.black12, height: 1.0),
         ),
       ),
-      drawer: Drawer(
-        backgroundColor: backgroundColor,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: greenColor),
-              child: Center(
-                child: Text(
-                  "EduConnect Menu",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-            ),
-            _drawerItem(Icons.home, "Halaman Utama", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => DashboardPage()),
-              );
-            }),
-            _drawerItem(Icons.home, "Permohonan Izin", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => PerizinanPage()),
-              );
-            }),
-            _drawerItem(Icons.calendar_month, "Jadwal", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => JadwalPage()),
-              );
-            }),
-            _drawerItem(Icons.event_note, "Agenda", () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AgendaPage()),
-                );
-              }),
-            _drawerItem(Icons.campaign, "Pengumuman", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => PengumumanPage()),
-              );
-            }),
-            _drawerItem(Icons.payment, "Pembayaran", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => RincianPembayaranPage()),
-              );
-            }),
-            _drawerItem(Icons.person, "Profil", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => ProfilPage()),
-              );
-            }),
-            const Divider(),
-            _drawerItem(Icons.logout, "Keluar", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => LoginPage()),
-              );
-            }, color: Colors.red),
-          ],
-        ),
-      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -235,7 +180,9 @@ class _AgendaPageState extends State<AgendaPage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 16),
+
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Column(
@@ -293,11 +240,13 @@ class _AgendaPageState extends State<AgendaPage> {
                   }).toList(),
                 ),
               ),
+
               const SizedBox(height: 80),
             ],
           ),
         ),
       ),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -328,19 +277,6 @@ class _AgendaPageState extends State<AgendaPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _drawerItem(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    Color? color,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? const Color(0xFF465940)),
-      title: Text(title, style: TextStyle(color: color ?? Colors.black87)),
-      onTap: onTap,
     );
   }
 }

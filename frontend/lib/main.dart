@@ -14,6 +14,13 @@ import 'orangtua/edit_profil_anak.dart';
 import 'orangtua/edit_profil_orangtua.dart';
 import 'orangtua/pembayaran.dart';
 import 'orangtua/agenda.dart';
+import 'admin/data_orangTua.dart';
+import 'admin/data_kelas.dart';
+import 'admin/data_guru.dart';
+import 'admin/data_siswa.dart';
+import 'admin/dashboard_admin.dart';
+import 'admin/jadwal_pelajaran.dart';
+import 'admin/informasi_pembayaran.dart';
 import 'auth/splash_screen.dart';
 import 'auth/login.dart';
 
@@ -61,8 +68,18 @@ class EduConnectApp extends StatelessWidget {
         ),
       ),
 
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       // 🟢 Halaman pertama langsung SplashScreen
       home: const SplashScreen(),
+=======
+      // 🟢 Halaman pertama saat aplikasi dibuka
+      home: const DataKelasPage(),
+>>>>>>> Stashed changes
+=======
+      // 🟢 Halaman pertama saat aplikasi dibuka
+      home: const DataKelasPage(),
+>>>>>>> Stashed changes
 
       // 🧭 Daftar semua rute aplikasi
       routes: {
@@ -81,6 +98,15 @@ class EduConnectApp extends StatelessWidget {
         '/edit_profil_orangtua': (context) => EditOrangTuaPage(),
         '/agenda': (context) => const AgendaPage(),
         '/perizinan': (context) => const PerizinanPage(),
+
+      //--- ADMIN ---
+        '/dashboard_admin' : (context) => DashboardAdminPage(),
+        '/data_siswa' : (context) => DataSiswaPage(),
+        '/data_orangTua' : (context) => DataOrangTuaPage(),
+        '/data_kelas' : (context) => DataKelasPage(),
+        '/data_guru' : (context) =>DataGuruPage(),
+        '/jadwal_pelajaran' : (context) =>JadwalPelajaranPage(),
+        '/informasi_pembayaran' : (context) =>DataPembayaranPage(),
       },
     );
   }

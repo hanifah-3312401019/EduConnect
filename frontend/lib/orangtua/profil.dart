@@ -102,6 +102,8 @@ class _ProfilPageState extends State<ProfilPage> {
     const Color greenColor = Color(0xFF465940);
     const Color backgroundColor = Color(0xFFFDFBF0);
 
+
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(

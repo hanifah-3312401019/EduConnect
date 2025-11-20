@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'perizinan.dart';
+import 'package:frontend/widgets/sidebarOrangtua.dart';
 import 'jadwal.dart';
 import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
-import 'agenda.dart';
-import 'package:frontend/auth/login.dart';
 
 class DashboardPage extends StatefulWidget {
   @override
@@ -53,6 +51,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
+
+      // ---------------------- APPBAR -------------------------
       appBar: AppBar(
         backgroundColor: backgroundColor,
         elevation: 0,
@@ -87,74 +87,11 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),
         ),
       ),
-      drawer: Drawer(
-        backgroundColor: backgroundColor,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: greenColor),
-              child: const Center(
-                child: Text(
-                  "EduConnect Menu",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-            ),
-            _drawerItem(Icons.home, "Halaman Utama", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => DashboardPage()),
-              );
-            }),
-            _drawerItem(Icons.home, "Permohonan Izin", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => PerizinanPage()),
-              );
-            }),
-            _drawerItem(Icons.calendar_month, "Jadwal", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => JadwalPage()),
-              );
-            }),
-            _drawerItem(Icons.event_note, "Agenda", () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AgendaPage()),
-                );
-              }),
-            _drawerItem(Icons.campaign, "Pengumuman", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PengumumanPage()),
-              );
-            }),
-            _drawerItem(Icons.payment, "Pembayaran", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RincianPembayaranPage(),
-                ),
-              );
-            }),
-            _drawerItem(Icons.person, "Profil", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfilPage()),
-              );
-            }),
-            const Divider(),
-            _drawerItem(Icons.logout, "Keluar", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => LoginPage()),
-              );
-            }, color: Colors.red),
-          ],
-        ),
-      ),
+
+      // -------------------- DRAWER (SUDAH DIPISAH) --------------------
+      drawer: const sidebarOrangtua(),
+
+      // ---------------------- BODY CONTENT -------------------------
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -170,6 +107,8 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
+
+      // -------------------- BOTTOM NAVIGATION ---------------------
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -203,19 +142,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _drawerItem(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    Color? color,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? greenColor),
-      title: Text(title, style: TextStyle(color: color ?? Colors.black87)),
-      onTap: onTap,
-    );
-  }
-
+  // --------------------- KEHADIRAN ------------------------
   Widget _buildAttendanceSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -269,6 +196,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // --------------------- PENGUMUMAN ------------------------
   Widget _buildAnnouncementSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,6 +265,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // --------------------- JADWAL HARI INI ------------------------
   Widget _buildScheduleSectionToday() {
     return _scheduleSection(
       title: "Jadwal Hari Ini",
@@ -350,6 +279,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // --------------------- JADWAL BESOK ------------------------
   Widget _buildScheduleSectionTomorrow() {
     return _scheduleSection(
       title: "Jadwal Besok",
