@@ -11,42 +11,19 @@ class Agenda extends StatefulWidget {
 
 class _AgendaState extends State<Agenda> {
   final List<AgendaItem> _agendaList = [
-    AgendaItem(
-      id: 1,
-      deskripsi: "Rapat Wali Murid",
-      tujuan: "Personal",
-      tanggal: DateTime(2025, 11, 10),
-      waktuMulai: TimeOfDay(hour: 8, minute: 0),
-      waktuSelesai: TimeOfDay(hour: 10, minute: 0),
-    ),
-    AgendaItem(
-      id: 2,
-      deskripsi: "Acara Memperingati Hari Pancasila",
-      tujuan: "Umum",
-      tanggal: DateTime(2025, 3, 20),
-      waktuMulai: TimeOfDay(hour: 8, minute: 0),
-      waktuSelesai: TimeOfDay(hour: 10, minute: 0),
-    ),
-    AgendaItem(
-      id: 3,
-      deskripsi: "Latihan Nari Kelas 3A",
-      tujuan: "Perkelas",
-      tanggal: DateTime(2025, 11, 17),
-      waktuMulai: TimeOfDay(hour: 7, minute: 0),
-      waktuSelesai: TimeOfDay(hour: 8, minute: 0),
-    ),
+    AgendaItem(1, "Rapat Wali Murid", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0)),
+    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0)),
+    AgendaItem(3, "Latihan Nari Kelas 3A", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0)),
   ];
 
   bool _showForm = false;
   AgendaItem? _editingAgenda;
-
   final _deskripsiController = TextEditingController();
-  String _selectedTujuan = "Umum";
+  String _selectedTujuan = "Sekolah";
   DateTime? _selectedDate;
   TimeOfDay? _selectedWaktuMulai;
   TimeOfDay? _selectedWaktuSelesai;
-
-  final List<String> _tujuanOptions = ["Umum", "Perkelas", "Personal"];
+  final List<String> _tujuanOptions = ["Sekolah", "Kelas", "Ekstrakurikuler"];
 
   @override
   void dispose() {
@@ -57,15 +34,13 @@ class _AgendaState extends State<Agenda> {
   void _toggleForm() {
     setState(() {
       _showForm = !_showForm;
-      if (!_showForm) {
-        _resetForm();
-      }
+      if (!_showForm) _resetForm();
     });
   }
 
   void _resetForm() {
     _deskripsiController.clear();
-    _selectedTujuan = "Umum";
+    _selectedTujuan = "Sekolah";
     _selectedDate = null;
     _selectedWaktuMulai = null;
     _selectedWaktuSelesai = null;
@@ -91,15 +66,10 @@ class _AgendaState extends State<Agenda> {
         title: const Text('Hapus Agenda'),
         content: const Text('Apakah Anda yakin ingin menghapus agenda ini?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
           TextButton(
             onPressed: () {
-              setState(() {
-                _agendaList.removeWhere((p) => p.id == id);
-              });
+              setState(() => _agendaList.removeWhere((p) => p.id == id));
               Navigator.pop(context);
             },
             child: const Text('Hapus'),
@@ -110,13 +80,8 @@ class _AgendaState extends State<Agenda> {
   }
 
   void _publishAgenda() {
-    if (_deskripsiController.text.isEmpty ||
-        _selectedDate == null ||
-        _selectedWaktuMulai == null ||
-        _selectedWaktuSelesai == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
+    if (_deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
       return;
     }
 
@@ -124,543 +89,753 @@ class _AgendaState extends State<Agenda> {
       if (_editingAgenda != null) {
         final index = _agendaList.indexWhere((p) => p.id == _editingAgenda!.id);
         if (index != -1) {
-          _agendaList[index] = AgendaItem(
-            id: _editingAgenda!.id,
-            deskripsi: _deskripsiController.text,
-            tujuan: _selectedTujuan,
-            tanggal: _selectedDate!,
-            waktuMulai: _selectedWaktuMulai!,
-            waktuSelesai: _selectedWaktuSelesai!,
-          );
+          _agendaList[index] = AgendaItem(_editingAgenda!.id, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!);
         }
       } else {
-        final newId = _agendaList.isEmpty
-            ? 1
-            : _agendaList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-
-        _agendaList.add(
-          AgendaItem(
-            id: newId,
-            deskripsi: _deskripsiController.text,
-            tujuan: _selectedTujuan,
-            tanggal: _selectedDate!,
-            waktuMulai: _selectedWaktuMulai!,
-            waktuSelesai: _selectedWaktuSelesai!,
-          ),
-        );
+        final newId = _agendaList.isEmpty ? 1 : _agendaList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
+        _agendaList.add(AgendaItem(newId, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!));
       }
-
       _showForm = false;
       _resetForm();
     });
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
+    final DateTime? picked = await showDatePicker(context: context, initialDate: _selectedDate ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+    if (picked != null && picked != _selectedDate) setState(() => _selectedDate = picked);
   }
 
   Future<void> _selectWaktuMulai(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedWaktuMulai ?? TimeOfDay.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedWaktuMulai = picked;
-      });
-    }
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: _selectedWaktuMulai ?? TimeOfDay.now());
+    if (picked != null) setState(() => _selectedWaktuMulai = picked);
   }
 
   Future<void> _selectWaktuSelesai(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedWaktuSelesai ?? TimeOfDay.now(),
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: _selectedWaktuSelesai ?? TimeOfDay.now());
+    if (picked != null) setState(() => _selectedWaktuSelesai = picked);
+  }
+
+  String _formatTime(TimeOfDay time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+  String _formatDate(DateTime date) => '${date.day.toString().padLeft(2, '0')} ${_getMonthName(date.month)} ${date.year}';
+
+  String _getMonthName(int month) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][month];
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isMobile = constraints.maxWidth < 768;
+        return isMobile ? const MobileAgendaWithNav() : Scaffold(
+          backgroundColor: const Color(0xFFFDFBF0),
+          appBar: AppBar(
+            title: const Text('Agenda', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            backgroundColor: const Color(0xFF465940),
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            leading: Builder(builder: (context) => IconButton(icon: const Icon(Icons.menu), onPressed: () => Scaffold.of(context).openDrawer())),
+          ),
+          drawer: const Sidebar(),
+          body: const SafeArea(child: WebAgendaContent()),
+        );
+      },
     );
-    if (picked != null) {
-      setState(() {
-        _selectedWaktuSelesai = picked;
-      });
-    }
   }
+}
 
-  String _formatTime(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
+class MobileAgendaWithNav extends StatefulWidget {
+  const MobileAgendaWithNav({super.key});
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')} ${_getMonthName(date.month)} ${date.year}';
-  }
+  @override
+  State<MobileAgendaWithNav> createState() => _MobileAgendaWithNavState();
+}
 
-  String _getMonthName(int month) {
-    switch (month) {
-      case 1:
-        return 'Jan';
-      case 2:
-        return 'Feb';
-      case 3:
-        return 'Mar';
-      case 4:
-        return 'Apr';
-      case 5:
-        return 'Mei';
-      case 6:
-        return 'Jun';
-      case 7:
-        return 'Jul';
-      case 8:
-        return 'Agu';
-      case 9:
-        return 'Sep';
-      case 10:
-        return 'Okt';
-      case 11:
-        return 'Nov';
-      case 12:
-        return 'Des';
-      default:
-        return '';
-    }
-  }
+class _MobileAgendaWithNavState extends State<MobileAgendaWithNav> {
+  int _currentIndex = 2;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDFBF0),
-      appBar: AppBar(title: const Text('Agenda Sekolah')),
+      appBar: AppBar(
+        title: const Text('Agenda', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: const Color(0xFF465940),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        leading: Builder(builder: (context) => IconButton(icon: const Icon(Icons.menu), onPressed: () => Scaffold.of(context).openDrawer())),
+      ),
       drawer: const Sidebar(),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  if (!_showForm) ...[
-                    _buildAgendaList(),
-                    const SizedBox(height: 20),
-                    _buildAddButton(),
-                  ] else
-                    _buildAgendaForm(),
-                ],
-              ),
-            ),
+      body: const SafeArea(child: MobileAgendaContent()),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, -2))]),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() => _currentIndex = index);
+            switch (index) {
+              case 0: Navigator.pushReplacementNamed(context, '/guru/dashboard'); break;
+              case 1: Navigator.pushReplacementNamed(context, '/guru/absensi'); break;
+              case 2: break;
+              case 3: Navigator.pushReplacementNamed(context, '/guru/pengumuman'); break;
+            }
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: const Color(0xFF465940),
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+          selectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Utama'),
+            BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Absensi'),
+            BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Agenda'),
+            BottomNavigationBarItem(icon: Icon(Icons.announcement), label: 'Pengumuman'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MobileAgendaContent extends StatefulWidget {
+  const MobileAgendaContent({super.key});
+
+  @override
+  State<MobileAgendaContent> createState() => _MobileAgendaContentState();
+}
+
+class _MobileAgendaContentState extends State<MobileAgendaContent> {
+  final List<AgendaItem> _agendaList = [
+    AgendaItem(1, "Rapat Wali Murid", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0)),
+    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0)),
+    AgendaItem(3, "Latihan Nari Kelas 3A", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0)),
+    AgendaItem(4, "Ujian Semester Genap", "Sekolah", DateTime(2025, 6, 15), TimeOfDay(hour: 7, minute: 30), TimeOfDay(hour: 12, minute: 0)),
+    AgendaItem(5, "Pembagian Raport", "Sekolah", DateTime(2025, 6, 28), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 11, minute: 0)),
+  ];
+
+  bool _showForm = false;
+  AgendaItem? _editingAgenda;
+  final _deskripsiController = TextEditingController();
+  String _selectedTujuan = "Sekolah";
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedWaktuMulai;
+  TimeOfDay? _selectedWaktuSelesai;
+  final List<String> _tujuanOptions = ["Sekolah", "Kelas", "Ekstrakurikuler"];
+
+  @override
+  void dispose() {
+    _deskripsiController.dispose();
+    super.dispose();
+  }
+
+  void _toggleForm() {
+    setState(() {
+      _showForm = !_showForm;
+      if (!_showForm) _resetForm();
+    });
+  }
+
+  void _resetForm() {
+    _deskripsiController.clear();
+    _selectedTujuan = "Sekolah";
+    _selectedDate = null;
+    _selectedWaktuMulai = null;
+    _selectedWaktuSelesai = null;
+    _editingAgenda = null;
+  }
+
+  void _editAgenda(AgendaItem agenda) {
+    setState(() {
+      _editingAgenda = agenda;
+      _deskripsiController.text = agenda.deskripsi;
+      _selectedTujuan = agenda.tujuan;
+      _selectedDate = agenda.tanggal;
+      _selectedWaktuMulai = agenda.waktuMulai;
+      _selectedWaktuSelesai = agenda.waktuSelesai;
+      _showForm = true;
+    });
+  }
+
+  void _deleteAgenda(int id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Agenda'),
+        content: const Text('Apakah Anda yakin ingin menghapus agenda ini?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(
+            onPressed: () {
+              setState(() => _agendaList.removeWhere((p) => p.id == id));
+              Navigator.pop(context);
+            },
+            child: const Text('Hapus'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAgendaList() {
-    if (_agendaList.isEmpty) {
-      return const Center(
-        child: Text(
-          'Belum ada agenda',
-          style: TextStyle(fontSize: 16, color: Colors.black87),
-        ),
-      );
+  void _publishAgenda() {
+    if (_deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
+      return;
     }
 
-    return Column(
-      children: _agendaList.map((agenda) => _buildAgendaCard(agenda)).toList(),
+    setState(() {
+      if (_editingAgenda != null) {
+        final index = _agendaList.indexWhere((p) => p.id == _editingAgenda!.id);
+        if (index != -1) {
+          _agendaList[index] = AgendaItem(_editingAgenda!.id, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!);
+        }
+      } else {
+        final newId = _agendaList.isEmpty ? 1 : _agendaList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
+        _agendaList.add(AgendaItem(newId, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!));
+      }
+      _showForm = false;
+      _resetForm();
+    });
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(context: context, initialDate: _selectedDate ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+    if (picked != null && picked != _selectedDate) setState(() => _selectedDate = picked);
+  }
+
+  Future<void> _selectWaktuMulai(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: _selectedWaktuMulai ?? TimeOfDay.now());
+    if (picked != null) setState(() => _selectedWaktuMulai = picked);
+  }
+
+  Future<void> _selectWaktuSelesai(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: _selectedWaktuSelesai ?? TimeOfDay.now());
+    if (picked != null) setState(() => _selectedWaktuSelesai = picked);
+  }
+
+  String _formatTime(TimeOfDay time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+  String _formatDate(DateTime date) => '${date.day.toString().padLeft(2, '0')} ${_getMonthName(date.month)} ${date.year}';
+
+  String _getMonthName(int month) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][month];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      child: Column(children: [
+        if (!_showForm) _buildHeaderWithAddButton(),
+        if (!_showForm) _buildAgendaList() else _buildAgendaForm(),
+        const SizedBox(height: 20),
+      ]),
     );
   }
 
-  Widget _buildAgendaCard(AgendaItem agenda) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    agenda.deskripsi,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2F3B1F),
-                    ),
-                  ),
-                ),
-                Text(
-                  _formatDate(agenda.tanggal),
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${_formatTime(agenda.waktuMulai)} - ${_formatTime(agenda.waktuSelesai)}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2F3B1F),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tujuan: ${agenda.tujuan}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _editAgenda(agenda),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8A9B6E),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Edit'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _deleteAgenda(agenda.id),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE74C3C),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Hapus'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
+  Widget _buildHeaderWithAddButton() => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Agenda Sekolah', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 12),
+      Align(alignment: Alignment.centerRight, child: ElevatedButton.icon(
         onPressed: _toggleForm,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF465940),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add, size: 20),
-            SizedBox(width: 8),
-            Text('Tambahkan Data'),
-          ],
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Tambahkan Data'),
+        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF465940), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+      )),
+    ]),
+  );
+
+  Widget _buildAgendaList() => _agendaList.isEmpty 
+    ? const Center(child: Text('Belum ada agenda', style: TextStyle(fontSize: 16, color: Colors.black87)))
+    : Column(children: _agendaList.map((agenda) => _buildAgendaCard(agenda)).toList());
+
+  Widget _buildAgendaCard(AgendaItem agenda) => Card(
+    elevation: 2,
+    margin: const EdgeInsets.only(bottom: 16),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(agenda.deskripsi, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F)))),
+          Text(_formatDate(agenda.tanggal), style: const TextStyle(color: Colors.black87, fontSize: 14)),
+        ]),
+        const SizedBox(height: 8),
+        Text('${_formatTime(agenda.waktuMulai)} - ${_formatTime(agenda.waktuSelesai)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+        const SizedBox(height: 8),
+        Text('Tujuan: ${agenda.tujuan}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: ElevatedButton(
+            onPressed: () => _editAgenda(agenda),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8A9B6E), foregroundColor: Colors.white),
+            child: const Text('Edit'),
+          )),
+          const SizedBox(width: 8),
+          Expanded(child: ElevatedButton(
+            onPressed: () => _deleteAgenda(agenda.id),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE74C3C), foregroundColor: Colors.white),
+            child: const Text('Hapus'),
+          )),
+        ]),
+      ]),
+    ),
+  );
+
+  Widget _buildAgendaForm() => Card(
+    elevation: 2,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(_editingAgenda == null ? 'Tambah Agenda Baru' : 'Edit Agenda', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
+        const SizedBox(height: 20),
+        _buildFormField(controller: _deskripsiController, label: 'Deskripsi Agenda', hint: 'Masukkan deskripsi agenda', maxLines: 3),
+        const SizedBox(height: 16),
+        _buildTujuanDropdown(),
+        const SizedBox(height: 16),
+        _buildDateField(),
+        const SizedBox(height: 16),
+        Row(children: [Expanded(child: _buildWaktuMulaiField()), const SizedBox(width: 12), Expanded(child: _buildWaktuSelesaiField())]),
+        const SizedBox(height: 20),
+        Row(children: [
+          Expanded(child: ElevatedButton(
+            onPressed: _toggleForm,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey, foregroundColor: Colors.white),
+            child: const Text('Batal'),
+          )),
+          const SizedBox(width: 12),
+          Expanded(child: ElevatedButton(
+            onPressed: _publishAgenda,
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF465940), foregroundColor: Colors.white),
+            child: const Text('Publikasikan'),
+          )),
+        ]),
+      ]),
+    ),
+  );
+
+  Widget _buildFormField({required TextEditingController controller, required String label, required String hint, int maxLines = 1}) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 4),
+      TextField(
+        controller: controller,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.black54),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
       ),
-    );
-  }
+    ],
+  );
 
-  Widget _buildAgendaForm() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _editingAgenda == null ? 'Tambah Agenda Baru' : 'Edit Agenda',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2F3B1F),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // DESKRIPSI → sekarang jadi field utama
-            _buildFormField(
-              controller: _deskripsiController,
-              label: 'Deskripsi Agenda',
-              hint: 'Masukkan deskripsi agenda',
-              maxLines: 3,
-            ),
-
-            const SizedBox(height: 16),
-            _buildTujuanDropdown(),
-            const SizedBox(height: 16),
-            _buildDateField(),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(child: _buildWaktuMulaiField()),
-                const SizedBox(width: 12),
-                Expanded(child: _buildWaktuSelesaiField()),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _toggleForm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Batal'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _publishAgenda,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF465940),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Publikasikan'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+  Widget _buildTujuanDropdown() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Tujuan Agenda', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 4),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedTujuan,
+            isExpanded: true,
+            items: _tujuanOptions.map((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(color: Colors.black87)))).toList(),
+            onChanged: (String? newValue) => setState(() => _selectedTujuan = newValue!),
+          ),
         ),
       ),
-    );
-  }
+    ],
+  );
 
-  Widget _buildFormField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2F3B1F),
-          ),
-        ),
-        const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Colors.black54),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTujuanDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tujuan Agenda',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2F3B1F),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
+  Widget _buildDateField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Tanggal', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 4),
+      InkWell(
+        onTap: () => _selectDate(context),
+        child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedTujuan,
-              isExpanded: true,
-              items: _tujuanOptions.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(
-                    value,
-                    style: const TextStyle(color: Colors.black87),
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedTujuan = newValue!;
-                });
-              },
-            ),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+          child: Row(children: [
+            Icon(Icons.calendar_today, size: 20, color: Colors.grey.shade600),
+            const SizedBox(width: 8),
+            Text(_selectedDate != null ? _formatDate(_selectedDate!) : 'Pilih tanggal', style: TextStyle(color: _selectedDate != null ? Colors.black : Colors.black54)),
+          ]),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 
-  Widget _buildDateField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tanggal',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2F3B1F),
-          ),
+  Widget _buildWaktuMulaiField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Waktu Mulai', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 4),
+      InkWell(
+        onTap: () => _selectWaktuMulai(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+          child: Row(children: [
+            Icon(Icons.access_time, size: 20, color: Colors.grey.shade600),
+            const SizedBox(width: 8),
+            Text(_selectedWaktuMulai != null ? _formatTime(_selectedWaktuMulai!) : 'Pilih waktu', style: TextStyle(color: _selectedWaktuMulai != null ? Colors.black : Colors.black54)),
+          ]),
         ),
-        const SizedBox(height: 4),
-        InkWell(
-          onTap: () => _selectDate(context),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 20,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedDate != null
-                      ? _formatDate(_selectedDate!)
-                      : 'Pilih tanggal',
-                  style: TextStyle(
-                    color: _selectedDate != null
-                        ? Colors.black
-                        : Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 
-  Widget _buildWaktuMulaiField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Waktu Mulai',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2F3B1F),
-          ),
+  Widget _buildWaktuSelesaiField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Waktu Selesai', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 4),
+      InkWell(
+        onTap: () => _selectWaktuSelesai(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+          child: Row(children: [
+            Icon(Icons.access_time, size: 20, color: Colors.grey.shade600),
+            const SizedBox(width: 8),
+            Text(_selectedWaktuSelesai != null ? _formatTime(_selectedWaktuSelesai!) : 'Pilih waktu', style: TextStyle(color: _selectedWaktuSelesai != null ? Colors.black : Colors.black54)),
+          ]),
         ),
-        const SizedBox(height: 4),
-        InkWell(
-          onTap: () => _selectWaktuMulai(context),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.access_time, size: 20, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedWaktuMulai != null
-                      ? _formatTime(_selectedWaktuMulai!)
-                      : 'Pilih waktu',
-                  style: TextStyle(
-                    color: _selectedWaktuMulai != null
-                        ? Colors.black
-                        : Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWaktuSelesaiField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Waktu Selesai',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2F3B1F),
-          ),
-        ),
-        const SizedBox(height: 4),
-        InkWell(
-          onTap: () => _selectWaktuSelesai(context),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.access_time, size: 20, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedWaktuSelesai != null
-                      ? _formatTime(_selectedWaktuSelesai!)
-                      : 'Pilih waktu',
-                  style: TextStyle(
-                    color: _selectedWaktuSelesai != null
-                        ? Colors.black
-                        : Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }
 
-// MODEL BARU TANPA JUDUL
+class WebAgendaContent extends StatefulWidget {
+  const WebAgendaContent({super.key});
+
+  @override
+  State<WebAgendaContent> createState() => _WebAgendaContentState();
+}
+
+class _WebAgendaContentState extends State<WebAgendaContent> {
+  final List<AgendaItem> _agendaList = [
+    AgendaItem(1, "Rapat Wali Murid", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0)),
+    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0)),
+    AgendaItem(3, "Latihan Nari Kelas 3A", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0)),
+    AgendaItem(4, "Ujian Semester Genap", "Sekolah", DateTime(2025, 6, 15), TimeOfDay(hour: 7, minute: 30), TimeOfDay(hour: 12, minute: 0)),
+    AgendaItem(5, "Pembagian Raport", "Sekolah", DateTime(2025, 6, 28), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 11, minute: 0)),
+    AgendaItem(6, "Workshop Guru", "Kelas", DateTime(2025, 7, 5), TimeOfDay(hour: 9, minute: 0), TimeOfDay(hour: 15, minute: 0)),
+  ];
+
+  bool _showForm = false;
+  AgendaItem? _editingAgenda;
+  final _deskripsiController = TextEditingController();
+  String _selectedTujuan = "Sekolah";
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedWaktuMulai;
+  TimeOfDay? _selectedWaktuSelesai;
+  final List<String> _tujuanOptions = ["Sekolah", "Kelas", "Ekstrakurikuler"];
+
+  @override
+  void dispose() {
+    _deskripsiController.dispose();
+    super.dispose();
+  }
+
+  void _toggleForm() {
+    setState(() {
+      _showForm = !_showForm;
+      if (!_showForm) _resetForm();
+    });
+  }
+
+  void _resetForm() {
+    _deskripsiController.clear();
+    _selectedTujuan = "Sekolah";
+    _selectedDate = null;
+    _selectedWaktuMulai = null;
+    _selectedWaktuSelesai = null;
+    _editingAgenda = null;
+  }
+
+  void _editAgenda(AgendaItem agenda) {
+    setState(() {
+      _editingAgenda = agenda;
+      _deskripsiController.text = agenda.deskripsi;
+      _selectedTujuan = agenda.tujuan;
+      _selectedDate = agenda.tanggal;
+      _selectedWaktuMulai = agenda.waktuMulai;
+      _selectedWaktuSelesai = agenda.waktuSelesai;
+      _showForm = true;
+    });
+  }
+
+  void _deleteAgenda(int id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Agenda'),
+        content: const Text('Apakah Anda yakin ingin menghapus agenda ini?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(
+            onPressed: () {
+              setState(() => _agendaList.removeWhere((p) => p.id == id));
+              Navigator.pop(context);
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _publishAgenda() {
+    if (_deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
+      return;
+    }
+
+    setState(() {
+      if (_editingAgenda != null) {
+        final index = _agendaList.indexWhere((p) => p.id == _editingAgenda!.id);
+        if (index != -1) {
+          _agendaList[index] = AgendaItem(_editingAgenda!.id, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!);
+        }
+      } else {
+        final newId = _agendaList.isEmpty ? 1 : _agendaList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
+        _agendaList.add(AgendaItem(newId, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!));
+      }
+      _showForm = false;
+      _resetForm();
+    });
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(context: context, initialDate: _selectedDate ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+    if (picked != null && picked != _selectedDate) setState(() => _selectedDate = picked);
+  }
+
+  Future<void> _selectWaktuMulai(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: _selectedWaktuMulai ?? TimeOfDay.now());
+    if (picked != null) setState(() => _selectedWaktuMulai = picked);
+  }
+
+  Future<void> _selectWaktuSelesai(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(context: context, initialTime: _selectedWaktuSelesai ?? TimeOfDay.now());
+    if (picked != null) setState(() => _selectedWaktuSelesai = picked);
+  }
+
+  String _formatTime(TimeOfDay time) => '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+  String _formatDate(DateTime date) => '${date.day.toString().padLeft(2, '0')} ${_getMonthName(date.month)} ${date.year}';
+
+  String _getMonthName(int month) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][month];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(32),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _buildHeaderWithAddButton(),
+        const SizedBox(height: 24),
+        if (!_showForm) _buildAgendaList() else _buildAgendaForm(),
+        const SizedBox(height: 40),
+      ]),
+    );
+  }
+
+  Widget _buildHeaderWithAddButton() => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      const Text('Agenda Sekolah', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
+      ElevatedButton.icon(
+        onPressed: _toggleForm,
+        icon: const Icon(Icons.add, size: 20),
+        label: const Text('Tambahkan Data'),
+        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF465940), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+      ),
+    ],
+  );
+
+  Widget _buildAgendaList() => _agendaList.isEmpty 
+    ? const Center(child: Text('Belum ada agenda', style: TextStyle(fontSize: 18, color: Colors.black87)))
+    : Column(children: _agendaList.map((agenda) => _buildAgendaCard(agenda)).toList());
+
+  Widget _buildAgendaCard(AgendaItem agenda) => Card(
+    elevation: 4,
+    margin: const EdgeInsets.only(bottom: 20),
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(agenda.deskripsi, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F)))),
+          Text(_formatDate(agenda.tanggal), style: const TextStyle(color: Colors.black87, fontSize: 16)),
+        ]),
+        const SizedBox(height: 12),
+        Text('${_formatTime(agenda.waktuMulai)} - ${_formatTime(agenda.waktuSelesai)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+        const SizedBox(height: 8),
+        Text('Tujuan: ${agenda.tujuan}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87)),
+        const SizedBox(height: 16),
+        Row(children: [
+          ElevatedButton(
+            onPressed: () => _editAgenda(agenda),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8A9B6E), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
+            child: const Text('Edit'),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () => _deleteAgenda(agenda.id),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE74C3C), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
+            child: const Text('Hapus'),
+          ),
+        ]),
+      ]),
+    ),
+  );
+
+  Widget _buildAgendaForm() => Card(
+    elevation: 4,
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(_editingAgenda == null ? 'Tambah Agenda Baru' : 'Edit Agenda', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
+        const SizedBox(height: 24),
+        _buildFormField(controller: _deskripsiController, label: 'Deskripsi Agenda', hint: 'Masukkan deskripsi agenda', maxLines: 3),
+        const SizedBox(height: 20),
+        _buildTujuanDropdown(),
+        const SizedBox(height: 20),
+        _buildDateField(),
+        const SizedBox(height: 20),
+        Row(children: [Expanded(child: _buildWaktuMulaiField()), const SizedBox(width: 16), Expanded(child: _buildWaktuSelesaiField())]),
+        const SizedBox(height: 24),
+        Row(children: [
+          ElevatedButton(
+            onPressed: _toggleForm,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)),
+            child: const Text('Batal'),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: _publishAgenda,
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF465940), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)),
+            child: const Text('Publikasikan'),
+          ),
+        ]),
+      ]),
+    ),
+  );
+
+  Widget _buildFormField({required TextEditingController controller, required String label, required String hint, int maxLines = 1}) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 8),
+      TextField(
+        controller: controller,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.black54),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildTujuanDropdown() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Tujuan Agenda', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 8),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedTujuan,
+            isExpanded: true,
+            items: _tujuanOptions.map((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(fontSize: 16, color: Colors.black87)))).toList(),
+            onChanged: (String? newValue) => setState(() => _selectedTujuan = newValue!),
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildDateField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Tanggal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 8),
+      InkWell(
+        onTap: () => _selectDate(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+          child: Row(children: [
+            Icon(Icons.calendar_today, size: 24, color: Colors.grey.shade600),
+            const SizedBox(width: 12),
+            Text(_selectedDate != null ? _formatDate(_selectedDate!) : 'Pilih tanggal', style: TextStyle(fontSize: 16, color: _selectedDate != null ? Colors.black : Colors.black54)),
+          ]),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildWaktuMulaiField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Waktu Mulai', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 8),
+      InkWell(
+        onTap: () => _selectWaktuMulai(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+          child: Row(children: [
+            Icon(Icons.access_time, size: 24, color: Colors.grey.shade600),
+            const SizedBox(width: 12),
+            Text(_selectedWaktuMulai != null ? _formatTime(_selectedWaktuMulai!) : 'Pilih waktu', style: TextStyle(fontSize: 16, color: _selectedWaktuMulai != null ? Colors.black : Colors.black54)),
+          ]),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildWaktuSelesaiField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Waktu Selesai', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
+      const SizedBox(height: 8),
+      InkWell(
+        onTap: () => _selectWaktuSelesai(context),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(8)),
+          child: Row(children: [
+            Icon(Icons.access_time, size: 24, color: Colors.grey.shade600),
+            const SizedBox(width: 12),
+            Text(_selectedWaktuSelesai != null ? _formatTime(_selectedWaktuSelesai!) : 'Pilih waktu', style: TextStyle(fontSize: 16, color: _selectedWaktuSelesai != null ? Colors.black : Colors.black54)),
+          ]),
+        ),
+      ),
+    ],
+  );
+}
+
 class AgendaItem {
   final int id;
   final String deskripsi;
@@ -669,12 +844,5 @@ class AgendaItem {
   final TimeOfDay waktuMulai;
   final TimeOfDay waktuSelesai;
 
-  AgendaItem({
-    required this.id,
-    required this.deskripsi,
-    required this.tujuan,
-    required this.tanggal,
-    required this.waktuMulai,
-    required this.waktuSelesai,
-  });
+  AgendaItem(this.id, this.deskripsi, this.tujuan, this.tanggal, this.waktuMulai, this.waktuSelesai);
 }

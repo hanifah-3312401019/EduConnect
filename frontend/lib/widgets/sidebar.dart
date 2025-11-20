@@ -9,8 +9,10 @@ class Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
     return Drawer(
-      width: 280,
+      width: isMobile ? 280 : 280,
       backgroundColor: const Color(0xFF465940),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -18,35 +20,39 @@ class Sidebar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Profile Section
-            _buildProfileSection(),
+            _buildProfileSection(isMobile),
             const SizedBox(height: 20),
 
             // Navigation Menu
-            _buildNavigationMenu(context),
+            _buildNavigationMenu(context, isMobile),
             const Spacer(),
 
             // Logout Button
-            _buildLogoutButton(context),
+            _buildLogoutButton(context, isMobile),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileSection() {
-    return const Column(
+  Widget _buildProfileSection(bool isMobile) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
-          radius: 30,
+          radius: isMobile ? 25 : 30, // Lebih kecil di mobile
           backgroundColor: Colors.white,
-          child: Icon(Icons.person, size: 30, color: Color(0xFF465940)),
+          child: Icon(
+            Icons.person,
+            size: isMobile ? 25 : 30, // Lebih kecil di mobile
+            color: const Color(0xFF465940),
+          ),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         Text(
           'Siti Nursiah',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isMobile ? 14 : 16, // Font lebih kecil di mobile
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -55,37 +61,36 @@ class Sidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavigationMenu(BuildContext context) {
+  Widget _buildNavigationMenu(BuildContext context, bool isMobile) {
     return Column(
       children: [
         _buildMenuTile(context, 'Halaman Utama', Icons.home, () {
           Navigator.pushReplacementNamed(context, '/guru/dashboard');
-        }),
+        }, isMobile),
         _buildMenuTile(context, 'Absensi', Icons.people, () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const Absensi()),
           );
-        }),
+        }, isMobile),
         _buildMenuTile(context, 'Agenda', Icons.calendar_today, () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const Agenda()),
           );
-        }),
-
+        }, isMobile),
         _buildMenuTile(context, 'Pengumuman', Icons.announcement, () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const Pengumuman()),
           );
-        }),
+        }, isMobile),
         _buildMenuTile(context, 'Permohonan Izin', Icons.assignment, () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const PermohonanIzin()),
           );
-        }),
+        }, isMobile),
       ],
     );
   }
@@ -95,12 +100,20 @@ class Sidebar extends StatelessWidget {
     String title,
     IconData icon,
     VoidCallback onTap,
+    bool isMobile,
   ) {
     return ListTile(
-      leading: Icon(icon, color: Colors.white, size: 20),
+      leading: Icon(
+        icon,
+        color: Colors.white,
+        size: isMobile ? 18 : 20, // Icon lebih kecil di mobile
+      ),
       title: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: isMobile ? 13 : 14, // Font lebih kecil di mobile
+        ),
       ),
       onTap: () {
         // Tutup drawer dulu
@@ -110,10 +123,11 @@ class Sidebar extends StatelessWidget {
       },
       contentPadding: EdgeInsets.zero,
       minLeadingWidth: 0,
+      dense: isMobile, // Lebih padat di mobile
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
+  Widget _buildLogoutButton(BuildContext context, bool isMobile) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -126,10 +140,17 @@ class Sidebar extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF465940),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(
+            vertical: isMobile ? 10 : 12,
+          ), // Padding lebih kecil di mobile
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        child: const Text('Keluar'),
+        child: Text(
+          'Keluar',
+          style: TextStyle(
+            fontSize: isMobile ? 14 : 16, // Font lebih kecil di mobile
+          ),
+        ),
       ),
     );
   }
