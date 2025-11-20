@@ -1,7 +1,71 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-class EditAnakPage extends StatelessWidget {
-  const EditAnakPage({super.key});
+String baseUrl = "http://10.0.2.2:8000/api";
+
+class EditAnakPage extends StatefulWidget {
+  final Map<String, dynamic>? data; // nullable
+  const EditAnakPage({super.key, this.data});
+
+  @override
+  State<EditAnakPage> createState() => _EditAnakPageState();
+}
+
+class _EditAnakPageState extends State<EditAnakPage> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController namaController;
+  late TextEditingController ekskulController;
+  late TextEditingController tglController;
+  late TextEditingController alamatController;
+  String? jenisKelamin;
+  String? agama;
+
+  @override
+  void initState() {
+    super.initState();
+    namaController = TextEditingController(
+      text: widget.data?['nama_anak'] ?? '',
+    );
+    ekskulController = TextEditingController(
+      text: widget.data?['ekskul'] ?? '',
+    );
+    tglController = TextEditingController(
+      text: widget.data?['tgl_lahir'] ?? '',
+    );
+    alamatController = TextEditingController(
+      text: widget.data?['alamat_anak'] ?? '',
+    );
+    jenisKelamin = widget.data?['jenis_kelamin'];
+    agama = widget.data?['agama'];
+  }
+
+  Future<void> saveAnak() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/profil/update-anak'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id': widget.data?['id'], // HARUS ADA DI API
+        'nama_anak': namaController.text,
+        'ekskul': ekskulController.text,
+        'tgl_lahir': tglController.text,
+        'jenis_kelamin': jenisKelamin,
+        'agama': agama,
+        'alamat_anak': alamatController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data anak berhasil diperbarui')),
+      );
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan: ${response.body}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,82 +83,74 @@ class EditAnakPage extends StatelessWidget {
         ),
         title: const Text(
           "Data Anak",
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 16,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(color: Colors.black, fontSize: 16),
         ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
         child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              const CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.transparent,
-                child: Icon(Icons.person, size: 55, color: Colors.black),
-              ),
-              const SizedBox(height: 25),
-
-              _buildRoundedTextField(label: "Nama Anak :"),
-              const SizedBox(height: 16),
-
-              _buildRoundedTextField(label: "Ekstrakulikuler : Basket"),
-              const SizedBox(height: 16),
-
-              _buildRoundedTextField(label: "Tanggal Lahir : 21 Mei 2009"),
-              const SizedBox(height: 16),
-
-              _buildDropdownField(
-                label: "Jenis Kelamin :",
-                items: ["Laki-laki", "Perempuan"],
-              ),
-              const SizedBox(height: 16),
-
-              _buildDropdownField(
-                label: "Agama :",
-                items: ["Islam", "Kristen", "Katolik", "Hindu", "Buddha"],
-              ),
-              const SizedBox(height: 16),
-
-              _buildRoundedTextField(label: "Alamat :", maxLines: 4),
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: 150,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                const CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.transparent,
+                  child: Icon(Icons.person, size: 55, color: Colors.black),
+                ),
+                const SizedBox(height: 25),
+                _buildTextField("Nama Anak", namaController),
+                const SizedBox(height: 16),
+                _buildTextField("Ekstrakulikuler", ekskulController),
+                const SizedBox(height: 16),
+                _buildTextField("Tanggal Lahir", tglController),
+                const SizedBox(height: 16),
+                _buildDropdown(
+                  "Jenis Kelamin",
+                  ["Laki-laki", "Perempuan"],
+                  jenisKelamin,
+                  (val) => setState(() => jenisKelamin = val),
+                ),
+                const SizedBox(height: 16),
+                _buildDropdown(
+                  "Agama",
+                  ["Islam", "Kristen", "Katolik", "Hindu", "Buddha"],
+                  agama,
+                  (val) => setState(() => agama = val),
+                ),
+                const SizedBox(height: 16),
+                _buildTextField("Alamat", alamatController, maxLines: 4),
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: 150,
+                  child: ElevatedButton(
+                    onPressed: saveAnak,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: greenColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    "Simpan Data",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
+                    child: const Text(
+                      "Simpan Data",
+                      style: TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 30),
-            ],
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  static Widget _buildRoundedTextField({
-    required String label,
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
     int maxLines = 1,
   }) {
     const Color greenColor = Color(0xFF465940);
@@ -104,76 +160,38 @@ class EditAnakPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: TextField(
+      child: TextFormField(
+        controller: controller,
         maxLines: maxLines,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: label,
-          hintStyle: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 13,
-            color: Colors.black,
-          ),
-        ),
+        decoration: InputDecoration(border: InputBorder.none, hintText: label),
       ),
     );
   }
 
-  static Widget _buildDropdownField({
-    required String label,
-    required List<String> items,
-  }) {
+  Widget _buildDropdown(
+    String label,
+    List<String> items,
+    String? selected,
+    ValueChanged<String?> onChanged,
+  ) {
     const Color greenColor = Color(0xFF465940);
-    String? selectedValue;
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: greenColor, width: 1.5),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedValue,
-                    hint: Text(
-                      label,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: Colors.black,
-                      ),
-                    ),
-                    isExpanded: true,
-                    icon: const Icon(Icons.arrow_drop_down),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedValue = newValue;
-                      });
-                    },
-                    items: items.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          "$label $value",
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            color: Colors.black,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: greenColor, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          hint: Text(label),
+          value: selected,
+          onChanged: onChanged,
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
+        ),
+      ),
     );
   }
 }

@@ -1,7 +1,61 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-class EditOrangTuaPage extends StatelessWidget {
-  const EditOrangTuaPage({super.key});
+String baseUrl = "http://10.0.2.2:8000/api";
+
+class EditOrangTuaPage extends StatefulWidget {
+  final Map<String, dynamic>? data;
+  const EditOrangTuaPage({super.key, this.data});
+
+  @override
+  State<EditOrangTuaPage> createState() => _EditOrangTuaPageState();
+}
+
+class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController namaController;
+  late TextEditingController telpController;
+  late TextEditingController emailController;
+  late TextEditingController alamatController;
+
+  @override
+  void initState() {
+    super.initState();
+    namaController = TextEditingController(text: widget.data?['nama'] ?? '');
+    telpController = TextEditingController(
+      text: widget.data?['no_telepon'] ?? '',
+    );
+    emailController = TextEditingController(text: widget.data?['email'] ?? '');
+    alamatController = TextEditingController(
+      text: widget.data?['alamat'] ?? '',
+    );
+  }
+
+  Future<void> saveOrtu() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/profil/update-ortu'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'id': widget.data?['orangTua_Id'], // Karena DB pakai OrangTua_Id
+        'nama': namaController.text,
+        'no_telepon': telpController.text,
+        'email': emailController.text,
+        'alamat': alamatController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data orang tua berhasil diperbarui')),
+      );
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan: ${response.body}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,75 +73,60 @@ class EditOrangTuaPage extends StatelessWidget {
         ),
         title: const Text(
           "Data Orang Tua",
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 16,
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(color: Colors.black, fontSize: 16),
         ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
         child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              const CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.transparent,
-                child: Icon(Icons.person, size: 55, color: Colors.black),
-              ),
-              const SizedBox(height: 25),
-
-              // Input Nama Orang Tua
-              _buildRoundedTextField(label: "Nama Orang Tua :"),
-              const SizedBox(height: 16),
-
-              // Input No Telepon
-              _buildRoundedTextField(label: "No Telepon :"),
-              const SizedBox(height: 16),
-
-              // Input Email
-              _buildRoundedTextField(label: "Email :"),
-              const SizedBox(height: 16),
-
-              // Input Alamat (Lebih tinggi)
-              _buildRoundedTextField(label: "Alamat :", maxLines: 4),
-              const SizedBox(height: 30),
-
-              // Tombol Simpan Data
-              SizedBox(
-                width: 150,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                const CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.transparent,
+                  child: Icon(Icons.person, size: 55, color: Colors.black),
+                ),
+                const SizedBox(height: 25),
+                _buildTextField("Nama Orang Tua", namaController),
+                const SizedBox(height: 16),
+                _buildTextField("No Telepon", telpController),
+                const SizedBox(height: 16),
+                _buildTextField("Email", emailController),
+                const SizedBox(height: 16),
+                _buildTextField("Alamat", alamatController, maxLines: 4),
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: 150,
+                  child: ElevatedButton(
+                    onPressed: saveOrtu,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: greenColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: const Text(
-                    "Simpan Data",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Poppins',
-                      fontSize: 13,
+                    child: const Text(
+                      "Simpan Data",
+                      style: TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 30),
-            ],
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  static Widget _buildRoundedTextField({
-    required String label,
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
     int maxLines = 1,
   }) {
     const Color greenColor = Color(0xFF465940);
@@ -97,17 +136,10 @@ class EditOrangTuaPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: TextField(
+      child: TextFormField(
+        controller: controller,
         maxLines: maxLines,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: label,
-          hintStyle: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 13,
-            color: Colors.black,
-          ),
-        ),
+        decoration: InputDecoration(border: InputBorder.none, hintText: label),
       ),
     );
   }

@@ -2,18 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Model;
 
-class OrangTua extends Authenticatable
+class OrangTua extends Model
 {
-    use HasApiTokens, HasFactory;
+    use HasFactory;
 
-    protected $table = 'orang_tuas';
-
-    protected $primaryKey = 'OrangTua_Id';
+    protected $table = 'orang_tuas'; // sesuai nama tabel di phpMyAdmin
+    protected $primaryKey = 'OrangTua_Id'; // primary key kamu beda
 
     protected $fillable = [
         'Nama',
@@ -23,5 +20,8 @@ class OrangTua extends Authenticatable
         'Alamat',
     ];
 
-    protected $hidden = ['Kata_Sandi'];
+    public function anak()
+    {
+        return $this->hasOne(Anak::class, 'orang_tua_id');
+    }
 }
