@@ -40,8 +40,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigasi setelah 3 detik
-    Future.delayed(const Duration(seconds: 3), () {
+    // Navigasi setelah 5 detik
+    Future.delayed(const Duration(seconds: 5), () {
       Navigator.pushReplacementNamed(context, '/login');
     });
   }

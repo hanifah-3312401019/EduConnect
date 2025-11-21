@@ -13,10 +13,11 @@ Route::get('/user', function (Request $request) {
 // LOGIN
 Route::post('/login', [UniversalLoginController::class, 'login']);
 
-Route::get('/users', [UserController::class, 'index']);
-Route::get('/users/{id}', [UserController::class, 'show']);
-Route::get('/profil', [ProfilController::class, 'getProfil']);
-Route::get('/profil', [ProfilController::class, 'getProfil']);
+// SEMUA ROUTE PROFIL
+Route::get('/profil-new', [ProfilController::class, 'getProfil']);
 Route::post('/profil/update-anak', [ProfilController::class, 'updateAnak']);
 Route::post('/profil/update-ortu', [ProfilController::class, 'updateOrtu']);
 
+Route::options('/{any}', function () {
+    return response()->json([]);
+})->where('any', '.*');

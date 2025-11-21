@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/widgets/sidebarAdmin.dart';
-import 'informasi_pembayaran.dart';
-import 'data_guru.dart';
-import 'data_siswa.dart';
-import 'data_orangTua.dart';
-import 'data_kelas.dart';
-import 'jadwal_pelajaran.dart';
+import 'package:frontend/admin/data_siswa.dart';
+import 'package:frontend/admin/data_guru.dart';
+import 'package:frontend/admin/data_orangTua.dart';
+import 'package:frontend/admin/data_kelas.dart';
+import 'package:frontend/admin/jadwal_pelajaran.dart';
+import 'package:frontend/admin/informasi_pembayaran.dart';
 
 class DashboardAdminPage extends StatefulWidget {
   const DashboardAdminPage({super.key});

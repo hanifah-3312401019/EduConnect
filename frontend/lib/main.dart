@@ -68,18 +68,9 @@ class EduConnectApp extends StatelessWidget {
         ),
       ),
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      // 🟢 Halaman pertama langsung SplashScreen
+      // 🟢 Halaman pertama dengan SplashScreen & authentication check
       home: const SplashScreen(),
-=======
-      // 🟢 Halaman pertama saat aplikasi dibuka
-      home: const DataKelasPage(),
->>>>>>> Stashed changes
-=======
-      // 🟢 Halaman pertama saat aplikasi dibuka
-      home: const DataKelasPage(),
->>>>>>> Stashed changes
+
 
       // 🧭 Daftar semua rute aplikasi
       routes: {
@@ -100,13 +91,14 @@ class EduConnectApp extends StatelessWidget {
         '/perizinan': (context) => const PerizinanPage(),
 
       //--- ADMIN ---
-        '/dashboard_admin' : (context) => DashboardAdminPage(),
-        '/data_siswa' : (context) => DataSiswaPage(),
-        '/data_orangTua' : (context) => DataOrangTuaPage(),
-        '/data_kelas' : (context) => DataKelasPage(),
-        '/data_guru' : (context) =>DataGuruPage(),
-        '/jadwal_pelajaran' : (context) =>JadwalPelajaranPage(),
-        '/informasi_pembayaran' : (context) =>DataPembayaranPage(),
+        '/admin/dashboard': (context) => DashboardAdminPage(),
+        '/admin/data_siswa': (context) => DataSiswaPage(),
+        '/admin/data_orangtua': (context) => DataOrangTuaPage(),
+        '/admin/data_kelas': (context) => DataKelasPage(),
+        '/admin/data_guru': (context) => DataGuruPage(),
+        '/admin/jadwal_pelajaran': (context) => JadwalPelajaranPage(),
+        '/admin/informasi_pembayaran': (context) => DataPembayaranPage(),
+        
       },
     );
   }

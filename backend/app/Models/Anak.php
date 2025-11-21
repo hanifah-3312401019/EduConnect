@@ -9,7 +9,7 @@ class Anak extends Model
 {
     use HasFactory;
 
-    protected $table = 'anak';
+    protected $table = 'siswa';
     protected $fillable = ['orang_tua_id', 'nama', 'ekskul', 'tgl_lahir', 'jenis_kelamin', 'agama', 'alamat'];
 
     public function orangTua()

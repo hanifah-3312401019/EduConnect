@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/auth/login.dart';
 
 class SidebarAdmin extends StatelessWidget {
   final Function(String) onMenuSelected;
@@ -40,8 +41,20 @@ class SidebarAdmin extends StatelessWidget {
                 menuItem(Icons.calendar_view_week, "informasi_pembayaran"),
 
                 const Divider(color: Colors.white54, height: 30),
-
-                menuItem(Icons.logout, "Keluar", color: Colors.redAccent),
+                
+                // PERBAIKI - handle logout
+                ListTile(
+                  leading: Icon(Icons.logout, color: Colors.redAccent),
+                  title: Text("Keluar", style: TextStyle(color: Colors.redAccent)),
+                  onTap: () {
+                    // Handle logout logic di sini
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => LoginPage()),
+                      (route) => false,
+                    );
+                  },
+                )
               ],
             ),
           )

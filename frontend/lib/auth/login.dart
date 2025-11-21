@@ -5,7 +5,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:frontend/env/api_base_url.dart';
+import 'package:frontend/orangtua/dashboard_orangtua.dart';
 
+String globalAuthToken = '';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,146 +22,171 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-void _login() async {
-  final email = _emailController.text.trim();
-  final password = _passwordController.text.trim();
+  void _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-  if (email.isEmpty || password.isEmpty) return;
+    if (email.isEmpty || password.isEmpty) return;
 
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  final baseUrl = ApiConfig.baseUrl;
+    final baseUrl = ApiConfig.baseUrl;
 
-  final response = await http.post(
-    Uri.parse("$baseUrl/api/login"),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({
-      "Email": email,
-      "Kata_Sandi": password,
-    }),
-  );
-
-  setState(() => _isLoading = false);
-
-  if (response.statusCode == 200) { // jika status code 200 → login berhasil
-    final data = jsonDecode(response.body);
-
-    final role = data['role'];
-    final token = data['token']; // menerima role & token dari backend
-
-    if (role == "guru") {
-      Navigator.pushReplacementNamed(context, '/guru/dashboard');
-    } 
-    else if (role == "orangtua") {
-      Navigator.pushReplacementNamed(context, '/dashboard');
-    } 
-    else if (role == "admin") {
-      Navigator.pushReplacementNamed(context, '/admin/dashboard');
-    }
-
-  } else {
-    // jika login gagal
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Email atau kata sandi salah")),
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/login"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"Email": email, "Kata_Sandi": password}),
     );
-  }
-}
 
-  @override
+    setState(() => _isLoading = false);
+
+    print('Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final role = data['role'];
+      final token = data['token'];
+
+      print('Login berhasil! Role: $role');
+
+      globalAuthToken = token;
+      print('Token disimpan: $token');
+
+      if (role == "guru") {
+        Navigator.pushReplacementNamed(context, '/guru/dashboard');
+      } else if (role == "orangtua") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardPage()),
+        );
+      } else if (role == "admin") {
+        Navigator.pushReplacementNamed(context, '/admin/dashboard');
+      }
+    } else {
+      final errorData = jsonDecode(response.body);
+      final errorMessage = errorData['message'] ?? 'Terjadi kesalahan';
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+    }
+  }
+
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 80),
-              _buildHeaderSection(),
-              const SizedBox(height: 60),
-              _buildLoginForm(),
-              const SizedBox(height: 40),
-              _buildFooter(),
-              const SizedBox(height: 40),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Responsive breakpoints
+            if (constraints.maxWidth > 600) {
+              // DESKTOP/TABLET LAYOUT
+              return _buildDesktopLayout();
+            } else {
+              // MOBILE LAYOUT
+              return _buildMobileLayout();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  // ==================== DESKTOP LAYOUT ====================
+  Widget _buildDesktopLayout() {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        padding: const EdgeInsets.all(40),
+        child: Row(
+          children: [
+            // LEFT SIDE - Branding
+            Expanded(
+              flex: 1,
+              child: _buildDesktopLeftSide(),
+            ),
+            const SizedBox(width: 60),
+            // RIGHT SIDE - Login Form
+            Expanded(
+              flex: 1,
+              child: _buildDesktopLoginForm(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLeftSide() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Logo
+        Container(
+          width: 150,
+          height: 150,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: AppConstants.primaryColor.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 5),
+              ),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.asset('assets/images/Logo.png', fit: BoxFit.cover),
+          ),
         ),
-      ),
+        const SizedBox(height: 24),
+
+        // App Title
+        const Text(
+          AppConstants.appName,
+          style: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.w800,
+            color: AppConstants.primaryColor,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Subtitle
+        Text(
+          AppConstants.appSubtitle,
+          style: TextStyle(
+            fontSize: 18,
+            color: AppConstants.primaryColor.withOpacity(0.8),
+            fontWeight: FontWeight.w500,
+            height: 1.4,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHeaderSection() {
-    return Center(
-      child: Column(
-        children: [
-          // Logo
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: AppConstants.primaryColor.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Image.asset(
-                'assets/images/Logo.png',
-                fit: BoxFit.cover,
-              ),
-            ),
+  Widget _buildDesktopLoginForm() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
           ),
-          const SizedBox(height: 16),
-          
-          // App Title
-          const Text(
-            AppConstants.appName,
-            style: TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.w800,
-              color: AppConstants.primaryColor,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          // Subtitle
-          _buildSubtitleCard(),
         ],
       ),
-    );
-  }
-
-  Widget _buildSubtitleCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppConstants.primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        AppConstants.appSubtitle,
-        style: TextStyle(
-          fontSize: 14,
-          color: AppConstants.primaryColor.withOpacity(0.8),
-          fontWeight: FontWeight.w500,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  Widget _buildLoginForm() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: AppConstants.formContainerDecoration,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildFormHeader(),
           const SizedBox(height: 32),
@@ -179,22 +206,130 @@ void _login() async {
             obscureText: _obscurePassword,
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? 
-                  Icons.visibility_outlined : 
-                  Icons.visibility_off_outlined,
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
                 color: Colors.grey[500],
                 size: 20,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
           const SizedBox(height: 32),
+          _buildLoginButton(),
+          const SizedBox(height: 24),
+          _buildFooter(),
+        ],
+      ),
+    );
+  }
+
+  // ==================== MOBILE LAYOUT ====================
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 60),
+          _buildMobileHeaderSection(),
+          const SizedBox(height: 40),
+          _buildMobileLoginForm(),
+          const SizedBox(height: 40),
+          _buildFooter(),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileHeaderSection() {
+    return Center(
+      child: Column(
+        children: [
+          // Logo
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: AppConstants.primaryColor.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Image.asset('assets/images/Logo.png', fit: BoxFit.cover),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // App Title
+          const Text(
+            AppConstants.appName,
+            style: TextStyle(
+              fontSize: 42,
+              fontWeight: FontWeight.w800,
+              color: AppConstants.primaryColor,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Subtitle
+          _buildSubtitleCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLoginForm() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: AppConstants.formContainerDecoration,
+      child: Column(
+        children: [
+          _buildFormHeader(),
+          const SizedBox(height: 24),
+          CustomTextField(
+            controller: _emailController,
+            label: 'Email',
+            hint: 'masukan email anda',
+            prefixIcon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            controller: _passwordController,
+            label: 'Kata Sandi',
+            hint: 'masukan kata sandi',
+            prefixIcon: Icons.lock_outline,
+            obscureText: _obscurePassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: Colors.grey[500],
+                size: 20,
+              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
+          ),
+          const SizedBox(height: 24),
           _buildLoginButton(),
         ],
       ),
     );
   }
 
+  // ==================== SHARED COMPONENTS ====================
   Widget _buildFormHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -279,6 +414,25 @@ void _login() async {
     );
   }
 
+  Widget _buildSubtitleCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppConstants.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        AppConstants.appSubtitle,
+        style: TextStyle(
+          fontSize: 14,
+          color: AppConstants.primaryColor.withOpacity(0.8),
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
   Widget _buildFooter() {
     return Center(
       child: Container(
@@ -299,7 +453,7 @@ void _login() async {
       ),
     );
   }
-
+  
   @override
   void dispose() {
     _emailController.dispose();
