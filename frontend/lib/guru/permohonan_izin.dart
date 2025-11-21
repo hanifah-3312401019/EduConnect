@@ -243,7 +243,6 @@ class MobilePermohonanIzin extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Placeholder untuk gambar/surat
               Container(
                 width: double.infinity,
                 height: 200,

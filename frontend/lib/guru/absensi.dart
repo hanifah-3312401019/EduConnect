@@ -218,7 +218,6 @@ class _MobileAbsensiContentState extends State<MobileAbsensiContent> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       child: Column(children: [
-        // Header
         Container(
           width: double.infinity, padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
           decoration: BoxDecoration(
@@ -233,7 +232,6 @@ class _MobileAbsensiContentState extends State<MobileAbsensiContent> {
         ),
         SizedBox(height: isSmallScreen ? 12 : 16),
 
-        // Tanggal
         Container(
           width: double.infinity, padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
           decoration: BoxDecoration(
@@ -262,7 +260,6 @@ class _MobileAbsensiContentState extends State<MobileAbsensiContent> {
         ),
         SizedBox(height: isSmallScreen ? 12 : 16),
 
-        // Centang Semua
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
@@ -280,14 +277,12 @@ class _MobileAbsensiContentState extends State<MobileAbsensiContent> {
         ),
         SizedBox(height: isSmallScreen ? 12 : 16),
 
-        // Tabel
         Container(
           decoration: BoxDecoration(
             color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 3))],
             border: Border.all(color: Colors.grey.shade100),
           ),
           child: Column(children: [
-            // Header Tabel
             Container(
               padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
               decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF465940), Color(0xFF2D3A2A)])),
@@ -299,7 +294,6 @@ class _MobileAbsensiContentState extends State<MobileAbsensiContent> {
               ]),
             ),
             
-            // List Siswa
             ..._siswaList.asMap().entries.map((entry) {
               final index = entry.key;
               final siswa = entry.value;
@@ -321,7 +315,6 @@ class _MobileAbsensiContentState extends State<MobileAbsensiContent> {
         ),
         SizedBox(height: isSmallScreen ? 16 : 20),
 
-        // Tombol Simpan
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(

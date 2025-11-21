@@ -11,13 +11,14 @@ class Agenda extends StatefulWidget {
 
 class _AgendaState extends State<Agenda> {
   final List<AgendaItem> _agendaList = [
-    AgendaItem(1, "Rapat Wali Murid", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), "1A"),
-    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), ""),
-    AgendaItem(3, "Latihan Nari Kelas 3A", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0), ""),
+    AgendaItem(1, "Rapat Wali Murid", "Pertemuan rutin wali murid kelas 1A", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), "1A"),
+    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Upacara dan lomba untuk memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), ""),
+    AgendaItem(3, "Latihan Nari Kelas 3A", "Latihan tari tradisional untuk persiapan pentas seni", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0), ""),
   ];
 
   bool _showForm = false;
   AgendaItem? _editingAgenda;
+  final _judulController = TextEditingController();
   final _deskripsiController = TextEditingController();
   String _selectedTujuan = "Sekolah";
   String _selectedKelas = "";
@@ -29,6 +30,7 @@ class _AgendaState extends State<Agenda> {
 
   @override
   void dispose() {
+    _judulController.dispose();
     _deskripsiController.dispose();
     super.dispose();
   }
@@ -41,6 +43,7 @@ class _AgendaState extends State<Agenda> {
   }
 
   void _resetForm() {
+    _judulController.clear();
     _deskripsiController.clear();
     _selectedTujuan = "Sekolah";
     _selectedKelas = "";
@@ -53,6 +56,7 @@ class _AgendaState extends State<Agenda> {
   void _editAgenda(AgendaItem agenda) {
     setState(() {
       _editingAgenda = agenda;
+      _judulController.text = agenda.judul;
       _deskripsiController.text = agenda.deskripsi;
       _selectedTujuan = agenda.tujuan;
       _selectedKelas = agenda.kelas;
@@ -84,7 +88,7 @@ class _AgendaState extends State<Agenda> {
   }
 
   void _publishAgenda() {
-    if (_deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
+    if (_judulController.text.isEmpty || _deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
       return;
     }
@@ -98,11 +102,11 @@ class _AgendaState extends State<Agenda> {
       if (_editingAgenda != null) {
         final index = _agendaList.indexWhere((p) => p.id == _editingAgenda!.id);
         if (index != -1) {
-          _agendaList[index] = AgendaItem(_editingAgenda!.id, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas);
+          _agendaList[index] = AgendaItem(_editingAgenda!.id, _judulController.text, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas);
         }
       } else {
         final newId = _agendaList.isEmpty ? 1 : _agendaList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-        _agendaList.add(AgendaItem(newId, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas));
+        _agendaList.add(AgendaItem(newId, _judulController.text, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas));
       }
       _showForm = false;
       _resetForm();
@@ -215,15 +219,16 @@ class MobileAgendaContent extends StatefulWidget {
 
 class _MobileAgendaContentState extends State<MobileAgendaContent> {
   final List<AgendaItem> _agendaList = [
-    AgendaItem(1, "Rapat Wali Murid", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), "1A"),
-    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), ""),
-    AgendaItem(3, "Latihan Nari Kelas 3A", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0), ""),
-    AgendaItem(4, "Ujian Semester Genap", "Sekolah", DateTime(2025, 6, 15), TimeOfDay(hour: 7, minute: 30), TimeOfDay(hour: 12, minute: 0), ""),
-    AgendaItem(5, "Pembagian Raport", "Sekolah", DateTime(2025, 6, 28), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 11, minute: 0), ""),
+    AgendaItem(1, "Rapat Wali Murid", "Pertemuan rutin wali murid kelas 1A", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), "1A"),
+    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Upacara dan lomba untuk memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), ""),
+    AgendaItem(3, "Latihan Nari Kelas 3A", "Latihan tari tradisional untuk persiapan pentas seni", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0), ""),
+    AgendaItem(4, "Ujian Semester Genap", "Ujian akhir semester untuk semua kelas", "Sekolah", DateTime(2025, 6, 15), TimeOfDay(hour: 7, minute: 30), TimeOfDay(hour: 12, minute: 0), ""),
+    AgendaItem(5, "Pembagian Raport", "Pembagian raport semester genap", "Sekolah", DateTime(2025, 6, 28), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 11, minute: 0), ""),
   ];
 
   bool _showForm = false;
   AgendaItem? _editingAgenda;
+  final _judulController = TextEditingController();
   final _deskripsiController = TextEditingController();
   String _selectedTujuan = "Sekolah";
   String _selectedKelas = "";
@@ -235,6 +240,7 @@ class _MobileAgendaContentState extends State<MobileAgendaContent> {
 
   @override
   void dispose() {
+    _judulController.dispose();
     _deskripsiController.dispose();
     super.dispose();
   }
@@ -247,6 +253,7 @@ class _MobileAgendaContentState extends State<MobileAgendaContent> {
   }
 
   void _resetForm() {
+    _judulController.clear();
     _deskripsiController.clear();
     _selectedTujuan = "Sekolah";
     _selectedKelas = "";
@@ -259,6 +266,7 @@ class _MobileAgendaContentState extends State<MobileAgendaContent> {
   void _editAgenda(AgendaItem agenda) {
     setState(() {
       _editingAgenda = agenda;
+      _judulController.text = agenda.judul;
       _deskripsiController.text = agenda.deskripsi;
       _selectedTujuan = agenda.tujuan;
       _selectedKelas = agenda.kelas;
@@ -290,7 +298,7 @@ class _MobileAgendaContentState extends State<MobileAgendaContent> {
   }
 
   void _publishAgenda() {
-    if (_deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
+    if (_judulController.text.isEmpty || _deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
       return;
     }
@@ -304,11 +312,11 @@ class _MobileAgendaContentState extends State<MobileAgendaContent> {
       if (_editingAgenda != null) {
         final index = _agendaList.indexWhere((p) => p.id == _editingAgenda!.id);
         if (index != -1) {
-          _agendaList[index] = AgendaItem(_editingAgenda!.id, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas);
+          _agendaList[index] = AgendaItem(_editingAgenda!.id, _judulController.text, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas);
         }
       } else {
         final newId = _agendaList.isEmpty ? 1 : _agendaList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-        _agendaList.add(AgendaItem(newId, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas));
+        _agendaList.add(AgendaItem(newId, _judulController.text, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas));
       }
       _showForm = false;
       _resetForm();
@@ -374,9 +382,11 @@ class _MobileAgendaContentState extends State<MobileAgendaContent> {
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text(agenda.deskripsi, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F)))),
+          Expanded(child: Text(agenda.judul, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F)))),
           Text(_formatDate(agenda.tanggal), style: const TextStyle(color: Colors.black87, fontSize: 14)),
         ]),
+        const SizedBox(height: 8),
+        Text(agenda.deskripsi, style: const TextStyle(fontSize: 14, color: Colors.black87)),
         const SizedBox(height: 8),
         Text('${_formatTime(agenda.waktuMulai)} - ${_formatTime(agenda.waktuSelesai)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
         const SizedBox(height: 8),
@@ -406,6 +416,8 @@ class _MobileAgendaContentState extends State<MobileAgendaContent> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(_editingAgenda == null ? 'Tambah Agenda Baru' : 'Edit Agenda', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
         const SizedBox(height: 20),
+        _buildFormField(controller: _judulController, label: 'Judul Agenda', hint: 'Masukkan judul agenda', maxLines: 1),
+        const SizedBox(height: 16),
         _buildFormField(controller: _deskripsiController, label: 'Deskripsi Agenda', hint: 'Masukkan deskripsi agenda', maxLines: 3),
         const SizedBox(height: 16),
         _buildTujuanDropdown(),
@@ -574,16 +586,17 @@ class WebAgendaContent extends StatefulWidget {
 
 class _WebAgendaContentState extends State<WebAgendaContent> {
   final List<AgendaItem> _agendaList = [
-    AgendaItem(1, "Rapat Wali Murid", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), "1A"),
-    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), ""),
-    AgendaItem(3, "Latihan Nari Kelas 3A", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0), ""),
-    AgendaItem(4, "Ujian Semester Genap", "Sekolah", DateTime(2025, 6, 15), TimeOfDay(hour: 7, minute: 30), TimeOfDay(hour: 12, minute: 0), ""),
-    AgendaItem(5, "Pembagian Raport", "Sekolah", DateTime(2025, 6, 28), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 11, minute: 0), ""),
-    AgendaItem(6, "Workshop Guru", "Kelas", DateTime(2025, 7, 5), TimeOfDay(hour: 9, minute: 0), TimeOfDay(hour: 15, minute: 0), "3B"),
+    AgendaItem(1, "Rapat Wali Murid", "Pertemuan rutin wali murid kelas 1A", "Kelas", DateTime(2025, 11, 10), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), "1A"),
+    AgendaItem(2, "Acara Memperingati Hari Pancasila", "Upacara dan lomba untuk memperingati Hari Pancasila", "Sekolah", DateTime(2025, 3, 20), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 10, minute: 0), ""),
+    AgendaItem(3, "Latihan Nari Kelas 3A", "Latihan tari tradisional untuk persiapan pentas seni", "Ekstrakurikuler", DateTime(2025, 11, 17), TimeOfDay(hour: 7, minute: 0), TimeOfDay(hour: 8, minute: 0), ""),
+    AgendaItem(4, "Ujian Semester Genap", "Ujian akhir semester untuk semua kelas", "Sekolah", DateTime(2025, 6, 15), TimeOfDay(hour: 7, minute: 30), TimeOfDay(hour: 12, minute: 0), ""),
+    AgendaItem(5, "Pembagian Raport", "Pembagian raport semester genap", "Sekolah", DateTime(2025, 6, 28), TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 11, minute: 0), ""),
+    AgendaItem(6, "Workshop Guru", "Pelatihan metode pembelajaran terbaru untuk guru", "Kelas", DateTime(2025, 7, 5), TimeOfDay(hour: 9, minute: 0), TimeOfDay(hour: 15, minute: 0), "3B"),
   ];
 
   bool _showForm = false;
   AgendaItem? _editingAgenda;
+  final _judulController = TextEditingController();
   final _deskripsiController = TextEditingController();
   String _selectedTujuan = "Sekolah";
   String _selectedKelas = "";
@@ -595,6 +608,7 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
 
   @override
   void dispose() {
+    _judulController.dispose();
     _deskripsiController.dispose();
     super.dispose();
   }
@@ -607,6 +621,7 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
   }
 
   void _resetForm() {
+    _judulController.clear();
     _deskripsiController.clear();
     _selectedTujuan = "Sekolah";
     _selectedKelas = "";
@@ -619,6 +634,7 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
   void _editAgenda(AgendaItem agenda) {
     setState(() {
       _editingAgenda = agenda;
+      _judulController.text = agenda.judul;
       _deskripsiController.text = agenda.deskripsi;
       _selectedTujuan = agenda.tujuan;
       _selectedKelas = agenda.kelas;
@@ -650,7 +666,7 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
   }
 
   void _publishAgenda() {
-    if (_deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
+    if (_judulController.text.isEmpty || _deskripsiController.text.isEmpty || _selectedDate == null || _selectedWaktuMulai == null || _selectedWaktuSelesai == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field harus diisi')));
       return;
     }
@@ -664,11 +680,11 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
       if (_editingAgenda != null) {
         final index = _agendaList.indexWhere((p) => p.id == _editingAgenda!.id);
         if (index != -1) {
-          _agendaList[index] = AgendaItem(_editingAgenda!.id, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas);
+          _agendaList[index] = AgendaItem(_editingAgenda!.id, _judulController.text, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas);
         }
       } else {
         final newId = _agendaList.isEmpty ? 1 : _agendaList.map((p) => p.id).reduce((a, b) => a > b ? a : b) + 1;
-        _agendaList.add(AgendaItem(newId, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas));
+        _agendaList.add(AgendaItem(newId, _judulController.text, _deskripsiController.text, _selectedTujuan, _selectedDate!, _selectedWaktuMulai!, _selectedWaktuSelesai!, _selectedKelas));
       }
       _showForm = false;
       _resetForm();
@@ -734,9 +750,11 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text(agenda.deskripsi, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F)))),
+          Expanded(child: Text(agenda.judul, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F)))),
           Text(_formatDate(agenda.tanggal), style: const TextStyle(color: Colors.black87, fontSize: 16)),
         ]),
+        const SizedBox(height: 12),
+        Text(agenda.deskripsi, style: const TextStyle(fontSize: 16, color: Colors.black87)),
         const SizedBox(height: 12),
         Text('${_formatTime(agenda.waktuMulai)} - ${_formatTime(agenda.waktuSelesai)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
         const SizedBox(height: 8),
@@ -766,6 +784,8 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(_editingAgenda == null ? 'Tambah Agenda Baru' : 'Edit Agenda', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
         const SizedBox(height: 24),
+        _buildFormField(controller: _judulController, label: 'Judul Agenda', hint: 'Masukkan judul agenda', maxLines: 1),
+        const SizedBox(height: 20),
         _buildFormField(controller: _deskripsiController, label: 'Deskripsi Agenda', hint: 'Masukkan deskripsi agenda', maxLines: 3),
         const SizedBox(height: 20),
         _buildTujuanDropdown(),
@@ -927,6 +947,7 @@ class _WebAgendaContentState extends State<WebAgendaContent> {
 
 class AgendaItem {
   final int id;
+  final String judul;
   final String deskripsi;
   final String tujuan;
   final DateTime tanggal;
@@ -934,5 +955,5 @@ class AgendaItem {
   final TimeOfDay waktuSelesai;
   final String kelas;
 
-  AgendaItem(this.id, this.deskripsi, this.tujuan, this.tanggal, this.waktuMulai, this.waktuSelesai, this.kelas);
+  AgendaItem(this.id, this.judul, this.deskripsi, this.tujuan, this.tanggal, this.waktuMulai, this.waktuSelesai, this.kelas);
 }
