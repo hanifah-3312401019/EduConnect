@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:frontend/env/api_base_url.dart';
 
-String baseUrl = "http://10.0.2.2:8000/api";
+String baseUrl = "${ApiConfig.baseUrl}/api";
+String globalAuthToken = '';
 
 class EditOrangTuaPage extends StatefulWidget {
   final Map<String, dynamic>? data;
@@ -18,42 +20,81 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
   late TextEditingController telpController;
   late TextEditingController emailController;
   late TextEditingController alamatController;
+  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    namaController = TextEditingController(text: widget.data?['nama'] ?? '');
+    namaController = TextEditingController(text: widget.data?['Nama'] ?? '');
     telpController = TextEditingController(
-      text: widget.data?['no_telepon'] ?? '',
+      text: widget.data?['No_Telepon'] ?? '',
     );
-    emailController = TextEditingController(text: widget.data?['email'] ?? '');
+    emailController = TextEditingController(text: widget.data?['Email'] ?? '');
     alamatController = TextEditingController(
-      text: widget.data?['alamat'] ?? '',
+      text: widget.data?['Alamat'] ?? '',
     );
   }
 
   Future<void> saveOrtu() async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/profil/update-ortu'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'id': widget.data?['orangTua_Id'], // Karena DB pakai OrangTua_Id
-        'nama': namaController.text,
-        'no_telepon': telpController.text,
-        'email': emailController.text,
-        'alamat': alamatController.text,
-      }),
-    );
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        isLoading = true;
+      });
 
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data orang tua berhasil diperbarui')),
-      );
-      Navigator.pop(context, true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: ${response.body}')),
-      );
+      try {
+        final Map<String, dynamic> requestData = {
+          'Nama': namaController.text,
+          'No_Telepon': telpController.text,
+          'Email': emailController.text,
+          'Alamat': alamatController.text,
+        };
+
+        print('Data yang dikirim: $requestData');
+
+        final response = await http.post(
+          Uri.parse('$baseUrl/profil/update-ortu'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $globalAuthToken',
+          },
+          body: jsonEncode(requestData),
+        );
+
+        print('Response Status: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                responseData['message'] ?? 'Data orang tua berhasil diperbarui',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true);
+        } else {
+          final errorData = jsonDecode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Gagal menyimpan: ${errorData['message'] ?? response.body}',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      } finally {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -101,7 +142,7 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
                 SizedBox(
                   width: 150,
                   child: ElevatedButton(
-                    onPressed: saveOrtu,
+                    onPressed: isLoading ? null : saveOrtu,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: greenColor,
                       shape: RoundedRectangleBorder(
@@ -109,10 +150,21 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    child: const Text(
-                      "Simpan Data",
-                      style: TextStyle(color: Colors.white, fontSize: 13),
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            "Simpan Data",
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -139,7 +191,17 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        decoration: InputDecoration(border: InputBorder.none, hintText: label),
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: label,
+          hintStyle: TextStyle(color: Colors.grey[600]),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return '$label harus diisi';
+          }
+          return null;
+        },
       ),
     );
   }
