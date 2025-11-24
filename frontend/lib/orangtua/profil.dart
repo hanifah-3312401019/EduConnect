@@ -10,7 +10,7 @@ import 'pembayaran.dart';
 import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
 
-String baseUrl = "http://10.0.2.2:8000/api";
+String baseUrl = "http://192.168.43.115:8000/api";
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -62,7 +62,7 @@ class _ProfilPageState extends State<ProfilPage> {
   Future<void> fetchProfil() async {
     try {
       final response = await http.get(
-        Uri.parse("$baseUrl/profil"),
+        Uri.parse("$baseUrl/profil-new"),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -101,8 +101,6 @@ class _ProfilPageState extends State<ProfilPage> {
   Widget build(BuildContext context) {
     const Color greenColor = Color(0xFF465940);
     const Color backgroundColor = Color(0xFFFDFBF0);
-
-
 
     return Scaffold(
       backgroundColor: backgroundColor,

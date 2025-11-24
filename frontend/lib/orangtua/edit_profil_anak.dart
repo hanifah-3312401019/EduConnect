@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-String baseUrl = "http://10.0.2.2:8000/api";
+String baseUrl = "http://192.168.43.115:8000/api";
+String globalAuthToken = '';
 
 class EditAnakPage extends StatefulWidget {
   final Map<String, dynamic>? data; // nullable
