@@ -10,7 +10,7 @@ class ApiConfig {
       // return "http://10.0.2.2:8000";
       // CATATAN:
       // Untuk HP USB real device → nanti ganti ke IP WiFi laptop:
-      return "http://192.168.43.115:8000";
+      return "http://192.168.100.21:8000";
     }
   }
 }

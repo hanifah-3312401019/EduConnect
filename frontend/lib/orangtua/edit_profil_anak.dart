@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-String baseUrl = "http://192.168.43.115:8000/api";
+String baseUrl = "http://localhost:8000/api";
 String globalAuthToken = '';
 
 class EditAnakPage extends StatefulWidget {
@@ -22,6 +22,16 @@ class _EditAnakPageState extends State<EditAnakPage> {
   String? jenisKelamin;
   String? agama;
 
+  // FIX: List untuk dropdown dengan value yang sesuai
+  final List<String> _jenisKelaminOptions = ['L', 'P'];
+  final List<String> _agamaOptions = [
+    'Islam',
+    'Kristen',
+    'Katolik',
+    'Hindu',
+    'Buddha',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -37,34 +47,62 @@ class _EditAnakPageState extends State<EditAnakPage> {
     alamatController = TextEditingController(
       text: widget.data?['alamat_anak'] ?? '',
     );
-    jenisKelamin = widget.data?['jenis_kelamin'];
-    agama = widget.data?['agama'];
+
+    // FIX: Handle jenis kelamin mapping
+    String? jkFromData = widget.data?['jenis_kelamin']?.toString();
+    if (jkFromData == 'L') {
+      jenisKelamin = 'Laki-laki';
+    } else if (jkFromData == 'P') {
+      jenisKelamin = 'Perempuan';
+    } else {
+      jenisKelamin = 'Laki-laki'; // default
+    }
+
+    agama = widget.data?['agama']?.toString() ?? 'Islam';
   }
 
   Future<void> saveAnak() async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/profil/update-anak'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'id': widget.data?['id'], // HARUS ADA DI API
-        'nama_anak': namaController.text,
-        'ekskul': ekskulController.text,
-        'tgl_lahir': tglController.text,
-        'jenis_kelamin': jenisKelamin,
-        'agama': agama,
-        'alamat_anak': alamatController.text,
-      }),
-    );
+    if (_formKey.currentState!.validate()) {
+      try {
+        // FIX: Map jenis kelamin untuk backend
+        String jkForBackend = 'L';
+        if (jenisKelamin == 'Perempuan') {
+          jkForBackend = 'P';
+        }
 
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data anak berhasil diperbarui')),
-      );
-      Navigator.pop(context, true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan: ${response.body}')),
-      );
+        final response = await http.post(
+          Uri.parse('$baseUrl/profil/update-anak'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({
+            'nama_anak': namaController.text,
+            'ekskul': ekskulController.text,
+            'tgl_lahir': tglController.text,
+            'jenis_kelamin': jkForBackend, // FIX: Kirim 'L' atau 'P'
+            'agama': agama,
+            'alamat_anak': alamatController.text,
+          }),
+        );
+
+        print("Save Response: ${response.statusCode} - ${response.body}");
+
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Data anak berhasil diperbarui')),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menyimpan: ${response.body}')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -101,28 +139,35 @@ class _EditAnakPageState extends State<EditAnakPage> {
                   child: Icon(Icons.person, size: 55, color: Colors.black),
                 ),
                 const SizedBox(height: 25),
-                _buildTextField("Nama Anak", namaController),
+                _buildTextField("Nama Anak", namaController, isRequired: true),
                 const SizedBox(height: 16),
                 _buildTextField("Ekstrakulikuler", ekskulController),
                 const SizedBox(height: 16),
-                _buildTextField("Tanggal Lahir", tglController),
+                _buildTextField("Tanggal Lahir (YYYY-MM-DD)", tglController),
                 const SizedBox(height: 16),
+
+                // FIX: Dropdown Jenis Kelamin
                 _buildDropdown(
                   "Jenis Kelamin",
                   ["Laki-laki", "Perempuan"],
                   jenisKelamin,
                   (val) => setState(() => jenisKelamin = val),
+                  isRequired: true,
                 ),
                 const SizedBox(height: 16),
+
+                // FIX: Dropdown Agama
                 _buildDropdown(
                   "Agama",
-                  ["Islam", "Kristen", "Katolik", "Hindu", "Buddha"],
+                  _agamaOptions,
                   agama,
                   (val) => setState(() => agama = val),
                 ),
                 const SizedBox(height: 16),
+
                 _buildTextField("Alamat", alamatController, maxLines: 4),
                 const SizedBox(height: 30),
+
                 SizedBox(
                   width: 150,
                   child: ElevatedButton(
@@ -153,6 +198,7 @@ class _EditAnakPageState extends State<EditAnakPage> {
     String label,
     TextEditingController controller, {
     int maxLines = 1,
+    bool isRequired = false,
   }) {
     const Color greenColor = Color(0xFF465940);
     return Container(
@@ -165,6 +211,14 @@ class _EditAnakPageState extends State<EditAnakPage> {
         controller: controller,
         maxLines: maxLines,
         decoration: InputDecoration(border: InputBorder.none, hintText: label),
+        validator: isRequired
+            ? (value) {
+                if (value == null || value.isEmpty) {
+                  return '$label harus diisi';
+                }
+                return null;
+              }
+            : null,
       ),
     );
   }
@@ -173,8 +227,9 @@ class _EditAnakPageState extends State<EditAnakPage> {
     String label,
     List<String> items,
     String? selected,
-    ValueChanged<String?> onChanged,
-  ) {
+    ValueChanged<String?> onChanged, {
+    bool isRequired = false,
+  }) {
     const Color greenColor = Color(0xFF465940);
     return Container(
       decoration: BoxDecoration(

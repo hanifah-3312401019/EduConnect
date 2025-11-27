@@ -24,6 +24,6 @@ class OrangTua extends Model
 
     public function anak()
     {
-        return $this->hasOne(Anak::class, 'orang_tua_id');
+        return $this->hasOne(Anak::class, 'OrangTua_Id');
     }
 }

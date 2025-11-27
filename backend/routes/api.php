@@ -17,7 +17,3 @@ Route::post('/login', [UniversalLoginController::class, 'login']);
 Route::get('/profil-new', [ProfilController::class, 'getProfil']);
 Route::post('/profil/update-anak', [ProfilController::class, 'updateAnak']);
 Route::post('/profil/update-ortu', [ProfilController::class, 'updateOrtu']);
-
-Route::options('/{any}', function () {
-    return response()->json([]);
-})->where('any', '.*');
