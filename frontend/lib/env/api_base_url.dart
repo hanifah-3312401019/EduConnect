@@ -8,9 +8,8 @@ class ApiConfig {
     } else {
       // Jika project dibuka dari Android Emulator
       // return "http://10.0.2.2:8000/api";
-
       // Jika pakai HP real device (USB/WiFi)
-      return "http://192.168.43.115:8000";
+      return "http://192.168.100.21:8000";
     }
   }
 }

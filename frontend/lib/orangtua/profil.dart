@@ -6,12 +6,18 @@ import 'edit_profil_orangtua.dart';
 import 'dashboard_orangtua.dart';
 import 'perizinan.dart';
 import 'jadwal.dart';
+import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
 import 'package:frontend/env/api_base_url.dart';
+import 'package:frontend/widgets/sidebarOrangtua.dart';
+import 'package:frontend/widgets/NavbarOrangtua.dart';
 
 String baseUrl = "http://localhost:8000/api";
+const Color greenColor = Color(0xFF465940);
+const Color backgroundColor = Color(0xFFFDFBF0);
+
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
@@ -21,7 +27,7 @@ class ProfilPage extends StatefulWidget {
 }
 
 class _ProfilPageState extends State<ProfilPage> {
-  int _selectedIndex = 4;
+  int _selectedIndex = 4; // Profil aktif
   Map<String, dynamic>? profil;
   bool isLoading = true;
   String errorMessage = '';
@@ -30,34 +36,6 @@ class _ProfilPageState extends State<ProfilPage> {
   void initState() {
     super.initState();
     fetchProfil();
-  }
-
-  void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-
-    Widget? targetPage;
-    switch (index) {
-      case 0:
-        targetPage = DashboardPage();
-        break;
-      case 1:
-        targetPage = JadwalPage();
-        break;
-      case 2:
-        break;
-      case 3:
-        targetPage = RincianPembayaranPage();
-        break;
-      case 4:
-        targetPage = ProfilPage();
-        break;
-    }
-    if (targetPage != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => targetPage!),
-      );
-    }
   }
 
   Future<void> fetchProfil() async {
@@ -70,12 +48,8 @@ class _ProfilPageState extends State<ProfilPage> {
         },
       );
 
-      print("Response Status: ${response.statusCode}");
-      print("Response Body: ${response.body}");
-
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-
         setState(() {
           profil = responseData;
           isLoading = false;
@@ -85,7 +59,7 @@ class _ProfilPageState extends State<ProfilPage> {
         setState(() {
           profil = null;
           isLoading = false;
-          errorMessage = "Error: ${response.statusCode} - ${response.body}";
+          errorMessage = "Error: ${response.statusCode}";
         });
       }
     } catch (e) {
@@ -94,22 +68,78 @@ class _ProfilPageState extends State<ProfilPage> {
         isLoading = false;
         errorMessage = "Koneksi error: $e";
       });
-      print("Exception: $e");
+    }
+  }
+
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+    Widget? targetPage;
+    switch (index) {
+      case 0:
+        targetPage = DashboardPage();
+        break;
+      case 1:
+        targetPage = JadwalPage();
+        break;
+      case 2:
+        targetPage = PengumumanPage();
+        break;
+      case 3:
+        targetPage = RincianPembayaranPage();
+        break;
+      case 4:
+        targetPage = ProfilPage();
+        break;
+    }
+    if (targetPage != null && targetPage.runtimeType != runtimeType) {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => targetPage!,
+          transitionDuration: Duration.zero,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color greenColor = Color(0xFF465940);
-    const Color backgroundColor = Color(0xFFFDFBF0);
-
     return Scaffold(
       backgroundColor: backgroundColor,
+      drawer: const sidebarOrangtua(),
       appBar: AppBar(
         backgroundColor: backgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF465940)),
-        title: const Text("Profil", style: TextStyle(color: Colors.black)),
+        iconTheme: const IconThemeData(color: greenColor),
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.school, color: greenColor),
+            SizedBox(width: 6),
+            Text(
+              "EduConnect",
+              style: TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: greenColor),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tidak ada notifikasi baru')),
+              );
+            },
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),
+        ),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -135,10 +165,9 @@ class _ProfilPageState extends State<ProfilPage> {
             )
           : SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Header
+                    // Header Profil
                     Container(
                       width: double.infinity,
                       color: greenColor,
@@ -150,7 +179,7 @@ class _ProfilPageState extends State<ProfilPage> {
                             backgroundColor: Colors.white,
                             child: Icon(
                               Icons.person,
-                              color: Color(0xFF465940),
+                              color: greenColor,
                               size: 40,
                             ),
                           ),
@@ -179,54 +208,66 @@ class _ProfilPageState extends State<ProfilPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Data Orang Tua
-                    _buildDataCard(
-                      title: "Data Orang Tua",
-                      fields: {
-                        "Nama": profil!["Nama"]?.toString() ?? "-",
-                        "No Telepon": profil!["No_Telepon"]?.toString() ?? "-",
-                        "Email": profil!["Email"]?.toString() ?? "-",
-                        "Alamat": profil!["Alamat"]?.toString() ?? "-",
-                      },
-                      onEdit: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EditOrangTuaPage(data: profil!),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          _buildDataCard(
+                            title: "Data Orang Tua",
+                            fields: {
+                              "Nama": profil!["Nama"]?.toString() ?? "-",
+                              "No Telepon":
+                                  profil!["No_Telepon"]?.toString() ?? "-",
+                              "Email": profil!["Email"]?.toString() ?? "-",
+                              "Alamat": profil!["Alamat"]?.toString() ?? "-",
+                            },
+                            onEdit: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      EditOrangTuaPage(data: profil!),
+                                ),
+                              ).then((_) => fetchProfil());
+                            },
                           ),
-                        ).then((_) => fetchProfil()); // Refresh setelah edit
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Data Anak
-                    _buildDataCard(
-                      title: "Data Anak",
-                      fields: {
-                        "Nama": profil!["nama_anak"]?.toString() ?? "-",
-                        "Ekstrakulikuler": profil!["ekskul"]?.toString() ?? "-",
-                        "Tanggal Lahir":
-                            profil!["tgl_lahir"]?.toString() ?? "-",
-                        "Jenis Kelamin":
-                            profil!["jenis_kelamin"]?.toString() ?? "-",
-                        "Agama": profil!["agama"]?.toString() ?? "-",
-                        "Alamat": profil!["alamat_anak"]?.toString() ?? "-",
-                      },
-                      onEdit: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EditAnakPage(data: profil!),
+                          const SizedBox(height: 16),
+                          _buildDataCard(
+                            title: "Data Anak",
+                            fields: {
+                              "Nama": profil!["nama_anak"]?.toString() ?? "-",
+                              "Ekstrakulikuler":
+                                  profil!["ekskul"]?.toString() ?? "-",
+                              "Tanggal Lahir":
+                                  profil!["tgl_lahir"]?.toString() ?? "-",
+                              "Jenis Kelamin": profil!["jenis_kelamin"] == 'L'
+                                  ? 'Laki-laki'
+                                  : 'Perempuan',
+                              "Agama": profil!["agama"]?.toString() ?? "-",
+                              "Alamat":
+                                  profil!["alamat_anak"]?.toString() ?? "-",
+                            },
+                            onEdit: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EditAnakPage(data: profil!),
+                                ),
+                              ).then((_) => fetchProfil());
+                            },
                           ),
-                        ).then((_) => fetchProfil()); // Refresh setelah edit
-                      },
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+      bottomNavigationBar: NavbarOrangtua(
+        selectedIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
     );
   }
 
@@ -235,8 +276,6 @@ class _ProfilPageState extends State<ProfilPage> {
     required Map<String, String> fields,
     required VoidCallback onEdit,
   }) {
-    const Color greenColor = Color(0xFF465940);
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -264,7 +303,7 @@ class _ProfilPageState extends State<ProfilPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 120,
+                    width: 140,
                     child: Text(
                       e.key,
                       style: const TextStyle(fontWeight: FontWeight.w500),

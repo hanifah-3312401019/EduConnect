@@ -73,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
@@ -103,16 +103,10 @@ class _LoginPageState extends State<LoginPage> {
         child: Row(
           children: [
             // LEFT SIDE - Branding
-            Expanded(
-              flex: 1,
-              child: _buildDesktopLeftSide(),
-            ),
+            Expanded(flex: 1, child: _buildDesktopLeftSide()),
             const SizedBox(width: 60),
             // RIGHT SIDE - Login Form
-            Expanded(
-              flex: 1,
-              child: _buildDesktopLoginForm(),
-            ),
+            Expanded(flex: 1, child: _buildDesktopLoginForm()),
           ],
         ),
       ),
@@ -453,7 +447,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-  
+
   @override
   void dispose() {
     _emailController.dispose();

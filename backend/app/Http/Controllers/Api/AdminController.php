@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\OrangTua;
 use App\Models\Admin;
-use App\Models\Anak;
+use App\Models\Siswa;
 use App\Models\Guru;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
