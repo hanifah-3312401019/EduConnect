@@ -38,7 +38,7 @@ class SidebarAdmin extends StatelessWidget {
                 menuItem(Icons.family_restroom, "Data Orang Tua"),
                 menuItem(Icons.class_, "Data Kelas"),
                 menuItem(Icons.calendar_view_week, "Jadwal Pelajaran"),
-                menuItem(Icons.calendar_view_week, "informasi_pembayaran"),
+                menuItem(Icons.calendar_view_week, "informasi Pembayaran"),
 
                 const Divider(color: Colors.white54, height: 30),
                 

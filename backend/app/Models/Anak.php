@@ -9,8 +9,8 @@ class Anak extends Model
 {
     use HasFactory;
 
-    protected $table = 'anak';
-    protected $fillable = ['orang_tua_id', 'nama', 'ekskul', 'tgl_lahir', 'jenis_kelamin', 'agama', 'alamat'];
+    protected $table = 'siswa';
+    protected $fillable = ['orangTua_id', 'nama', 'ekstrakulikuler', 'tanggal_lahir', 'jenis_kelamin', 'agama', 'alamat'];
 
     public function orangTua()
     {

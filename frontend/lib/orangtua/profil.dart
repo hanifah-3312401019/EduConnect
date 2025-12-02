@@ -9,8 +9,9 @@ import 'jadwal.dart';
 import 'pembayaran.dart';
 import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
+import 'package:frontend/env/api_base_url.dart';
 
-String baseUrl = "http://192.168.43.115:8000/api";
+String baseUrl = "http://localhost:8000/api";
 
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});

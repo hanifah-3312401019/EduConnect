@@ -6,6 +6,22 @@ import 'data_siswa.dart';
 import 'jadwal_pelajaran.dart';
 import 'informasi_pembayaran.dart';
 import 'package:frontend/widgets/sidebarAdmin.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:frontend/env/api_base_url.dart';
+
+// DATA LOKAL SEMENTARA
+List<Map<String, String>> dataOrangTua = [];
+
+List<String> kelasList = [
+  "Semua",
+  "Kelas 1",
+  "Kelas 2",
+  "Kelas 3",
+  "Kelas 4",
+  "Kelas 5",
+  "Kelas 6"
+];
 
 class DataOrangTuaPage extends StatefulWidget {
   const DataOrangTuaPage({super.key});
@@ -17,50 +33,94 @@ class DataOrangTuaPage extends StatefulWidget {
 class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   String selectedFilter = "Semua";
 
-  // KELAS LENGKAP
-  final List<String> kelasList = [
-    "Semua",
-    "1A", "1B",
-    "2A", "2B",
-    "3A", "3B",
-    "4A", "4B",
-    "5A", "5B",
-    "6A", "6B",
-  ];
+  // =========================================================
+  // FUNGSI POST API → TAMBAH ORANG TUA
+  Future<bool> tambahOrangTua(Map<String, dynamic> data) async {
+    try {
+      final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/create");
 
-  List<Map<String, String>> dataOrangTua = [
-    {
-      'nama': 'Eni Irmawati',
-      'telp': '089156431238',
-      'email': 'eni@gmail.com',
-      'alamat': 'Batam Center',
-      'anak': 'Aleya Savina',
-      'kelas': '1A'
-    },
-    {
-      'nama': 'Tia Saputri',
-      'telp': '081365479043',
-      'email': 'tia.saputri@gmail.com',
-      'alamat': 'Tanjung Piayu',
-      'anak': 'Maisya Razela',
-      'kelas': '2B'
-    },
-  ];
+      final res = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: jsonEncode(data),
+      );
 
+      print("STATUS: ${res.statusCode}");
+      print("BODY: ${res.body}");
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final resBody = jsonDecode(res.body);
+        return resBody["success"] == true;
+      }
+
+      return false;
+    } catch (e) {
+      print("Error tambah orang tua: $e");
+      return false;
+    }
+  }
+
+  // =========================================================
+  // FUNGSI GET API → AMBIL DATA ORANG TUA
+  Future<void> loadDataOrangTua() async {
+    try {
+      final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/list");
+
+      final res = await http.get(url, headers: {
+        "Accept": "application/json",
+      });
+
+      print("GET STATUS: ${res.statusCode}");
+
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final list = body["data"] as List;
+
+        setState(() {
+          dataOrangTua = list.map((d) {
+            return {
+              "nama": d["Nama"]?.toString() ?? "-",
+              "email": d["Email"]?.toString() ?? "-",
+              "telp": d["No_Telepon"]?.toString() ?? "-",
+              "alamat": d["Alamat"]?.toString() ?? "-",
+              "anak": "-",
+              "kelas": "-",
+            };
+          }).toList();
+        });
+      } else {
+        print("Gagal memuat data. Status: ${res.statusCode}");
+      }
+    } catch (e) {
+      print("ERROR FETCH DATA ORANG TUA: $e");
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadDataOrangTua();
+  }
+
+  // =========================================================
+  // FILTER TABLE
   List<Map<String, String>> get filteredData {
     if (selectedFilter == "Semua") return dataOrangTua;
     return dataOrangTua.where((d) => d["kelas"] == selectedFilter).toList();
   }
 
   // =========================================================
-  // TAMBAH DATA
+  // MODAL TAMBAH DATA
   void _tambahData() {
     final nama = TextEditingController();
     final telp = TextEditingController();
     final email = TextEditingController();
     final alamat = TextEditingController();
     final anak = TextEditingController();
-    String kelasDipilih = "1A";
+    String kelasDipilih = "";
 
     showDialog(
       context: context,
@@ -79,7 +139,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
 
               const SizedBox(height: 10),
               DropdownButtonFormField(
-                value: kelasDipilih,
+                value: kelasDipilih.isEmpty ? null : kelasDipilih,
                 decoration: _inputDecoration("Kelas Anak"),
                 items: kelasList
                     .where((e) => e != "Semua")
@@ -91,23 +151,47 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
 
+          // SIMPAN KE API
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                dataOrangTua.add({
-                  "nama": nama.text,
-                  "telp": telp.text,
-                  "email": email.text,
-                  "alamat": alamat.text,
-                  "anak": anak.text,
-                  "kelas": kelasDipilih,
-                });
+            onPressed: () async {
+              final ok = await tambahOrangTua({
+                "Nama": nama.text,
+                "Email": email.text,
+                "No_Telepon": telp.text,
+                "Alamat": alamat.text,
               });
-              Navigator.pop(context);
+
+              if (ok) {
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text("Akun Orang Tua berhasil ditambahkan!")),
+                );
+
+                setState(() {
+                  dataOrangTua.add({
+                    "nama": nama.text,
+                    "telp": telp.text,
+                    "email": email.text,
+                    "alamat": alamat.text,
+                    "anak": anak.text,
+                    "kelas": kelasDipilih,
+                  });
+                });
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Gagal menambahkan data")),
+                );
+              }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF465940)),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: const Color(0xFF465940)),
             child: const Text("Simpan", style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -157,7 +241,6 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
-
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -289,6 +372,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
         children: [
           SidebarAdmin(onMenuSelected: handleMenu),
 
+          // RIGHT SIDE
           Expanded(
             child: Column(
               children: [
@@ -334,8 +418,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF465940),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 12),
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -348,7 +431,6 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
 
                         const SizedBox(height: 20),
 
-                        // ========================= TABEL =========================
                         Expanded(
                           child: Card(
                             elevation: 3,
@@ -358,8 +440,8 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
                               scrollDirection: Axis.horizontal,
                               child: SingleChildScrollView(
                                 child: DataTable(
-                                  headingRowColor: WidgetStateProperty.all(
-                                      const Color(0xFF465940)),
+                                  headingRowColor:
+                                      WidgetStateProperty.all(const Color(0xFF465940)),
                                   headingTextStyle: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold),
@@ -387,26 +469,22 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
                                         DataCell(Text(d["telp"]!)),
                                         DataCell(Text(d["anak"]!)),
                                         DataCell(Text(d["kelas"]!)),
-                                        DataCell(
-                                          Row(
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(Icons.edit,
-                                                    color: Colors.blue),
-                                                onPressed: () => _editData(
-                                                  dataOrangTua.indexOf(d),
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete,
-                                                    color: Colors.red),
-                                                onPressed: () => _deleteData(
-                                                  dataOrangTua.indexOf(d),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                        DataCell(Row(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.edit,
+                                                  color: Colors.blue),
+                                              onPressed: () => _editData(
+                                                  dataOrangTua.indexOf(d)),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete,
+                                                  color: Colors.red),
+                                              onPressed: () => _deleteData(
+                                                  dataOrangTua.indexOf(d)),
+                                            ),
+                                          ],
+                                        )),
                                       ]);
                                     },
                                   ),
@@ -450,7 +528,10 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
             children: [
               Text(
                 "Halo, Ini Admin",
-                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold),
               ),
               Text(
                 "Admin@gmail.com",
@@ -470,7 +551,9 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
             child: const Text(
               "Keluar",
               style: TextStyle(
-                  color: Color(0xFF465940), fontSize: 14, fontWeight: FontWeight.bold),
+                  color: Color(0xFF465940),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold),
             ),
           )
         ],
