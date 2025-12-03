@@ -3,12 +3,12 @@ import 'package:frontend/orangtua/perizinan.dart';
 import 'guru/dashboard_guru.dart';
 import 'guru/permohonan_izin.dart';
 import 'guru/absensi.dart';
-import 'guru/pengumuman.dart';
+import 'guru/pengumuman.dart' as guru;
 import 'guru/agenda.dart';
 import 'orangtua/dashboard_orangtua.dart';
 import 'orangtua/jadwal.dart';
 import 'orangtua/profil.dart';
-import 'orangtua/pengumuman.dart';
+import 'orangtua/pengumuman.dart' as ortu;
 import 'orangtua/perizinan.dart';
 import 'orangtua/edit_profil_anak.dart';
 import 'orangtua/edit_profil_orangtua.dart';
@@ -78,13 +78,13 @@ class EduConnectApp extends StatelessWidget {
         '/guru/dashboard': (context) => const DashboardGuru(),
         '/guru/permohonan-izin': (context) => const PermohonanIzin(),
         '/guru/absensi': (context) => const Absensi(),
-        '/guru/pengumuman': (context) => const Pengumuman(),
+        '/guru/pengumuman': (context) => const guru.PengumumanPage(),
         '/guru/agenda': (context) => const Agenda(),
         '/dashboard': (context) => DashboardPage(),
         '/pembayaran': (context) => RincianPembayaranPage(),
         '/jadwal': (context) => JadwalPage(),
         '/profil': (context) => ProfilPage(),
-        '/pengumuman': (context) => PengumumanPage(),
+        '/pengumuman': (context) => const ortu.PengumumanPage(),
         '/edit_profil_anak': (context) => EditAnakPage(),
         '/edit_profil_orangtua': (context) => EditOrangTuaPage(),
         '/agenda': (context) => const AgendaPage(),

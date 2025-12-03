@@ -72,7 +72,12 @@ class UniversalLoginController extends Controller
                 'success' => true,
                 'role' => 'guru', 
                 'token' => $token,
-                'profile' => $guru
+                'profile' => [
+                    'Guru_Id' => $guru->Guru_Id,   // ← WAJIB DIKIRIM
+                    'Nama'    => $guru->Nama,
+                    'Email'   => $guru->Email,
+                    'NIK'     => $guru->NIK
+                ]
             ]);
         }
 

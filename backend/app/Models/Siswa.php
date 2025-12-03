@@ -23,10 +23,10 @@ class Siswa extends Model
         'Ekstrakulikuler',
         'Kelas_Id'
     ];
-
+    // Pastikan Siswa model sudah ada ini:
     public function orangTua()
     {
-        return $this->belongsTo(OrangTua::class, 'OrangTua_Id');
+        return $this->belongsTo(OrangTua::class, 'OrangTua_Id', 'OrangTua_Id');
     }
 
     public function kelas()

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../guru/permohonan_izin.dart';
 import '../guru/absensi.dart';
-import '../guru/pengumuman.dart';
+import '../guru/pengumuman.dart' as guru_pengumuman; // Tambahkan alias
 import '../guru/agenda.dart';
 
 class Sidebar extends StatelessWidget {
@@ -40,11 +40,11 @@ class Sidebar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
-          radius: isMobile ? 25 : 30, // Lebih kecil di mobile
+          radius: isMobile ? 25 : 30,
           backgroundColor: Colors.white,
           child: Icon(
             Icons.person,
-            size: isMobile ? 25 : 30, // Lebih kecil di mobile
+            size: isMobile ? 25 : 30,
             color: const Color(0xFF465940),
           ),
         ),
@@ -52,7 +52,7 @@ class Sidebar extends StatelessWidget {
         Text(
           'Siti Nursiah',
           style: TextStyle(
-            fontSize: isMobile ? 14 : 16, // Font lebih kecil di mobile
+            fontSize: isMobile ? 14 : 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -82,7 +82,7 @@ class Sidebar extends StatelessWidget {
         _buildMenuTile(context, 'Pengumuman', Icons.announcement, () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const Pengumuman()),
+            MaterialPageRoute(builder: (context) => const guru_pengumuman.PengumumanPage()), // Gunakan alias
           );
         }, isMobile),
         _buildMenuTile(context, 'Permohonan Izin', Icons.assignment, () {
@@ -106,13 +106,13 @@ class Sidebar extends StatelessWidget {
       leading: Icon(
         icon,
         color: Colors.white,
-        size: isMobile ? 18 : 20, // Icon lebih kecil di mobile
+        size: isMobile ? 18 : 20,
       ),
       title: Text(
         title,
         style: TextStyle(
           color: Colors.white,
-          fontSize: isMobile ? 13 : 14, // Font lebih kecil di mobile
+          fontSize: isMobile ? 13 : 14,
         ),
       ),
       onTap: () {
@@ -123,7 +123,7 @@ class Sidebar extends StatelessWidget {
       },
       contentPadding: EdgeInsets.zero,
       minLeadingWidth: 0,
-      dense: isMobile, // Lebih padat di mobile
+      dense: isMobile,
     );
   }
 
@@ -142,13 +142,13 @@ class Sidebar extends StatelessWidget {
           foregroundColor: const Color(0xFF465940),
           padding: EdgeInsets.symmetric(
             vertical: isMobile ? 10 : 12,
-          ), // Padding lebih kecil di mobile
+          ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           'Keluar',
           style: TextStyle(
-            fontSize: isMobile ? 14 : 16, // Font lebih kecil di mobile
+            fontSize: isMobile ? 14 : 16,
           ),
         ),
       ),

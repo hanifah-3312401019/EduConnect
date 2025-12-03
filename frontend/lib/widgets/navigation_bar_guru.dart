@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../guru/absensi.dart';
 import '../guru/agenda.dart';
-import '../guru/pengumuman.dart';
+import '../guru/pengumuman.dart' as guru_pengumuman; // Tambahkan alias
 
 class NavigationBarGuru extends StatefulWidget {
   const NavigationBarGuru({super.key});
@@ -17,7 +17,7 @@ class _NavigationBarGuruState extends State<NavigationBarGuru> {
     const PlaceholderWidget(title: 'Halaman Utama', icon: Icons.home),
     const Absensi(),
     const Agenda(),
-    const Pengumuman(),
+    const guru_pengumuman.PengumumanPage(), // Gunakan alias
   ];
 
   @override

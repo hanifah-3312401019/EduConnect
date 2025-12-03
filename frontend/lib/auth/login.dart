@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:frontend/env/api_base_url.dart';
 import 'package:frontend/orangtua/dashboard_orangtua.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 String globalAuthToken = '';
 
@@ -47,6 +48,18 @@ class _LoginPageState extends State<LoginPage> {
       final data = jsonDecode(response.body);
       final role = data['role'];
       final token = data['token'];
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // SIMPAN TOKEN
+      await prefs.setString('token', token);
+
+      // SIMPAN GURU ID JIKA ROLE GURU
+        if (role == "guru") {
+          final guruId = data['profile']['Guru_Id'];
+          await prefs.setInt('Guru_Id', guruId);
+          print("Guru_Id disimpan: $guruId");
+        }
 
       print('Login berhasil! Role: $role');
 

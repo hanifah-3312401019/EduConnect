@@ -31,6 +31,6 @@ class OrangTua extends Authenticatable
 
     public function anak()
     {
-        return $this->hasOne(Anak::class, 'OrangTua_Id');
+        return $this->hasOne(Siswa::class, 'OrangTua_Id', 'OrangTua_Id');
     }
 }

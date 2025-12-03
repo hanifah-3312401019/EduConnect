@@ -6,7 +6,100 @@ import 'pembayaran.dart';
 import 'profil.dart';
 import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
+// MODEL PENGUMUMAN
+
+class PengumumanOrtu {
+  final int pengumumanId;
+  final String judul;
+  final String isi;
+  final String tipe;
+  final DateTime tanggal;
+  final Map<String, dynamic>? guru;
+
+  PengumumanOrtu({
+    required this.pengumumanId,
+    required this.judul,
+    required this.isi,
+    required this.tipe,
+    required this.tanggal,
+    this.guru,
+  });
+
+  factory PengumumanOrtu.fromJson(Map<String, dynamic> json) {
+    return PengumumanOrtu(
+      pengumumanId: json['Pengumuman_Id'] ?? 0,
+      judul: json['Judul'] ?? '',
+      isi: json['Isi'] ?? '',
+      tipe: json['Tipe'] ?? 'umum',
+      tanggal: json['Tanggal'] != null
+          ? DateTime.parse(json['Tanggal'])
+          : DateTime.now(),
+      guru: json['guru'],
+    );
+  }
+
+  String get kategoriDisplay {
+    switch (tipe) {
+      case 'personal':
+        return 'Personal';
+      case 'perkelas':
+        return 'Kelas';
+      default:
+        return 'Umum';
+    }
+  }
+}
+
+// API SERVICE
+class PengumumanOrtuApiService {
+  static const String baseUrl = 'http://localhost:8000/api';
+
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = globalAuthToken;
+
+    print('🔎 TOKEN TERAMBIL DARI GLOBAL: $token');
+
+    return {
+      'Accept': 'application/json',
+      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  static Future<List<PengumumanOrtu>> getPengumumanOrtu([
+    String kategori = 'semua',
+  ]) async {
+    try {
+      final headers = await _getHeaders();
+
+      final uri = (kategori == 'semua')
+          ? Uri.parse('$baseUrl/orangtua/pengumuman')
+          : Uri.parse('$baseUrl/orangtua/pengumuman/$kategori');
+
+      final response = await http.get(uri, headers: headers);
+
+      print("📥 STATUS: ${response.statusCode}");
+      print("📥 BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return (data['data'] as List)
+              .map((e) => PengumumanOrtu.fromJson(e))
+              .toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error API: $e');
+      return [];
+    }
+  }
+}
+
+// PAGE
 class PengumumanPage extends StatefulWidget {
   const PengumumanPage({super.key});
 
@@ -20,26 +113,30 @@ class _PengumumanPageState extends State<PengumumanPage> {
 
   final List<String> _kategoriList = ['Semua', 'Umum', 'Kelas', 'Personal'];
 
-  final List<Map<String, String>> _pengumuman = [
-    {
-      'judul': 'Libur Nasional',
-      'kategori': 'Umum',
-      'deskripsi':
-          'Setelah siswa mengikuti ujian sekolah, maka pembelajaran akan diliburkan dari tanggal 25 Desember 2025 - 25 Januari 2025',
-    },
-    {
-      'judul': 'Ujian Akhir Semester',
-      'kategori': 'Kelas',
-      'deskripsi':
-          'Siswa kelas 5 akan mengikuti ujian sesuai dengan jadwal, oleh karena itu siswa diminta untuk membawa kartu ujian yang sudah diberikan.',
-    },
-    {
-      'judul': 'Informasi Pembayaran',
-      'kategori': 'Personal',
-      'deskripsi':
-          'Mohon segera melunasi pembayaran SPP sesuai dengan rincian pembayaran yang dapat dilihat pada halaman pembayaran dibawah ini.',
-    },
-  ];
+  // ⭐ FIX MAPPING KATEGORI API (SATU-SATUNYA YANG DIUBAH)
+  final Map<String, String> kategoriApiMap = {
+    'Semua': 'semua',
+    'Umum': 'umum',
+    'Kelas': 'perkelas',
+    'Personal': 'personal',
+  };
+
+  List<PengumumanOrtu> _apiPengumumanList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPengumumanFromApi(kategoriApiMap[_selectedKategori]!);
+  }
+
+  void _loadPengumumanFromApi([String kategori = 'semua']) async {
+    final pengumuman = await PengumumanOrtuApiService.getPengumumanOrtu(
+      kategori,
+    );
+    setState(() {
+      _apiPengumumanList = pengumuman;
+    });
+  }
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
@@ -69,16 +166,16 @@ class _PengumumanPageState extends State<PengumumanPage> {
     }
   }
 
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color greenColor = Color(0xFF465940);
     const Color backgroundColor = Color(0xFFFDFBF0);
 
-    final filteredList = _selectedKategori == 'Semua'
-        ? _pengumuman
-        : _pengumuman
-            .where((item) => item['kategori'] == _selectedKategori)
-            .toList();
+    final filteredList = _apiPengumumanList;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -116,6 +213,8 @@ class _PengumumanPageState extends State<PengumumanPage> {
           child: Container(color: Colors.black12, height: 1.0),
         ),
       ),
+
+      // Drawer
       drawer: Drawer(
         backgroundColor: backgroundColor,
         child: ListView(
@@ -149,11 +248,11 @@ class _PengumumanPageState extends State<PengumumanPage> {
               );
             }),
             _drawerItem(Icons.event_note, "Agenda", () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AgendaPage()),
-                );
-              }),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AgendaPage()),
+              );
+            }),
             _drawerItem(Icons.campaign, "Pengumuman", () {
               Navigator.pushReplacement(
                 context,
@@ -182,6 +281,8 @@ class _PengumumanPageState extends State<PengumumanPage> {
           ],
         ),
       ),
+
+      // BODY
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -201,6 +302,8 @@ class _PengumumanPageState extends State<PengumumanPage> {
                     ),
                   ),
                   const Spacer(),
+
+                  // DROPDOWN (FIX API)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -211,8 +314,10 @@ class _PengumumanPageState extends State<PengumumanPage> {
                       child: DropdownButton<String>(
                         value: _selectedKategori,
                         dropdownColor: greenColor,
-                        icon:
-                            const Icon(Icons.arrow_drop_down, color: Colors.white),
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.white,
+                        ),
                         style:
                             const TextStyle(color: Colors.white, fontSize: 14),
                         items: _kategoriList.map((String kategori) {
@@ -225,18 +330,23 @@ class _PengumumanPageState extends State<PengumumanPage> {
                           setState(() {
                             _selectedKategori = newValue!;
                           });
+
+                          final apiKategori = kategoriApiMap[newValue]!;
+                          _loadPengumumanFromApi(apiKategori);
                         },
                       ),
                     ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 16),
+
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Column(
                   key: ValueKey<String>(_selectedKategori),
-                  children: filteredList.map((item) {
+                  children: filteredList.map((pengumuman) {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.symmetric(
@@ -262,7 +372,7 @@ class _PengumumanPageState extends State<PengumumanPage> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  item['judul']!,
+                                  pengumuman.judul,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -272,14 +382,16 @@ class _PengumumanPageState extends State<PengumumanPage> {
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 2),
+                                  horizontal: 10,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFDFBF0),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  item['kategori']!,
-                                  style: const TextStyle(
+                                  pengumuman.kategoriDisplay,
+                                  style: TextStyle(
                                     color: greenColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -290,12 +402,44 @@ class _PengumumanPageState extends State<PengumumanPage> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            item['deskripsi']!,
+                            pengumuman.isi,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               height: 1.4,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatDate(pengumuman.tanggal),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.person,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                pengumuman.guru?['Nama'] ?? 'Guru',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -303,11 +447,38 @@ class _PengumumanPageState extends State<PengumumanPage> {
                   }).toList(),
                 ),
               ),
+
+              if (filteredList.isEmpty) ...[
+                const SizedBox(height: 50),
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.campaign_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tidak ada pengumuman',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Pengumuman ${_selectedKategori.toLowerCase()} belum tersedia',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 80),
             ],
           ),
         ),
       ),
+
+      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -332,7 +503,8 @@ class _PengumumanPageState extends State<PengumumanPage> {
             icon: Icon(Icons.payment),
             label: 'Pembayaran',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
     );
