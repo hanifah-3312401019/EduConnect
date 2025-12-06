@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('siswa', function (Blueprint $table) {
+Schema::create('siswa', function (Blueprint $table) {
             $table->id('Siswa_Id');
             $table->string('Nama');
             $table->unsignedBigInteger('OrangTua_Id')->nullable();
@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('Tanggal_Lahir')->nullable();
             $table->string('Alamat')->nullable();
             $table->enum('Jenis_Kelamin', ['L', 'P'])->nullable();
-            $table->string('Ekstrakulikuler')->nullable();
+            $table->unsignedBigInteger('Ekstrakulikuler_Id')->nullable();
             $table->unsignedBigInteger('Kelas_Id')->nullable();
 
             // Relasi
@@ -29,6 +29,11 @@ return new class extends Migration
                   ->references('Kelas_Id')
                   ->on('kelas')
                   ->onDelete('set null');
+            
+            $table->foreign('Ekstrakulikuler_Id')
+                    ->references('Ekstrakulikuler_Id')
+                    ->on('ekstrakulikuler')
+                    ->onDelete('set null');
 
             $table->timestamps();
         });
