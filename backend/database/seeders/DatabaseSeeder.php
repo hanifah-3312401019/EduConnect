@@ -17,11 +17,10 @@ class DatabaseSeeder extends Seeder
             GuruSeeder::class,
             OrangTuaSeeder::class,
             KelasSeeder::class,
+            EkstrakulikulerSeeder::class,
             SiswaSeeder::class,
-            // AnakSeeder::class,
             PengumumanSeeder::class,
         ]);
 
     }
 }
-
