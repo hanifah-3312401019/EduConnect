@@ -20,7 +20,7 @@ class Siswa extends Model
         'Tanggal_Lahir',
         'Alamat',
         'Jenis_Kelamin',
-        'Ekstrakulikuler',
+        'Ekstrakulikuler_Id',
         'Kelas_Id'
     ];
     // Pastikan Siswa model sudah ada ini:
@@ -33,4 +33,9 @@ class Siswa extends Model
     {
         return $this->belongsTo(Kelas::class, 'Kelas_Id');
     }
+
+    public function ekstrakulikuler()
+{
+    return $this->belongsTo(Ekstrakulikuler::class, 'Ekstrakulikuler_Id');
+}
 }
