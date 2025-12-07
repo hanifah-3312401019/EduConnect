@@ -39,7 +39,9 @@ class _EditAnakPageState extends State<EditAnakPage> {
       text: widget.data?['nama_anak'] ?? '',
     );
     ekskulController = TextEditingController(
-      text: widget.data?['ekskul'] ?? '',
+      text: (widget.data?['ekskul'] is Map)
+          ? widget.data!['ekskul']['nama']?.toString() ?? ''
+          : widget.data?['ekskul']?.toString() ?? '',
     );
     tglController = TextEditingController(
       text: widget.data?['tgl_lahir'] ?? '',

@@ -18,7 +18,6 @@ String baseUrl = "http://localhost:8000/api";
 const Color greenColor = Color(0xFF465940);
 const Color backgroundColor = Color(0xFFFDFBF0);
 
-
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
 
@@ -237,13 +236,16 @@ class _ProfilPageState extends State<ProfilPage> {
                             title: "Data Anak",
                             fields: {
                               "Nama": profil!["nama_anak"]?.toString() ?? "-",
-                              "Ekstrakulikuler":
-                                  profil!["ekskul"]?.toString() ?? "-",
+                              "Ekstrakulikuler": profil!["ekskul"] != null
+                                  ? profil!["ekskul"]["nama"]
+                                  : "-",
                               "Tanggal Lahir":
                                   profil!["tgl_lahir"]?.toString() ?? "-",
                               "Jenis Kelamin": profil!["jenis_kelamin"] == 'L'
                                   ? 'Laki-laki'
-                                  : 'Perempuan',
+                                  : profil!["jenis_kelamin"] == 'P'
+                                  ? 'Perempuan'
+                                  : '-',
                               "Agama": profil!["agama"]?.toString() ?? "-",
                               "Alamat":
                                   profil!["alamat_anak"]?.toString() ?? "-",
@@ -252,7 +254,17 @@ class _ProfilPageState extends State<ProfilPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => EditAnakPage(data: profil!),
+                                  builder: (_) => EditAnakPage(
+                                    data: {
+                                      'nama_anak': profil!['nama_anak'],
+                                      'ekskul':
+                                          profil!['ekskul'], // Map (nanti kita handle)
+                                      'tgl_lahir': profil!['tgl_lahir'],
+                                      'jenis_kelamin': profil!['jenis_kelamin'],
+                                      'agama': profil!['agama'],
+                                      'alamat_anak': profil!['alamat_anak'],
+                                    },
+                                  ),
                                 ),
                               ).then((_) => fetchProfil());
                             },
