@@ -36,6 +36,6 @@ class Siswa extends Model
 
     public function ekstrakulikuler()
 {
-    return $this->belongsTo(Ekstrakulikuler::class, 'Ekstrakulikuler_Id');
+    return $this->belongsTo(Ekstrakulikuler::class, 'Ekstrakulikuler_Id', 'Ekstrakulikuler_Id');
 }
 }

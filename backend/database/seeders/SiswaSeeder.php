@@ -17,7 +17,7 @@ class SiswaSeeder extends Seeder
                 'Tanggal_Lahir'   => '2009-05-21',
                 'Alamat'          => 'Jl. Merdeka No.12',
                 'Jenis_Kelamin'   => 'L',     // WAJIB 'L' atau 'P'
-                'Ekstrakulikuler_Id' => 'Basket',
+                'Ekstrakulikuler_Id' => 1,
                 'Kelas_Id'        => 1,  
                 'created_at'      => now(),
                 'updated_at'      => now(),
