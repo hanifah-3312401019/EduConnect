@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 String baseUrl = "http://localhost:8000/api";
 String globalAuthToken = '';
@@ -19,6 +20,8 @@ class _EditAnakPageState extends State<EditAnakPage> {
   late TextEditingController ekskulController;
   late TextEditingController tglController;
   late TextEditingController alamatController;
+
+  int? idEkskul;
   String? jenisKelamin;
   String? agama;
 
@@ -35,13 +38,15 @@ class _EditAnakPageState extends State<EditAnakPage> {
   @override
   void initState() {
     super.initState();
+
+    print(widget.data);
+
     namaController = TextEditingController(
       text: widget.data?['nama_anak'] ?? '',
     );
+    idEkskul = widget.data?['ekskul_id']; // ambil ID dari backend
     ekskulController = TextEditingController(
-      text: (widget.data?['ekskul'] is Map)
-          ? widget.data!['ekskul']['nama']?.toString() ?? ''
-          : widget.data?['ekskul']?.toString() ?? '',
+      text: widget.data?['ekskul_nama']?.toString() ?? '',
     );
     tglController = TextEditingController(
       text: widget.data?['tgl_lahir'] ?? '',
@@ -72,17 +77,22 @@ class _EditAnakPageState extends State<EditAnakPage> {
           jkForBackend = 'P';
         }
 
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('token');
+
         final response = await http.post(
           Uri.parse('$baseUrl/profil/update-anak'),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'Authorization': 'Bearer $token', // <--- PENTING
           },
           body: jsonEncode({
+            "OrangTua_Id": widget.data?['OrangTua_Id'],
             'nama_anak': namaController.text,
-            'ekskul': ekskulController.text,
+            'ekskul_id': idEkskul,
             'tgl_lahir': tglController.text,
-            'jenis_kelamin': jkForBackend, // FIX: Kirim 'L' atau 'P'
+            'jenis_kelamin': jkForBackend,
             'agama': agama,
             'alamat_anak': alamatController.text,
           }),
@@ -108,6 +118,102 @@ class _EditAnakPageState extends State<EditAnakPage> {
     }
   }
 
+  Widget _buildReadOnlyField(String label, String value) {
+    const Color greenColor = Color(0xFF465940);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: greenColor,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: greenColor, width: 1.5),
+            color: Colors.grey.shade200, // warna locked
+          ),
+          child: Text(
+            value.isEmpty ? "-" : value,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  void showConfirmDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Konfirmasi Data",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Apakah anda yakin ingin menyimpan data ini?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 25),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Batal"),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        saveAnak();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF465940),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Simpan"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color greenColor = Color(0xFF465940);
@@ -115,18 +221,34 @@ class _EditAnakPageState extends State<EditAnakPage> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Data Anak",
-          style: TextStyle(color: Colors.black, fontSize: 16),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          color: const Color(0xFF465940),
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const Expanded(
+                child: Text(
+                  "Data Anak",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 48),
+            ],
+          ),
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
         child: SingleChildScrollView(
@@ -143,9 +265,9 @@ class _EditAnakPageState extends State<EditAnakPage> {
                 const SizedBox(height: 25),
                 _buildTextField("Nama Anak", namaController, isRequired: true),
                 const SizedBox(height: 16),
-                _buildTextField("Ekstrakulikuler", ekskulController),
+                _buildReadOnlyField("Ekstrakulikuler", ekskulController.text),
                 const SizedBox(height: 16),
-                _buildTextField("Tanggal Lahir (YYYY-MM-DD)", tglController),
+                _buildDatePickerField("Tanggal Lahir", tglController),
                 const SizedBox(height: 16),
 
                 // FIX: Dropdown Jenis Kelamin
@@ -173,7 +295,7 @@ class _EditAnakPageState extends State<EditAnakPage> {
                 SizedBox(
                   width: 150,
                   child: ElevatedButton(
-                    onPressed: saveAnak,
+                    onPressed: showConfirmDialog,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: greenColor,
                       shape: RoundedRectangleBorder(
@@ -221,6 +343,43 @@ class _EditAnakPageState extends State<EditAnakPage> {
                 return null;
               }
             : null,
+      ),
+    );
+  }
+
+  Widget _buildDatePickerField(String label, TextEditingController controller) {
+    const Color greenColor = Color(0xFF465940);
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: greenColor, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: TextFormField(
+        controller: controller,
+        readOnly: true, // <-- supaya tidak bisa edit manual
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: label,
+          suffixIcon: const Icon(Icons.calendar_today),
+        ),
+        onTap: () async {
+          DateTime? pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.tryParse(controller.text) ?? DateTime.now(),
+            firstDate: DateTime(1990),
+            lastDate: DateTime(2030),
+          );
+
+          if (pickedDate != null) {
+            String formatted =
+                "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+            setState(() {
+              controller.text = formatted;
+            });
+          }
+        },
       ),
     );
   }

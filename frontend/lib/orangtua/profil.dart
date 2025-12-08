@@ -13,6 +13,7 @@ import 'package:frontend/auth/login.dart';
 import 'package:frontend/env/api_base_url.dart';
 import 'package:frontend/widgets/sidebarOrangtua.dart';
 import 'package:frontend/widgets/NavbarOrangtua.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 String baseUrl = "http://localhost:8000/api";
 const Color greenColor = Color(0xFF465940);
@@ -39,18 +40,29 @@ class _ProfilPageState extends State<ProfilPage> {
 
   Future<void> fetchProfil() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
       final response = await http.get(
         Uri.parse("$baseUrl/profil-new"),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
         },
       );
 
+      print("STATUS: ${response.statusCode}");
+      print("BODY: ${response.body}");
+
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
+        final jsonRes = jsonDecode(response.body);
+
+        // FIX PENTING → cek apakah datanya di dalam key "data"
+        final data = jsonRes["data"] ?? jsonRes;
+
         setState(() {
-          profil = responseData;
+          profil = data;
           isLoading = false;
           errorMessage = '';
         });
@@ -236,9 +248,8 @@ class _ProfilPageState extends State<ProfilPage> {
                             title: "Data Anak",
                             fields: {
                               "Nama": profil!["nama_anak"]?.toString() ?? "-",
-                              "Ekstrakulikuler": profil!["ekskul"] != null
-                                  ? profil!["ekskul"]["nama"]
-                                  : "-",
+                              "Ekstrakulikuler":
+                                  profil!["ekskul_nama"]?.toString() ?? "-",
                               "Tanggal Lahir":
                                   profil!["tgl_lahir"]?.toString() ?? "-",
                               "Jenis Kelamin": profil!["jenis_kelamin"] == 'L'
@@ -256,9 +267,11 @@ class _ProfilPageState extends State<ProfilPage> {
                                 MaterialPageRoute(
                                   builder: (_) => EditAnakPage(
                                     data: {
+                                      'OrangTua_Id': profil!['OrangTua_Id'],
                                       'nama_anak': profil!['nama_anak'],
-                                      'ekskul':
-                                          profil!['ekskul'], // Map (nanti kita handle)
+                                      'ekskul_id': profil!['ekskul_id'],
+                                      'ekskul_nama': profil!['ekskul_nama'],
+                                      'ekskul_biaya': profil!['ekskul_biaya'],
                                       'tgl_lahir': profil!['tgl_lahir'],
                                       'jenis_kelamin': profil!['jenis_kelamin'],
                                       'agama': profil!['agama'],
@@ -292,7 +305,7 @@ class _ProfilPageState extends State<ProfilPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color.fromRGBO(253, 251, 240, 1),
         border: Border.all(color: greenColor, width: 1.8),
         borderRadius: BorderRadius.circular(18),
       ),

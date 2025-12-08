@@ -2,8 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController; 
-use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\Api\UserController; 
+use App\Http\Controllers\Api\ProfilController;
+use App\Http\Controllers\Api\EkskulController;
 use App\Http\Controllers\Auth\UniversalLoginController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\PengumumanGuruController;
@@ -18,9 +19,13 @@ Route::post('/login', [UniversalLoginController::class, 'login']);
 Route::post('/logout', [UniversalLoginController::class, 'logout']);
 
 // SEMUA ROUTE PROFIL
-Route::get('/profil-new', [ProfilController::class, 'getProfil']);
-Route::post('/profil/update-anak', [ProfilController::class, 'updateAnak']);
-Route::post('/profil/update-ortu', [ProfilController::class, 'updateOrtu']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profil-new', [ProfilController::class, 'getProfil']);
+    Route::post('/profil/update-anak', [ProfilController::class, 'updateAnak']);
+    Route::post('/profil/update-ortu', [ProfilController::class, 'updateOrtu']);
+});
+
+Route::get('/ekstrakulikuler', [EkskulController::class, 'index']);
 
 // ADMIN WEBSITE
 Route::get('/admin/profile', [AdminController::class, 'getProfile']);

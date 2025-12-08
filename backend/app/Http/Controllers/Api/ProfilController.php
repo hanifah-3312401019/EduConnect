@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\OrangTua;
 use App\Models\Siswa;
@@ -10,9 +11,9 @@ use Illuminate\Support\Facades\Validator;
 
 class ProfilController extends Controller
 {
-    public function getProfil()
+    public function getProfil(Request $request)
     {
-        $orangTua = OrangTua::first();
+        $orangTua = $request->user();
         if (!$orangTua) {
             return response()->json(['error' => 'Data orang tua tidak ditemukan'], 404);
         }
@@ -57,7 +58,7 @@ class ProfilController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $orangTua = OrangTua::first();
+        $orangTua = $request->user();
         if (!$orangTua) {
             return response()->json(['error' => 'Profil orang tua tidak ditemukan'], 404);
         }
@@ -73,45 +74,57 @@ class ProfilController extends Controller
     }
 
 
-    public function updateAnak(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'nama_anak'     => 'required|string',
-            'agama'         => 'nullable|string',
-            'tgl_lahir'     => 'nullable|date',
-            'jenis_kelamin' => 'nullable|string',
-            'alamat_anak'   => 'nullable|string',
-            'ekskul_id'     => 'nullable|integer|exists:ekstrakulikuler,Ekstrakulikuler_Id',
-            'kelas'         => 'nullable|integer',
-        ]);
+public function updateAnak(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'nama_anak'     => 'required|string',
+        'agama'         => 'nullable|string',
+        'tgl_lahir'     => 'nullable|date',
+        'jenis_kelamin' => 'nullable|string',
+        'alamat_anak'   => 'nullable|string',
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        // WAJIB: gunakan ekskul_id (sesuai Flutter)
+        'ekskul_id'     => 'nullable|integer|exists:ekstrakulikuler,Ekstrakulikuler_Id',
 
-        $orangTua = OrangTua::first();
-        if (!$orangTua) {
-            return response()->json(['error' => 'Profil orang tua tidak ditemukan'], 404);
-        }
+        'kelas'         => 'nullable|integer',
+    ]);
 
-        $anak = Siswa::where('OrangTua_Id', $orangTua->OrangTua_Id)->first();
-
-        if (!$anak) {
-            $anak = Siswa::create([
-                'OrangTua_Id' => $orangTua->OrangTua_Id
-            ]);
-        }
-
-        $anak->update([
-            'Nama'                 => $request->nama_anak,
-            'Agama'                => $request->agama,
-            'Tanggal_Lahir'        => $request->tgl_lahir,
-            'Jenis_Kelamin'        => $request->jenis_kelamin,
-            'Alamat'               => $request->alamat_anak,
-            'Ekstrakulikuler_Id'   => $request->ekskul_id,
-            'Kelas_Id'             => $request->kelas,
-        ]);
-
-        return response()->json(['message' => 'Profil Anak berhasil diperbarui'], 200);
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
     }
+
+    $orangTua = $request->user();
+    if (!$orangTua) {
+        return response()->json(['error' => 'Profil orang tua tidak ditemukan'], 404);
+    }
+
+    $anak = Siswa::where('OrangTua_Id', $orangTua->OrangTua_Id)->first();
+
+    // Jika belum ada data anak → buat baru
+    if (!$anak) {
+        $anak = Siswa::create([
+            'OrangTua_Id' => $orangTua->OrangTua_Id
+        ]);
+    }
+
+    // Jangan overwrite kolom ekskul jika Flutter tidak mengirim
+    $ekskulId = $request->has('ekskul_id')
+        ? $request->ekskul_id               // jika dikirim → pakai baru
+        : $anak->Ekstrakulikuler_Id;        // jika tidak dikirim → pakai data lama
+
+    $anak->update([
+        'Nama'                 => $request->nama_anak,
+        'Agama'                => $request->agama,
+        'Tanggal_Lahir'        => $request->tgl_lahir,
+        'Jenis_Kelamin'        => $request->jenis_kelamin,
+        'Alamat'               => $request->alamat_anak,
+        'Ekstrakulikuler_Id'   => $ekskulId,
+        'Kelas_Id'             => $request->kelas ?? $anak->Kelas_Id,
+    ]);
+
+    return response()->json([
+        'message' => 'Profil Anak berhasil diperbarui',
+        'ekskul_id' => $anak->Ekstrakulikuler_Id, // supaya bisa cek berubah atau tidak
+    ], 200);
+}
 }

@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:frontend/env/api_base_url.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-String baseUrl = "${ApiConfig.baseUrl}/api";
-String globalAuthToken = '';
+String baseUrl = "http://localhost:8000/api";
 
 class EditOrangTuaPage extends StatefulWidget {
   final Map<String, dynamic>? data;
@@ -16,15 +15,16 @@ class EditOrangTuaPage extends StatefulWidget {
 
 class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
   final _formKey = GlobalKey<FormState>();
+
   late TextEditingController namaController;
   late TextEditingController telpController;
   late TextEditingController emailController;
   late TextEditingController alamatController;
-  bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
+
     namaController = TextEditingController(text: widget.data?['Nama'] ?? '');
     telpController = TextEditingController(
       text: widget.data?['No_Telepon'] ?? '',
@@ -37,67 +37,111 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
 
   Future<void> saveOrtu() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        isLoading = true;
-      });
-
       try {
-        final Map<String, dynamic> requestData = {
-          'Nama': namaController.text,
-          'No_Telepon': telpController.text,
-          'Email': emailController.text,
-          'Alamat': alamatController.text,
-        };
-
-        print('Data yang dikirim: $requestData');
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('token');
 
         final response = await http.post(
           Uri.parse('$baseUrl/profil/update-ortu'),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': 'Bearer $globalAuthToken',
+            'Authorization': 'Bearer $token',
           },
-          body: jsonEncode(requestData),
+          body: jsonEncode({
+            "OrangTua_Id": widget.data?['OrangTua_Id'],
+            "Nama": namaController.text,
+            "No_Telepon": telpController.text,
+            "Email": emailController.text,
+            "Alamat": alamatController.text,
+          }),
         );
 
-        print('Response Status: ${response.statusCode}');
-        print('Response Body: ${response.body}');
+        print("Save Response: ${response.statusCode} - ${response.body}");
 
         if (response.statusCode == 200) {
-          final responseData = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                responseData['message'] ?? 'Data orang tua berhasil diperbarui',
-              ),
-              backgroundColor: Colors.green,
-            ),
+            const SnackBar(content: Text("Data orang tua berhasil diperbarui")),
           );
           Navigator.pop(context, true);
         } else {
-          final errorData = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Gagal menyimpan: ${errorData['message'] ?? response.body}',
-              ),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text("Gagal menyimpan: ${response.body}")),
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      } finally {
-        setState(() {
-          isLoading = false;
-        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
   }
 
+  // ======== DIALOG KONFIRMASI ========
+  void showConfirmDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Konfirmasi Data",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Apakah anda yakin ingin menyimpan data ini?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 25),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Batal"),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        saveOrtu();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF465940),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Simpan"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ======== UI MAIN ========
   @override
   Widget build(BuildContext context) {
     const Color greenColor = Color(0xFF465940);
@@ -105,18 +149,36 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Data Orang Tua",
-          style: TextStyle(color: Colors.black, fontSize: 16),
+
+      // ======== HEADER ========
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          color: greenColor,
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const Expanded(
+                child: Text(
+                  "Data Orang Tua",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 48), // title  center
+            ],
+          ),
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
         child: SingleChildScrollView(
@@ -131,18 +193,23 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
                   child: Icon(Icons.person, size: 55, color: Colors.black),
                 ),
                 const SizedBox(height: 25),
-                _buildTextField("Nama Orang Tua", namaController),
+
+                _buildField("Nama Orang Tua", namaController, isRequired: true),
                 const SizedBox(height: 16),
-                _buildTextField("No Telepon", telpController),
+
+                _buildField("No Telepon", telpController, isRequired: true),
                 const SizedBox(height: 16),
-                _buildTextField("Email", emailController),
+
+                _buildField("Email", emailController, isRequired: true),
                 const SizedBox(height: 16),
-                _buildTextField("Alamat", alamatController, maxLines: 4),
+
+                _buildField("Alamat", alamatController, maxLines: 4),
                 const SizedBox(height: 30),
+
                 SizedBox(
                   width: 150,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : saveOrtu,
+                    onPressed: showConfirmDialog,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: greenColor,
                       shape: RoundedRectangleBorder(
@@ -150,21 +217,10 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
-                        : const Text(
-                            "Simpan Data",
-                            style: TextStyle(color: Colors.white, fontSize: 13),
-                          ),
+                    child: const Text(
+                      "Simpan Data",
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -176,10 +232,12 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
     );
   }
 
-  Widget _buildTextField(
-    String label,
+  // ======== FIELD FORM ========
+  Widget _buildField(
+    String hint,
     TextEditingController controller, {
     int maxLines = 1,
+    bool isRequired = false,
   }) {
     const Color greenColor = Color(0xFF465940);
     return Container(
@@ -191,17 +249,10 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: label,
-          hintStyle: TextStyle(color: Colors.grey[600]),
-        ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return '$label harus diisi';
-          }
-          return null;
-        },
+        decoration: InputDecoration(border: InputBorder.none, hintText: hint),
+        validator: isRequired
+            ? (v) => v == null || v.isEmpty ? '$hint harus diisi' : null
+            : null,
       ),
     );
   }
