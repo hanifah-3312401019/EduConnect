@@ -1,11 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../guru/permohonan_izin.dart';
 import '../guru/absensi.dart';
-import '../guru/pengumuman.dart' as guru_pengumuman; // Tambahkan alias
+import '../guru/pengumuman.dart' as guru_pengumuman;
 import '../guru/agenda.dart';
 
-class Sidebar extends StatelessWidget {
+class Sidebar extends StatefulWidget {
   const Sidebar({super.key});
+
+  @override
+  State<Sidebar> createState() => _SidebarState();
+}
+
+class _SidebarState extends State<Sidebar> {
+  String namaGuru = "Guru";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGuruData();
+  }
+
+  Future<void> _loadGuruData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      namaGuru = prefs.getString('Guru_Nama') ?? "Guru";
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,15 +40,10 @@ class Sidebar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Section
             _buildProfileSection(isMobile),
             const SizedBox(height: 20),
-
-            // Navigation Menu
             _buildNavigationMenu(context, isMobile),
             const Spacer(),
-
-            // Logout Button
             _buildLogoutButton(context, isMobile),
           ],
         ),
@@ -50,7 +66,7 @@ class Sidebar extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Siti Nursiah',
+          namaGuru, // <- sudah otomatis
           style: TextStyle(
             fontSize: isMobile ? 14 : 16,
             fontWeight: FontWeight.bold,
@@ -68,28 +84,19 @@ class Sidebar extends StatelessWidget {
           Navigator.pushReplacementNamed(context, '/guru/dashboard');
         }, isMobile),
         _buildMenuTile(context, 'Absensi', Icons.people, () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const Absensi()),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const Absensi()));
         }, isMobile),
         _buildMenuTile(context, 'Agenda', Icons.calendar_today, () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const Agenda()),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const Agenda()));
         }, isMobile),
         _buildMenuTile(context, 'Pengumuman', Icons.announcement, () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const guru_pengumuman.PengumumanPage()), // Gunakan alias
+            MaterialPageRoute(builder: (_) => const guru_pengumuman.PengumumanPage()),
           );
         }, isMobile),
         _buildMenuTile(context, 'Permohonan Izin', Icons.assignment, () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PermohonanIzin()),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const PermohonanIzin()));
         }, isMobile),
       ],
     );
@@ -103,22 +110,10 @@ class Sidebar extends StatelessWidget {
     bool isMobile,
   ) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: Colors.white,
-        size: isMobile ? 18 : 20,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: isMobile ? 13 : 14,
-        ),
-      ),
+      leading: Icon(icon, color: Colors.white, size: isMobile ? 18 : 20),
+      title: Text(title, style: TextStyle(color: Colors.white, fontSize: isMobile ? 13 : 14)),
       onTap: () {
-        // Tutup drawer dulu
         Navigator.pop(context);
-        // Jalankan aksi navigasi
         onTap();
       },
       contentPadding: EdgeInsets.zero,
@@ -131,35 +126,20 @@ class Sidebar extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          // Tutup drawer
+        onPressed: () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+
           Navigator.pop(context);
-          // Navigasi ke login
           Navigator.pushReplacementNamed(context, '/login');
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF465940),
-          padding: EdgeInsets.symmetric(
-            vertical: isMobile ? 10 : 12,
-          ),
+          padding: EdgeInsets.symmetric(vertical: isMobile ? 10 : 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        child: Text(
-          'Keluar',
-          style: TextStyle(
-            fontSize: isMobile ? 14 : 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature - Fitur akan segera hadir'),
-        duration: const Duration(seconds: 2),
+        child: Text('Keluar', style: TextStyle(fontSize: isMobile ? 14 : 16)),
       ),
     );
   }

@@ -9,6 +9,8 @@ use App\Http\Controllers\Auth\UniversalLoginController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\PengumumanGuruController;
 use App\Http\Controllers\Api\PengumumanOrtuController;
+use App\Http\Controllers\Api\AgendaGuruController;
+use App\Http\Controllers\Api\AgendaOrtuController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -48,6 +50,20 @@ Route::get('/guru/siswa-kelas-saya', [PengumumanGuruController::class, 'getSiswa
 // ROUTE PENGUMUMAN ORTU
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orangtua/pengumuman/{kategori?}', [PengumumanOrtuController::class, 'showByKategori']);
+});
+
+// ROUTE AGENDA GURU
+Route::prefix('guru')->group(function () {
+    Route::get('/agenda', [AgendaGuruController::class, 'index']);
+    Route::post('/agenda', [AgendaGuruController::class, 'store']);
+    Route::put('/agenda/{id}', [AgendaGuruController::class, 'update']);
+    Route::delete('/agenda/{id}', [AgendaGuruController::class, 'destroy']);
+    Route::get('/agenda/dropdown-data', [AgendaGuruController::class, 'getDropdownData']);
+});
+
+// ROUTE AGENDA ORANG TUA
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/orangtua/agenda/{kategori?}', [AgendaOrtuController::class, 'index']);
 });
 
 Route::options('/{any}', function () {

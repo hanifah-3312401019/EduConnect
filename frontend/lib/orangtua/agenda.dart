@@ -5,10 +5,118 @@ import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
 import 'package:frontend/auth/login.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // import sidebar reusable
 import 'package:frontend/widgets/sidebarOrangtua.dart';
 
+// MODEL AGENDA ORANGTUA
+class AgendaOrtuModel {
+  final int agendaId;
+  final String judul;
+  final String deskripsi;
+  final String tipe;
+  final DateTime tanggal;
+  final String waktuMulai;
+  final String waktuSelesai;
+  final Map<String, dynamic>? guru;
+  final Map<String, dynamic>? kelas;
+  final Map<String, dynamic>? ekstrakulikuler;
+
+  AgendaOrtuModel({
+    required this.agendaId,
+    required this.judul,
+    required this.deskripsi,
+    required this.tipe,
+    required this.tanggal,
+    required this.waktuMulai,
+    required this.waktuSelesai,
+    this.guru,
+    this.kelas,
+    this.ekstrakulikuler,
+  });
+
+  factory AgendaOrtuModel.fromJson(Map<String, dynamic> json) {
+    return AgendaOrtuModel(
+      agendaId: json['Agenda_Id'] ?? 0,
+      judul: json['Judul'] ?? '',
+      deskripsi: json['Deskripsi'] ?? '',
+      tipe: json['Tipe'] ?? 'sekolah',
+      tanggal: DateTime.parse(json['Tanggal'] ?? DateTime.now().toIso8601String()),
+      waktuMulai: json['Waktu_Mulai'] ?? '08:00',
+      waktuSelesai: json['Waktu_Selesai'] ?? '10:00',
+      guru: json['guru'],
+      kelas: json['kelas'],
+      ekstrakulikuler: json['ekstrakulikuler'],
+    );
+  }
+
+  String get kategoriDisplay {
+    switch (tipe.toLowerCase()) {
+      case 'sekolah':
+        return 'Sekolah';
+      case 'perkelas':
+        return 'Kelas';
+      case 'ekskul':
+        return 'Ekstrakurikuler';
+      default:
+        return tipe;
+    }
+  }
+
+  String get waktuDisplay {
+    return '${waktuMulai.substring(0, 5)} - ${waktuSelesai.substring(0, 5)}';
+  }
+}
+
+// API SERVICE AGENDA ORANGTUA
+class AgendaOrtuApiService {
+  static const String baseUrl = 'http://localhost:8000/api';
+
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = globalAuthToken;
+
+    print('🔎 TOKEN TERAMBIL DARI GLOBAL: $token');
+
+    return {
+      'Accept': 'application/json',
+      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  static Future<List<AgendaOrtuModel>> getAgendaOrtu([
+    String kategori = 'semua',
+  ]) async {
+    try {
+      final headers = await _getHeaders();
+
+      final uri = (kategori == 'semua')
+          ? Uri.parse('$baseUrl/orangtua/agenda')
+          : Uri.parse('$baseUrl/orangtua/agenda/$kategori');
+
+      final response = await http.get(uri, headers: headers);
+
+      print("📥 AGENDA STATUS: ${response.statusCode}");
+      print("📥 AGENDA BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return (data['data'] as List)
+              .map((e) => AgendaOrtuModel.fromJson(e))
+              .toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('❌ Error API Agenda: $e');
+      return [];
+    }
+  }
+}
+
+// PAGE AGENDA ORANGTUA
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
 
@@ -22,63 +130,64 @@ class _AgendaPageState extends State<AgendaPage> {
 
   final List<String> _kategoriList = ['Semua', 'Sekolah', 'Kelas', 'Ekstrakurikuler'];
 
-  final List<Map<String, String>> _agendaList = [
-    {
-      'judul': 'Rapat Wali Murid',
-      'tanggal': '18 Juni 2025',
-      'waktu': '08.00 - 10.00',
-      'kategori': 'Sekolah',
-    },
-    {
-      'judul': 'Latihan Menari',
-      'tanggal': '02 September 2025',
-      'waktu': '10.00 - 13.00',
-      'kategori': 'Ekstrakurikuler',
-    },
-    {
-      'judul': 'Ujian Akhir Semester',
-      'tanggal': '10 November 2025',
-      'waktu': '08.00 - 12.00',
-      'kategori': 'Kelas',
-    },
-    {
-      'judul': 'Natal Sekolah',
-      'tanggal': '12 Desember 2025',
-      'waktu': '08.00 - 15.00',
-      'kategori': 'Sekolah',
-    },
-  ];
+  // ⭐ FIX MAPPING KATEGORI API
+  final Map<String, String> kategoriApiMap = {
+    'Semua': 'semua',
+    'Sekolah': 'sekolah',
+    'Kelas': 'perkelas',
+    'Ekstrakurikuler': 'ekskul',
+  };
+
+  List<AgendaOrtuModel> _apiAgendaList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAgendaFromApi(kategoriApiMap[_selectedKategori]!);
+  }
+
+  void _loadAgendaFromApi([String kategori = 'semua']) async {
+    final agenda = await AgendaOrtuApiService.getAgendaOrtu(kategori);
+    setState(() {
+      _apiAgendaList = agenda;
+    });
+  }
 
   void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+    if (index == _selectedIndex) return;
+
+    Widget? targetPage;
     switch (index) {
       case 0:
+        targetPage = DashboardPage();
         break;
       case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => JadwalPage()),
-        );
         break;
       case 2:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => PengumumanPage()),
-        );
+        targetPage = JadwalPage();
         break;
       case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => RincianPembayaranPage()),
-        );
+        targetPage = const PengumumanPage();
         break;
       case 4:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ProfilPage()),
-        );
+        targetPage = ProfilPage();
         break;
     }
+    if (targetPage != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => targetPage!),
+      );
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final List<String> monthNames = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    
+    return '${date.day.toString().padLeft(2, '0')} ${monthNames[date.month]} ${date.year}';
   }
 
   @override
@@ -86,11 +195,7 @@ class _AgendaPageState extends State<AgendaPage> {
     const Color greenColor = Color(0xFF465940);
     const Color backgroundColor = Color(0xFFFDFBF0);
 
-    final filteredList = _selectedKategori == 'Semua'
-        ? _agendaList
-        : _agendaList
-            .where((item) => item['kategori'] == _selectedKategori)
-            .toList();
+    final filteredList = _apiAgendaList;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -141,7 +246,7 @@ class _AgendaPageState extends State<AgendaPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.campaign, color: greenColor),
+                  const Icon(Icons.event_note, color: greenColor),
                   const SizedBox(width: 8),
                   const Text(
                     "Agenda",
@@ -152,6 +257,7 @@ class _AgendaPageState extends State<AgendaPage> {
                     ),
                   ),
                   const Spacer(),
+                  // DROPDOWN (FIX API)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -162,8 +268,12 @@ class _AgendaPageState extends State<AgendaPage> {
                       child: DropdownButton<String>(
                         value: _selectedKategori,
                         dropdownColor: greenColor,
-                        icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.white,
+                        ),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 14),
                         items: _kategoriList.map((String kategori) {
                           return DropdownMenuItem<String>(
                             value: kategori,
@@ -174,6 +284,9 @@ class _AgendaPageState extends State<AgendaPage> {
                           setState(() {
                             _selectedKategori = newValue!;
                           });
+
+                          final apiKategori = kategoriApiMap[newValue]!;
+                          _loadAgendaFromApi(apiKategori);
                         },
                       ),
                     ),
@@ -187,7 +300,7 @@ class _AgendaPageState extends State<AgendaPage> {
                 duration: const Duration(milliseconds: 300),
                 child: Column(
                   key: ValueKey<String>(_selectedKategori),
-                  children: filteredList.map((item) {
+                  children: filteredList.map((agenda) {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.symmetric(
@@ -209,31 +322,95 @@ class _AgendaPageState extends State<AgendaPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            item['judul']!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  agenda.judul,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFDFBF0),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  agenda.kategoriDisplay,
+                                  style: TextStyle(
+                                    color: greenColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Text(
-                            item['tanggal']!,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['waktu']!,
+                            agenda.deskripsi,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                              height: 1.4,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatDate(agenda.tanggal),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.access_time,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                agenda.waktuDisplay,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.person,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                agenda.guru?['Nama'] ?? 'Guru',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Tampilkan info tambahan berdasarkan tipe
+                          // DIHAPUS: Bagian yang menampilkan ikon kelas dan ekstrakulikuler
                         ],
                       ),
                     );
@@ -241,12 +418,37 @@ class _AgendaPageState extends State<AgendaPage> {
                 ),
               ),
 
+              if (filteredList.isEmpty) ...[
+                const SizedBox(height: 50),
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.event_note_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tidak ada agenda',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Agenda ${_selectedKategori.toLowerCase()} belum tersedia',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 80),
             ],
           ),
         ),
       ),
 
+      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -268,8 +470,8 @@ class _AgendaPageState extends State<AgendaPage> {
             label: 'Jadwal',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.payment),
-            label: 'Pembayaran',
+            icon: Icon(Icons.campaign),
+            label: 'Pengumuman',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -277,6 +479,19 @@ class _AgendaPageState extends State<AgendaPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _drawerItem(
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    Color? color,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: color ?? const Color(0xFF465940)),
+      title: Text(title, style: TextStyle(color: color ?? Colors.black87)),
+      onTap: onTap,
     );
   }
 }

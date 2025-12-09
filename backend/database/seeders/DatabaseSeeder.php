@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             EkstrakulikulerSeeder::class,
             SiswaSeeder::class,
             PengumumanSeeder::class,
+            AgendaSeeder::class,
         ]);
 
     }

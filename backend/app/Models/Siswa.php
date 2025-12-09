@@ -11,7 +11,7 @@ class Siswa extends Model
 
     protected $table = 'siswa';
 
-    protected $primaryKey = 'Siswa_Id'; // wajib!
+    protected $primaryKey = 'Siswa_Id'; 
 
     protected $fillable = [
         'Nama',
@@ -20,22 +20,25 @@ class Siswa extends Model
         'Tanggal_Lahir',
         'Alamat',
         'Jenis_Kelamin',
-        'Ekstrakulikuler_Id',
-        'Kelas_Id'
+        'Ekstrakulikuler_Id',   
+        'Kelas_Id',
     ];
-    // Pastikan Siswa model sudah ada ini:
+
+    // Relasi ke orang tua
     public function orangTua()
     {
         return $this->belongsTo(OrangTua::class, 'OrangTua_Id', 'OrangTua_Id');
     }
 
+    // Relasi ke kelas
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class, 'Kelas_Id');
+        return $this->belongsTo(Kelas::class, 'Kelas_Id', 'Kelas_Id');
     }
 
+    // Relasi ke ekstrakulikuler
     public function ekstrakulikuler()
-{
-    return $this->belongsTo(Ekstrakulikuler::class, 'Ekstrakulikuler_Id', 'Ekstrakulikuler_Id');
-}
+    {
+        return $this->belongsTo(Ekstrakulikuler::class, 'Ekstrakulikuler_Id', 'Ekstrakulikuler_Id');
+    }
 }

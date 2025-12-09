@@ -57,8 +57,13 @@ class _LoginPageState extends State<LoginPage> {
       // SIMPAN GURU ID JIKA ROLE GURU
         if (role == "guru") {
           final guruId = data['profile']['Guru_Id'];
-          await prefs.setInt('Guru_Id', guruId);
-          print("Guru_Id disimpan: $guruId");
+        final namaGuru = data['profile']['Nama'];
+
+        await prefs.setInt('Guru_Id', guruId);
+        await prefs.setString('Guru_Nama', namaGuru);
+
+        print("Guru_Id disimpan: $guruId");
+        print("Guru_Nama disimpan: $namaGuru");
         }
 
       print('Login berhasil! Role: $role');

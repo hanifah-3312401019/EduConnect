@@ -24,4 +24,9 @@ class Guru extends Authenticatable
     ];
 
     protected $hidden = ['Kata_Sandi'];
+
+    public function kelas()
+    {
+        return $this->hasOne(Kelas::class, 'Guru_Id', 'Guru_Id');
+    }
 }
