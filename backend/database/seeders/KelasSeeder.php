@@ -28,7 +28,7 @@ class KelasSeeder extends Seeder
             [
                 'Kelas_Id' => 2, // Explicitly set ID
                 'Nama_Kelas' => 'Kelas 2A',
-                'Guru_Id' => $guru->Guru_Id,
+                'Guru_Id' => null,
                 'Jumlah' => 28,
                 'Tahun_Ajar' => '2024/2025'
             ]
