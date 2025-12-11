@@ -15,12 +15,18 @@ List<Map<String, String>> dataOrangTua = [];
 
 List<String> kelasList = [
   "Semua",
-  "Kelas 1",
-  "Kelas 2",
-  "Kelas 3",
-  "Kelas 4",
-  "Kelas 5",
-  "Kelas 6"
+  "Kelas 1A",
+  "Kelas 1B",
+  "Kelas 2A",
+  "Kelas 2B",
+  "Kelas 3A",
+  "Kelas 3B",
+  "Kelas 4A",
+  "Kelas 4B",
+  "Kelas 5A",
+  "Kelas 5B",
+  "Kelas 6A",
+  "Kelas 6B"
 ];
 
 class DataOrangTuaPage extends StatefulWidget {
@@ -32,6 +38,8 @@ class DataOrangTuaPage extends StatefulWidget {
 
 class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   String selectedFilter = "Semua";
+  int? _sortColumnIndex;
+  bool _sortAscending = true;
 
   // =========================================================
   // FUNGSI POST API → TAMBAH ORANG TUA
@@ -64,6 +72,40 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   }
 
   // =========================================================
+  // FUNGSI UPDATE API → UBAH DATA ORANG TUA
+  Future<bool> updateOrangTua(String id, Map<String, dynamic> data) async {
+  final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/update/$id");
+
+  final res = await http.put(
+    url,
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: jsonEncode(data),
+  );
+
+  print("UPDATE STATUS: ${res.statusCode}");
+  print("UPDATE BODY: ${res.body}");
+
+  return res.statusCode == 200;
+}
+
+  // =========================================================
+  // FUNGSI DELETE API → HAPUS DATA ORANG TUA
+  Future<bool> deleteOrangTua(String id) async {
+  final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/delete/$id");
+
+  final res = await http.delete(url, headers: {
+    "Accept": "application/json",
+  });
+
+  print("DELETE STATUS: ${res.statusCode}");
+
+  return res.statusCode == 200;
+}
+
+  // =========================================================
   // FUNGSI GET API → AMBIL DATA ORANG TUA
   Future<void> loadDataOrangTua() async {
     try {
@@ -82,12 +124,13 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
         setState(() {
           dataOrangTua = list.map((d) {
             return {
+              "id": d["OrangTua_Id"].toString(),
               "nama": d["Nama"]?.toString() ?? "-",
               "email": d["Email"]?.toString() ?? "-",
               "telp": d["No_Telepon"]?.toString() ?? "-",
               "alamat": d["Alamat"]?.toString() ?? "-",
-              "anak": "-",
-              "kelas": "-",
+              "anak": d["Anak"]?.toString() ?? "-",
+              "kelas": d["Kelas"]?.toString() ?? "-",
             };
           }).toList();
         });
@@ -108,8 +151,51 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   // =========================================================
   // FILTER TABLE
   List<Map<String, String>> get filteredData {
-    if (selectedFilter == "Semua") return dataOrangTua;
-    return dataOrangTua.where((d) => d["kelas"] == selectedFilter).toList();
+    List<Map<String, String>> result;
+
+    if (selectedFilter == "Semua") {
+      result = List.from(dataOrangTua);
+    } else {
+      // Filter dengan partial match (mencari "Kelas 1" di "Kelas 1A", "Kelas 1B", dll)
+    result = dataOrangTua.where((d) {
+      final kelasValue = d["kelas"] ?? "";
+      return kelasValue.contains(selectedFilter);
+    }).toList();
+  }
+
+    // Sorting jika diperlukan
+    if (_sortColumnIndex != null) {
+      result.sort((a, b) {
+        final key = _getSortKey(_sortColumnIndex!);
+        final aValue = a[key]?.toLowerCase() ?? '';
+        final bValue = b[key]?.toLowerCase() ?? '';
+
+        return _sortAscending
+            ? aValue.compareTo(bValue)
+            : bValue.compareTo(aValue);
+      });
+    }
+
+    return result;
+  }
+
+  String _getSortKey(int columnIndex) {
+    switch (columnIndex) {
+      case 0:
+        return "nama";
+      case 1:
+        return "alamat";
+      case 2:
+        return "email";
+      case 3:
+        return "telp";
+      case 4:
+        return "anak";
+      case 5:
+        return "kelas";
+      default:
+        return "nama";
+    }
   }
 
   // =========================================================
@@ -209,7 +295,8 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
     final email = TextEditingController(text: d["email"]);
     final alamat = TextEditingController(text: d["alamat"]);
     final anak = TextEditingController(text: d["anak"]);
-    String kelasDipilih = d["kelas"]!;
+    String kelasDipilih = 
+    kelasList.contains(d["kelas"]) ? d["kelas"]! : kelasList[1];
 
     showDialog(
       context: context,
@@ -242,21 +329,27 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                dataOrangTua[index] = {
-                  "nama": nama.text,
-                  "telp": telp.text,
-                  "email": email.text,
-                  "alamat": alamat.text,
-                  "anak": anak.text,
-                  "kelas": kelasDipilih,
-                };
+            onPressed: () async {
+              final id = d["id"]!;
+              
+              final success = await updateOrangTua(id, {
+                "Nama": nama.text,
+                "Email": email.text,
+                "No_Telepon": telp.text,
+                "Alamat": alamat.text,
+                "Anak": anak.text,
+                "Kelas": kelasDipilih,
               });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF465940)),
-            child: const Text("Simpan", style: TextStyle(color: Colors.white)),
+                
+              if (success) {
+                await loadDataOrangTua();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Data berhasil diperbarui!")),
+               );
+             }
+           },
+           child: const Text("Simpan"), 
           ),
         ],
       ),
@@ -275,10 +368,19 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Batal")),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              setState(() => dataOrangTua.removeAt(index));
-              Navigator.pop(context);
-            },
+            onPressed: () async {
+              final id = dataOrangTua[index]["id"]!;
+
+              final success = await deleteOrangTua(id);
+
+              if (success) {
+                await loadDataOrangTua();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Data berhasil dihapus")),
+                  );
+                }
+              },
             child: const Text("Hapus"),
           ),
         ],
@@ -363,11 +465,366 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   }
 
   // =========================================================
+  // TABEL MODERN DENGAN STYLING
+Widget _buildModernTable() {
+  return Card(
+    elevation: 4,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: SizedBox(
+      height: MediaQuery.of(context).size.height * 0.6, // Atur tinggi tetap
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView( // ← TAMBAHKAN INI UNTUK SCROLL VERTICAL
+          scrollDirection: Axis.vertical,
+          child: Container(
+            constraints: BoxConstraints(
+              minWidth: MediaQuery.of(context).size.width - 100,
+            ),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                dividerColor: Colors.transparent,
+              ),
+              child: DataTable(
+                dividerThickness: 0,
+                headingRowColor: WidgetStateProperty.resolveWith<Color?>(
+                  (Set<WidgetState> states) => Colors.transparent,
+                ),
+                dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                  (Set<WidgetState> states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return Colors.grey[100];
+                    }
+                    return Colors.transparent;
+                  },
+                ),
+                headingTextStyle: const TextStyle(
+                  color: Color(0xFF465940),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+                dataTextStyle: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.black87,
+                ),
+                columnSpacing: 24,
+                horizontalMargin: 16,
+                sortColumnIndex: _sortColumnIndex,
+                sortAscending: _sortAscending,
+                columns: [
+                  DataColumn(
+                    label: _buildTableHeader("Nama Orang Tua", Icons.person),
+                    onSort: (columnIndex, ascending) {
+                      setState(() {
+                        _sortColumnIndex = columnIndex;
+                        _sortAscending = ascending;
+                      });
+                    },
+                  ),
+                  DataColumn(
+                    label: _buildTableHeader("Alamat", Icons.location_on),
+                    onSort: (columnIndex, ascending) {
+                      setState(() {
+                        _sortColumnIndex = columnIndex;
+                        _sortAscending = ascending;
+                      });
+                    },
+                  ),
+                  DataColumn(
+                    label: _buildTableHeader("Email", Icons.email),
+                    onSort: (columnIndex, ascending) {
+                      setState(() {
+                        _sortColumnIndex = columnIndex;
+                        _sortAscending = ascending;
+                      });
+                    },
+                  ),
+                  DataColumn(
+                    label: _buildTableHeader("No Telepon", Icons.phone),
+                    onSort: (columnIndex, ascending) {
+                      setState(() {
+                        _sortColumnIndex = columnIndex;
+                        _sortAscending = ascending;
+                      });
+                    },
+                  ),
+                  DataColumn(
+                    label: _buildTableHeader("Nama Anak", Icons.child_care),
+                    onSort: (columnIndex, ascending) {
+                      setState(() {
+                        _sortColumnIndex = columnIndex;
+                        _sortAscending = ascending;
+                      });
+                    },
+                  ),
+                  DataColumn(
+                    label: _buildTableHeader("Kelas", Icons.school),
+                    onSort: (columnIndex, ascending) {
+                      setState(() {
+                        _sortColumnIndex = columnIndex;
+                        _sortAscending = ascending;
+                      });
+                    },
+                  ),
+                  const DataColumn(label: Text("Aksi")),
+                ],
+                rows: filteredData.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final d = entry.value;
+
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              const CircleAvatar(
+                                radius: 16,
+                                backgroundColor: Color(0xFFE8F5E9),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 16,
+                                  color: Color(0xFF465940),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  d["nama"]!,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        SizedBox(
+                          width: 150,
+                          child: Text(
+                            d["alamat"]!,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Tooltip(
+                          message: d["email"]!,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.email_outlined,
+                                  size: 14, color: Colors.grey),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  d["email"]!,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Row(
+                          children: [
+                            const Icon(Icons.phone_outlined,
+                                size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(d["telp"]!),
+                          ],
+                        ),
+                      ),
+                      DataCell(
+                        Chip(
+                          label: Text(
+                            d["anak"]!,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          backgroundColor: Colors.blue[50],
+                          side: BorderSide.none,
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getKelasColor(d["kelas"]!),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            d["kelas"]!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  size: 16,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              onPressed: () => _editData(index),
+                              splashRadius: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.red[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.delete,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              onPressed: () => _deleteData(index),
+                              splashRadius: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+  Widget _buildTableHeader(String text, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF465940)),
+        const SizedBox(width: 6),
+        Text(text),
+      ]
+    );
+  }
+
+  Color _getKelasColor(String kelas) {
+    final colors = {
+      "Kelas 1": const Color(0xFF4285F4), // Biru
+      "Kelas 2": const Color(0xFF34A853), // Hijau
+      "Kelas 3": const Color(0xFFFBBC05), // Kuning
+      "Kelas 4": const Color(0xFFEA4335), // Merah
+      "Kelas 5": const Color(0xFF8E44AD), // Ungu
+      "Kelas 6": const Color(0xFF17A2B8), // Cyan
+    };
+
+    return colors[kelas] ?? const Color(0xFF465940);
+  }
+
+  // =========================================================
+  // HEADER STATISTIK MODERN
+  Widget _buildStatsHeader() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              Icons.group,
+              "Total Orang Tua",
+              dataOrangTua.length.toString(),
+              const Color(0xFF4285F4),
+            ),
+            _buildStatItem(
+              Icons.child_care,
+              "Total Anak",
+              dataOrangTua
+                  .fold(
+                      0,
+                      (sum, item) =>
+                          sum + (item["anak"]!.isNotEmpty ? 1 : 0))
+                  .toString(),
+              const Color(0xFF34A853),
+            ),
+            _buildStatItem(
+              Icons.filter_list,
+              "Tertampil",
+              "${filteredData.length} dari ${dataOrangTua.length}",
+              const Color(0xFFFBBC05),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String title, String value, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF465940),
+          ),
+        ),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
   // UI PAGE
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color((0xFFFDFBF0)),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Row(
         children: [
           SidebarAdmin(onMenuSelected: handleMenu),
@@ -377,121 +834,102 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
             child: Column(
               children: [
                 _buildHeader(),
-
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(26.0),
+                    padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              "Data Orang Tua",
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF465940),
-                              ),
-                            ),
-
-                            Row(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                OutlinedButton.icon(
-                                  onPressed: _filterData,
-                                  icon: const Icon(Icons.filter_alt),
-                                  label: const Text("Filter"),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: Color(0xFF465940)),
+                                const Text(
+                                  "Data Orang Tua",
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF465940),
                                   ),
                                 ),
-
-                                const SizedBox(width: 14),
-
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Total ${dataOrangTua.length} orang tua terdaftar",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: selectedFilter,
+                                      icon: const Icon(Icons.filter_alt, size: 20),
+                                      items: kelasList.map((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                value == "Semua"
+                                                    ? Icons.all_inclusive
+                                                    : Icons.school,
+                                                size: 16,
+                                                color: const Color(0xFF465940),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(value),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          selectedFilter = value!;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
                                 ElevatedButton.icon(
                                   onPressed: _tambahData,
-                                  icon: const Icon(Icons.add, color: Colors.white),
-                                  label: const Text(
-                                    "Tambahkan Data",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
+                                  icon: const Icon(Icons.add, size: 20),
+                                  label: const Text("Tambah Data"),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF465940),
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
+                                    elevation: 0,
+                                    shadowColor: Colors.transparent,
                                   ),
                                 ),
                               ],
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 20),
-
+                        _buildStatsHeader(),
+                        const SizedBox(height: 20),
                         Expanded(
-                          child: Card(
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: SingleChildScrollView(
-                                child: DataTable(
-                                  headingRowColor:
-                                      WidgetStateProperty.all(const Color(0xFF465940)),
-                                  headingTextStyle: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold),
-                                  dataRowColor: WidgetStateProperty.all(
-                                    const Color(0xFFF9FAFB),
-                                  ),
-                                  columnSpacing: 40,
-                                  columns: const [
-                                    DataColumn(label: Text("Nama Orang Tua")),
-                                    DataColumn(label: Text("Alamat")),
-                                    DataColumn(label: Text("Email")),
-                                    DataColumn(label: Text("No Telepon")),
-                                    DataColumn(label: Text("Nama Anak")),
-                                    DataColumn(label: Text("Kelas Anak")),
-                                    DataColumn(label: Text("Aksi")),
-                                  ],
-                                  rows: List.generate(
-                                    filteredData.length,
-                                    (i) {
-                                      final d = filteredData[i];
-                                      return DataRow(cells: [
-                                        DataCell(Text(d["nama"]!)),
-                                        DataCell(Text(d["alamat"]!)),
-                                        DataCell(Text(d["email"]!)),
-                                        DataCell(Text(d["telp"]!)),
-                                        DataCell(Text(d["anak"]!)),
-                                        DataCell(Text(d["kelas"]!)),
-                                        DataCell(Row(
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.edit,
-                                                  color: Colors.blue),
-                                              onPressed: () => _editData(
-                                                  dataOrangTua.indexOf(d)),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete,
-                                                  color: Colors.red),
-                                              onPressed: () => _deleteData(
-                                                  dataOrangTua.indexOf(d)),
-                                            ),
-                                          ],
-                                        )),
-                                      ]);
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                          child: _buildModernTable(),
                         ),
                       ],
                     ),
@@ -519,9 +957,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
             radius: 24,
             child: Icon(Icons.person, color: Color(0xFF465940), size: 32),
           ),
-
           const SizedBox(width: 14),
-
           const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,9 +965,10 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
               Text(
                 "Halo, Ini Admin",
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Text(
                 "Admin@gmail.com",
@@ -539,9 +976,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
               ),
             ],
           ),
-
           const Spacer(),
-
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
@@ -551,11 +986,12 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
             child: const Text(
               "Keluar",
               style: TextStyle(
-                  color: Color(0xFF465940),
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold),
+                color: Color(0xFF465940),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

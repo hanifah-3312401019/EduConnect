@@ -21,6 +21,7 @@ class OrangTua extends Authenticatable
         'Kata_Sandi',
         'No_Telepon',
         'Alamat',
+        'Siswa_Id',
     ];
 
     // Override password field
@@ -29,8 +30,9 @@ class OrangTua extends Authenticatable
         return $this->Kata_Sandi;
     }
 
-    public function anak()
+    public function siswa()
     {
         return $this->hasOne(Siswa::class, 'OrangTua_Id', 'OrangTua_Id');
     }
+
 }

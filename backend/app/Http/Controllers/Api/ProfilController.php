@@ -18,8 +18,8 @@ class ProfilController extends Controller
             return response()->json(['error' => 'Data orang tua tidak ditemukan'], 404);
         }
 
-        // Ambil siswa dan nama ekskul
-        $anak = Siswa::with('ekstrakulikuler')
+        // Ambil siswa + kelas + ekskul
+        $anak = Siswa::with(['kelas', 'ekstrakulikuler'])
                 ->where('OrangTua_Id', $orangTua->OrangTua_Id)
                 ->first();
 
@@ -40,7 +40,8 @@ class ProfilController extends Controller
             "ekskul_nama"    => $anak->ekstrakulikuler->nama ?? null,
             "ekskul_biaya"   => $anak->ekstrakulikuler->biaya ?? null,
 
-            "kelas"          => $anak->Kelas_Id ?? null,
+            "kelas_id"          => $anak->Kelas_Id ?? null,
+            "kelas_nama"     => $anak->kelas->Nama_Kelas ?? null,
         ]);
     }
 

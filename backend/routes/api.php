@@ -38,6 +38,11 @@ Route::post('/admin/orangtua/create', [AdminController::class, 'createOrangTua']
 // ADMIN - Ambil Semua Orang Tua
 Route::get('/admin/orangtua/list', [AdminController::class, 'getAllOrangTua']);
 
+// ADMIN - Edit dan Delete Orang Tua
+Route::get('/admin/orangtua/detail/{id}', [AdminController::class, 'getOrangTuaDetail']);
+Route::put('/admin/orangtua/update/{id}', [AdminController::class, 'updateOrangTua']);
+Route::delete('/admin/orangtua/delete/{id}', [AdminController::class, 'deleteOrangTua']);
+
 // GURU
 Route::post('/admin/guru/create', [AdminController::class, 'createGuru']);
 Route::get('/admin/guru/list', [AdminController::class, 'getAllGuru']);

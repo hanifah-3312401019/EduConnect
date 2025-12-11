@@ -16,7 +16,7 @@ use App\Mail\GuruPasswordMail;
 
 class AdminController extends Controller
 {
-    // FUNGSI ORANG TUA 
+    // FUNGSI ORANG TUA
     public function createOrangTua(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -33,10 +33,13 @@ class AdminController extends Controller
             ], 422);
         }
 
-        // Generate password otomatis
-        $plainPassword = substr(str_shuffle('ABCDEFGHJKLMNPQRSTUVWXYZ123456789'), 0, 8);
+        // Generate password berdasarkan nama + angka
+        $namaBersih = preg_replace('/[^a-zA-Z]/', '', $request->Nama);
+        $namaSingkat = strtolower(substr($namaBersih, 0, 4));
+        $angka = rand(1000, 9999);
+        $plainPassword = $namaSingkat . $angka;
 
-         // Simpan ke DB (hash)
+        // Simpan ke DB (hash)
         $orangTua = OrangTua::create([
             'Nama' => $request->Nama,
             'Email' => $request->Email,
@@ -61,11 +64,112 @@ class AdminController extends Controller
 
     public function getAllOrangTua()
     {
-        $data = OrangTua::select('OrangTua_Id', 'Nama', 'Email', 'No_Telepon', 'Alamat')->get();
+        $ortu = OrangTua::with(['siswa.kelas'])->get();
 
         return response()->json([
             'success' => true,
-            'data' => $data
+            'data' => $ortu->map(function ($o) {
+                return [
+                    'OrangTua_Id' => $o->OrangTua_Id,
+                    'Nama' => $o->Nama,
+                    'Email' => $o->Email,
+                    'No_Telepon' => $o->No_Telepon,
+                    'Alamat' => $o->Alamat,
+                    'Anak' => $o->siswa->Nama ?? '-',
+                    'Kelas' => $o->siswa->kelas->Nama_Kelas ?? '-',
+                ];
+            })
+        ]);
+    }
+
+    public function getOrangTuaDetail($id)
+    {
+        $ortu = OrangTua::with(['siswa.kelas'])->find($id);
+
+        if (!$ortu) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orang tua tidak ditemukan'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'OrangTua_Id' => $ortu->OrangTua_Id,
+                'Nama' => $ortu->Nama,
+                'Email' => $ortu->Email,
+                'No_Telepon' => $ortu->No_Telepon,
+                'Alamat' => $ortu->Alamat,
+                'Anak' => $ortu->siswa->Nama ?? '-',
+                'Kelas' => $ortu->siswa->kelas->Nama_Kelas ?? '-',
+            ]
+        ]);
+    }
+
+    public function updateOrangTua(Request $request, $id)
+    {
+        $ortu = OrangTua::find($id);
+
+        if (!$ortu) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orang tua tidak ditemukan'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'Nama' => 'required|string|max:255',
+            'Email' => 'required|email|unique:orang_tuas,Email,' . $id . ',OrangTua_Id',
+            'No_Telepon' => 'required',
+            'Alamat' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $ortu->update([
+            'Nama' => $request->Nama,
+            'Email' => $request->Email,
+            'No_Telepon' => $request->No_Telepon,
+            'Alamat' => $request->Alamat,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data orang tua berhasil diperbarui',
+            'data' => $ortu
+        ]);
+    }
+
+    public function deleteOrangTua($id)
+    {
+        $ortu = OrangTua::find($id);
+
+        if (!$ortu) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orang tua tidak ditemukan'
+            ], 404);
+        }
+
+        // Jika punya anak, tidak boleh langsung hapus
+        if ($ortu->siswa()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orang tua masih memiliki data anak. Hapus / ubah data anak terlebih dahulu.'
+            ], 400);
+        }
+
+        $ortu->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data orang tua berhasil dihapus'
         ]);
     }
 
