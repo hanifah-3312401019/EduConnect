@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_logo.dart';
-import '../widgets/app_title.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
+import 'package:frontend/orangtua/dashboard_orangtua.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -10,7 +10,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -19,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -40,10 +41,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigasi setelah 5 detik
-    Future.delayed(const Duration(seconds: 5), () {
+    // Cek session, tidak ada delay ke /login lagi
+    _checkSession();
+  }
+
+  Future<void> _checkSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final role = prefs.getString('role');
+
+    await Future.delayed(const Duration(seconds: 2)); // kasih waktu animasi
+
+    if (token != null && role != null) {
+      if (role == "guru") {
+        Navigator.pushReplacementNamed(context, '/guru/dashboard');
+      } else if (role == "orangtua") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => DashboardPage()),
+        );
+      } else if (role == "admin") {
+        Navigator.pushReplacementNamed(context, '/admin/dashboard');
+      }
+    } else {
       Navigator.pushReplacementNamed(context, '/login');
-    });
+    }
   }
 
   @override
@@ -78,7 +100,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             borderRadius: BorderRadius.circular(40),
                             boxShadow: [
                               BoxShadow(
-                                color: AppConstants.primaryColor.withOpacity(0.3),
+                                color: AppConstants.primaryColor
+                                    .withOpacity(0.3),
                                 blurRadius: 30,
                                 offset: const Offset(0, 15),
                                 spreadRadius: 2,
@@ -99,7 +122,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                               Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(40),
-                                  color: AppConstants.primaryColor.withOpacity(0.1),
+                                  color: AppConstants.primaryColor
+                                      .withOpacity(0.1),
                                 ),
                               ),
                               // Logo
@@ -118,9 +142,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           ),
                         ),
                       ),
-                      
                       const SizedBox(height: 50),
-                      
                       // Title dengan fade animation
                       FadeTransition(
                         opacity: _fadeAnimation,
@@ -153,9 +175,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           ),
                         ),
                       ),
-                      
                       const SizedBox(height: 16),
-                      
                       // Subtitle dengan delay animation
                       FadeTransition(
                         opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -165,12 +185,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           ),
                         ),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           decoration: BoxDecoration(
                             color: AppConstants.primaryColor.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(25),
                             border: Border.all(
-                              color: AppConstants.primaryColor.withOpacity(0.2),
+                              color:
+                                  AppConstants.primaryColor.withOpacity(0.2),
                               width: 1,
                             ),
                           ),
@@ -179,15 +201,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppConstants.primaryColor.withOpacity(0.9),
+                              color:
+                                  AppConstants.primaryColor.withOpacity(0.9),
                               letterSpacing: 0.3,
                             ),
                           ),
                         ),
                       ),
-                      
                       const SizedBox(height: 60),
-                      
                       // Modern loading indicator
                       FadeTransition(
                         opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -203,14 +224,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: List.generate(3, (index) {
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 4),
                                   child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 500),
+                                    duration:
+                                        const Duration(milliseconds: 500),
                                     width: 8,
                                     height: 8,
                                     decoration: BoxDecoration(
-                                      color: AppConstants.primaryColor.withOpacity(
-                                        _controller.value > (0.8 + index * 0.1) ? 1.0 : 0.3,
+                                      color: AppConstants.primaryColor
+                                          .withOpacity(
+                                        _controller.value >
+                                                (0.8 + index * 0.1)
+                                            ? 1.0
+                                            : 0.3,
                                       ),
                                       shape: BoxShape.circle,
                                     ),
@@ -224,7 +251,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                               'Memuat aplikasi...',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: AppConstants.primaryColor.withOpacity(0.7),
+                                color: AppConstants.primaryColor
+                                    .withOpacity(0.7),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

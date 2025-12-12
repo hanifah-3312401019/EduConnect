@@ -20,9 +20,42 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // ==============================
+  // POPUP LOGIN SUKSES
+  // ==============================
+  void showSuccessLoginDialog(BuildContext context, String role, Function onConfirm) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            "Login Berhasil",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Text("Anda telah berhasil login sebagai $role"),
+          actions: [
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                onConfirm(); // Lanjutkan navigasi setelah popup
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ==============================
+  // FUNGSI LOGIN
+  // ==============================
   void _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -51,12 +84,13 @@ class _LoginPageState extends State<LoginPage> {
 
       final prefs = await SharedPreferences.getInstance();
 
-      // SIMPAN TOKEN
+      // Simpan role & token
       await prefs.setString('token', token);
+      await prefs.setString('role', role);
 
-      // SIMPAN GURU ID JIKA ROLE GURU
-        if (role == "guru") {
-          final guruId = data['profile']['Guru_Id'];
+      // Simpan info guru jika role guru
+      if (role == "guru") {
+        final guruId = data['profile']['Guru_Id'];
         final namaGuru = data['profile']['Nama'];
 
         await prefs.setInt('Guru_Id', guruId);
@@ -64,48 +98,48 @@ class _LoginPageState extends State<LoginPage> {
 
         print("Guru_Id disimpan: $guruId");
         print("Guru_Nama disimpan: $namaGuru");
-        }
+      }
 
       print('Login berhasil! Role: $role');
-
       globalAuthToken = token;
-      print('Token disimpan: $token');
 
-      if (role == "guru") {
-        Navigator.pushReplacementNamed(context, '/guru/dashboard');
-      } else if (role == "orangtua") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => DashboardPage()),
-        );
-      } else if (role == "admin") {
-        Navigator.pushReplacementNamed(context, '/admin/dashboard');
-      }
+      // Tampilkan popup login sukses → setelah itu redirect dashboard sesuai role
+      showSuccessLoginDialog(context, role, () {
+        if (role == "guru") {
+          Navigator.pushReplacementNamed(context, '/guru/dashboard');
+        } else if (role == "orangtua") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => DashboardPage()),
+          );
+        } else if (role == "admin") {
+          Navigator.pushReplacementNamed(context, '/admin/dashboard');
+        }
+      });
+
     } else {
       final errorData = jsonDecode(response.body);
       final errorMessage = errorData['message'] ?? 'Terjadi kesalahan';
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(errorMessage)));
     }
   }
 
+  // =======================================================
+  // BUILD METHOD (LAYOUT)
+  // =======================================================
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Responsive breakpoints
-            if (constraints.maxWidth > 600) {
-              // DESKTOP/TABLET LAYOUT
-              return _buildDesktopLayout();
-            } else {
-              // MOBILE LAYOUT
-              return _buildMobileLayout();
-            }
+            return constraints.maxWidth > 600
+                ? _buildDesktopLayout()
+                : _buildMobileLayout();
           },
         ),
       ),
@@ -120,10 +154,8 @@ class _LoginPageState extends State<LoginPage> {
         padding: const EdgeInsets.all(40),
         child: Row(
           children: [
-            // LEFT SIDE - Branding
             Expanded(flex: 1, child: _buildDesktopLeftSide()),
             const SizedBox(width: 60),
-            // RIGHT SIDE - Login Form
             Expanded(flex: 1, child: _buildDesktopLoginForm()),
           ],
         ),
@@ -136,7 +168,6 @@ class _LoginPageState extends State<LoginPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Logo
         Container(
           width: 150,
           height: 150,
@@ -156,8 +187,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         const SizedBox(height: 24),
-
-        // App Title
         const Text(
           AppConstants.appName,
           style: TextStyle(
@@ -168,13 +197,11 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         const SizedBox(height: 16),
-
-        // Subtitle
         Text(
           AppConstants.appSubtitle,
           style: TextStyle(
             fontSize: 18,
-            color: AppConstants.primaryColor.withOpacity(0.8),
+            color: AppConstants.primaryColor,
             fontWeight: FontWeight.w500,
             height: 1.4,
           ),
@@ -260,7 +287,6 @@ class _LoginPageState extends State<LoginPage> {
     return Center(
       child: Column(
         children: [
-          // Logo
           Container(
             width: 120,
             height: 120,
@@ -280,20 +306,15 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // App Title
           const Text(
             AppConstants.appName,
             style: TextStyle(
               fontSize: 42,
               fontWeight: FontWeight.w800,
               color: AppConstants.primaryColor,
-              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 12),
-
-          // Subtitle
           _buildSubtitleCard(),
         ],
       ),
@@ -365,7 +386,6 @@ class _LoginPageState extends State<LoginPage> {
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: Colors.grey[800],
-            letterSpacing: -0.3,
           ),
         ),
       ],
@@ -414,7 +434,6 @@ class _LoginPageState extends State<LoginPage> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
                       ),
                     ),
                     SizedBox(width: 8),
@@ -437,7 +456,7 @@ class _LoginPageState extends State<LoginPage> {
         AppConstants.appSubtitle,
         style: TextStyle(
           fontSize: 14,
-          color: AppConstants.primaryColor.withOpacity(0.8),
+          color: AppConstants.primaryColor,
           fontWeight: FontWeight.w500,
         ),
         textAlign: TextAlign.center,
@@ -458,7 +477,6 @@ class _LoginPageState extends State<LoginPage> {
           style: TextStyle(
             color: Colors.grey[600],
             fontSize: 13,
-            fontWeight: FontWeight.w500,
           ),
           textAlign: TextAlign.center,
         ),
