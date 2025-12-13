@@ -88,7 +88,7 @@ class EduConnectApp extends StatelessWidget {
         '/edit_profil_anak': (context) => EditAnakPage(),
         '/edit_profil_orangtua': (context) => EditOrangTuaPage(),
         '/agenda': (context) => const AgendaPage(),
-        '/perizinan': (context) => const PerizinanPage(),
+        '/orangtua/perizinan': (context) => const PerizinanPage(),
 
       //--- ADMIN ---
         '/admin/dashboard': (context) => DashboardAdminPage(),

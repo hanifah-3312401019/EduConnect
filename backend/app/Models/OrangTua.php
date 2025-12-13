@@ -24,7 +24,11 @@ class OrangTua extends Authenticatable
         'Siswa_Id',
     ];
 
-    // Override password field
+    public function getRoleAttribute()
+    {
+        return 'orang_tua';
+    }
+    
     public function getAuthPassword()
     {
         return $this->Kata_Sandi;

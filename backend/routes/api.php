@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\PengumumanGuruController;
 use App\Http\Controllers\Api\PengumumanOrtuController;
 use App\Http\Controllers\Api\AgendaGuruController;
 use App\Http\Controllers\Api\AgendaOrtuController;
+use App\Http\Controllers\Api\PerizinanOrtuController;
+use App\Http\Controllers\Api\PerizinanGuruController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -18,7 +20,7 @@ Route::get('/user', function (Request $request) {
 
 // LOGIN
 Route::post('/login', [UniversalLoginController::class, 'login']);
-Route::post('/logout', [UniversalLoginController::class, 'logout']);
+Route::post('/logout', [UniversalLoginController::class, 'logout'])->middleware('auth:sanctum');
 
 // SEMUA ROUTE PROFIL
 Route::middleware('auth:sanctum')->group(function () {
@@ -30,35 +32,32 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/ekstrakulikuler', [EkskulController::class, 'index']);
 
 // ADMIN WEBSITE
-Route::get('/admin/profile', [AdminController::class, 'getProfile']);
-
-// ADMIN - Tambah Orang Tua
-Route::post('/admin/orangtua/create', [AdminController::class, 'createOrangTua']);
-
-// ADMIN - Ambil Semua Orang Tua
-Route::get('/admin/orangtua/list', [AdminController::class, 'getAllOrangTua']);
-
-// ADMIN - Edit dan Delete Orang Tua
-Route::get('/admin/orangtua/detail/{id}', [AdminController::class, 'getOrangTuaDetail']);
-Route::put('/admin/orangtua/update/{id}', [AdminController::class, 'updateOrangTua']);
-Route::delete('/admin/orangtua/delete/{id}', [AdminController::class, 'deleteOrangTua']);
-
-// GURU
-Route::post('/admin/guru/create', [AdminController::class, 'createGuru']);
-Route::get('/admin/guru/list', [AdminController::class, 'getAllGuru']);
-Route::get('/admin/guru/detail/{id}', [AdminController::class, 'getGuruDetail']);
-Route::put('/admin/guru/update/{id}', [AdminController::class, 'updateGuru']);
-Route::delete('/admin/guru/delete/{id}', [AdminController::class, 'deleteGuru']);
-Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/admin/profile', [AdminController::class, 'getProfile']);
+    
+    // ADMIN - Orang Tua
+    Route::post('/admin/orangtua/create', [AdminController::class, 'createOrangTua']);
+    Route::get('/admin/orangtua/list', [AdminController::class, 'getAllOrangTua']);
+    
+    // ADMIN - Guru
+    Route::post('/admin/guru/create', [AdminController::class, 'createGuru']);
+    Route::get('/admin/guru/list', [AdminController::class, 'getAllGuru']);
+    Route::get('/admin/guru/detail/{id}', [AdminController::class, 'getGuruDetail']);
+    Route::put('/admin/guru/update/{id}', [AdminController::class, 'updateGuru']);
+    Route::delete('/admin/guru/delete/{id}', [AdminController::class, 'deleteGuru']);
+    Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
+});
 
 // ROUTE PENGUMUMAN GURU
-Route::get('/guru/pengumuman', [PengumumanGuruController::class, 'index']);
-Route::post('/guru/pengumuman', [PengumumanGuruController::class, 'store']);
-Route::put('/guru/pengumuman/{id}', [PengumumanGuruController::class, 'update']);
-Route::delete('/guru/pengumuman/{id}', [PengumumanGuruController::class, 'destroy']);
-Route::get('/guru/pengumuman/dropdown-data', [PengumumanGuruController::class, 'getDropdownData']);
-Route::get('/guru/kelas-saya', [PengumumanGuruController::class, 'getKelasSaya'])->middleware('auth:sanctum');
-Route::get('/guru/siswa-kelas-saya', [PengumumanGuruController::class, 'getSiswaKelasSaya'])->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/guru/pengumuman', [PengumumanGuruController::class, 'index']);
+    Route::post('/guru/pengumuman', [PengumumanGuruController::class, 'store']);
+    Route::put('/guru/pengumuman/{id}', [PengumumanGuruController::class, 'update']);
+    Route::delete('/guru/pengumuman/{id}', [PengumumanGuruController::class, 'destroy']);
+    Route::get('/guru/pengumuman/dropdown-data', [PengumumanGuruController::class, 'getDropdownData']);
+    Route::get('/guru/kelas-saya', [PengumumanGuruController::class, 'getKelasSaya']);
+    Route::get('/guru/siswa-kelas-saya', [PengumumanGuruController::class, 'getSiswaKelasSaya']);
+});
 
 // ROUTE PENGUMUMAN ORTU
 Route::middleware('auth:sanctum')->group(function () {
@@ -66,7 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ROUTE AGENDA GURU
-Route::prefix('guru')->group(function () {
+Route::middleware('auth:sanctum')->prefix('guru')->group(function () {
     Route::get('/agenda', [AgendaGuruController::class, 'index']);
     Route::post('/agenda', [AgendaGuruController::class, 'store']);
     Route::put('/agenda/{id}', [AgendaGuruController::class, 'update']);
@@ -79,6 +78,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orangtua/agenda/{kategori?}', [AgendaOrtuController::class, 'index']);
 });
 
+// ROUTE PERIZINAN ORANG TUA & GURU
+Route::middleware('auth:sanctum')->group(function () {
+    // Orang Tua
+    Route::prefix('orangtua')->group(function () {
+        Route::get('/perizinan/anak', [PerizinanOrtuController::class, 'getAnak']);
+        Route::get('/perizinan', [PerizinanOrtuController::class, 'index']);
+        Route::post('/perizinan', [PerizinanOrtuController::class, 'store']);
+    });
+
+    // Guru
+    Route::prefix('guru')->group(function () {
+        Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
+    });
+});
+
+// Handle OPTIONS request untuk CORS
 Route::options('/{any}', function () {
     return response()->json([]);
 })->where('any', '.*');

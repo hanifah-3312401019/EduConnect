@@ -10,35 +10,40 @@ class Siswa extends Model
     use HasFactory;
 
     protected $table = 'siswa';
-
     protected $primaryKey = 'Siswa_Id'; 
 
     protected $fillable = [
         'Nama',
-        'OrangTua_Id',
-        'Agama',
+        'Jenis_Kelamin',
         'Tanggal_Lahir',
         'Alamat',
-        'Jenis_Kelamin',
-        'Ekstrakulikuler_Id',   
-        'Kelas_Id',
+        'Agama',
+        'Ekstrakulikuler_Id',
+        'OrangTua_Id',
+        'Id_Kelas',
     ];
 
-    // Relasi ke orang tua
+    protected $casts = [
+        'Tanggal_Lahir' => 'date',
+    ];
+
     public function orangTua()
     {
         return $this->belongsTo(OrangTua::class, 'OrangTua_Id', 'OrangTua_Id');
     }
 
-    // Relasi ke kelas
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class, 'Kelas_Id', 'Kelas_Id');
+        return $this->belongsTo(Kelas::class, 'Id_Kelas', 'Id_Kelas');
     }
 
-    // Relasi ke ekstrakulikuler
     public function ekstrakulikuler()
     {
         return $this->belongsTo(Ekstrakulikuler::class, 'Ekstrakulikuler_Id', 'Ekstrakulikuler_Id');
+    }
+
+    public function perizinan()
+    {
+        return $this->hasMany(Perizinan::class, 'Siswa_Id', 'Siswa_Id');
     }
 }
