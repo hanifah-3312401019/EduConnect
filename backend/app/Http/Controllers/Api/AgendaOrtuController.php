@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AgendaOrtuController extends Controller
 {
     public function index(Request $request, $kategori = 'semua')
     {
+        Log::info('=== AGENDA ORTU CONTROLLER ===', ['kategori' => $kategori]);
+
         $orangTua = Auth::user();
         
         if (!$orangTua) {
@@ -20,23 +23,31 @@ class AgendaOrtuController extends Controller
             ], 401);
         }
 
-        $anak = $orangTua->anak;
-        if (!$anak) {
+        // Gunakan relasi 'siswa()'
+        $siswa = $orangTua->siswa;
+        
+        if (!$siswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data anak tidak ditemukan'
+                'message' => 'Data siswa tidak ditemukan'
             ], 404);
         }
 
-        $agenda = $this->getAgendaForOrtu($anak, $kategori);
+        $agenda = $this->getAgendaForOrtu($siswa, $kategori);
 
         return response()->json([
             'success' => true,
-            'data' => $agenda
+            'data' => $agenda,
+            'debug' => [
+                'siswa_id' => $siswa->Siswa_Id,
+                'kelas_id' => $siswa->Kelas_Id,
+                'ekskul_id' => $siswa->Ekstrakulikuler_Id,
+                'total_agenda' => $agenda->count()
+            ]
         ]);
     }
 
-    private function getAgendaForOrtu($anak, $kategori)
+    private function getAgendaForOrtu($siswa, $kategori)
     {
         $query = Agenda::with(['guru', 'kelas', 'ekstrakulikuler'])
             ->orderBy('Tanggal', 'desc')
@@ -44,49 +55,39 @@ class AgendaOrtuController extends Controller
 
         switch ($kategori) {
             case 'sekolah':
-                // Agenda sekolah (umum) - semua kelas
                 $query->where('Tipe', 'sekolah');
                 break;
 
             case 'perkelas':
-                // Agenda perkelas anak
                 $query->where('Tipe', 'perkelas')
-                      ->where('Kelas_Id', $anak->Kelas_Id);
+                      ->where('Kelas_Id', $siswa->Kelas_Id);
                 break;
 
             case 'ekskul':
-                // Agenda ekskul anak
-                if ($anak->Ekstrakulikuler_Id) {
+                if ($siswa->Ekstrakulikuler_Id) {
                     $query->where('Tipe', 'ekskul')
-                          ->where('Ekstrakulikuler_Id', $anak->Ekstrakulikuler_Id);
+                          ->where('Ekstrakulikuler_Id', $siswa->Ekstrakulikuler_Id);
                 } else {
                     return collect();
                 }
                 break;
 
             default: // semua
-                // Gabungan semua agenda yang relevan
-                $query->where(function($q) use ($anak) {
-                    // Agenda sekolah (umum)
-                    $q->where('Tipe', 'sekolah');
-                })->orWhere(function($q) use ($anak) {
-                    // Agenda perkelas anak
-                    $q->where('Tipe', 'perkelas')
-                      ->where('Kelas_Id', $anak->Kelas_Id);
-                })->orWhere(function($q) use ($anak) {
-                    // Agenda ekskul anak
-                    if ($anak->Ekstrakulikuler_Id) {
-                        $q->where('Tipe', 'ekskul')
-                          ->where('Ekstrakulikuler_Id', $anak->Ekstrakulikuler_Id);
-                    }
+                $query->where(function($q) use ($siswa) {
+                    $q->where('Tipe', 'sekolah')
+                      ->orWhere(function($r) use ($siswa) {
+                          $r->where('Tipe', 'perkelas')
+                            ->where('Kelas_Id', $siswa->Kelas_Id);
+                      })
+                      ->orWhere(function($r) use ($siswa) {
+                          if ($siswa->Ekstrakulikuler_Id) {
+                              $r->where('Tipe', 'ekskul')
+                                ->where('Ekstrakulikuler_Id', $siswa->Ekstrakulikuler_Id);
+                          }
+                      });
                 });
         }
 
         return $query->get();
-    }
-
-    public static function getJenisAgenda($agenda)
-    {
-        return $agenda->Tipe; 
     }
 }

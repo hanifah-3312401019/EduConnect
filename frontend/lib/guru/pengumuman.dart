@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Model Pengumuman
 class PengumumanModel {
   final int pengumumanId;
   final String judul;
@@ -55,16 +54,13 @@ class PengumumanModel {
   }
 }
 
-// Service API Pengumuman
 class PengumumanApiService {
   static const String baseUrl = 'http://localhost:8000/api';
   
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
+    final token = prefs.getString('token');
     final guruId = prefs.getInt('Guru_Id');
-    
-    print('Token yang digunakan: $token');
     
     final headers = {
       'Content-Type': 'application/json',
@@ -85,15 +81,10 @@ class PengumumanApiService {
   static Future<List<PengumumanModel>> getPengumumanGuru() async {
     try {
       final headers = await _getHeaders();
-      print('Headers untuk GET: $headers');
-      
       final response = await http.get(
         Uri.parse('$baseUrl/guru/pengumuman'),
         headers: headers,
       );
-      
-      print('GET Pengumuman Status: ${response.statusCode}');
-      print('GET Pengumuman Response: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -102,14 +93,9 @@ class PengumumanApiService {
               .map((json) => PengumumanModel.fromJson(json))
               .toList();
         }
-      } else if (response.statusCode == 401) {
-        print('Error: Unauthorized - Token tidak valid');
-      } else if (response.statusCode == 500) {
-        print('Error: Server error');
       }
       return [];
     } catch (e) {
-      print('Error getPengumumanGuru: $e');
       return [];
     }
   }
@@ -117,20 +103,13 @@ class PengumumanApiService {
   static Future<Map<String, dynamic>> createPengumuman(Map<String, dynamic> data) async {
     try {
       final headers = await _getHeaders();
-      print('Data yang dikirim: $data');
-      
       final response = await http.post(
         Uri.parse('$baseUrl/guru/pengumuman'),
         headers: headers,
         body: json.encode(data),
       );
-      
-      print('CREATE Pengumuman Status: ${response.statusCode}');
-      print('CREATE Pengumuman Response: ${response.body}');
-      
       return json.decode(response.body);
     } catch (e) {
-      print('Error createPengumuman: $e');
       return {'success': false, 'message': 'Error: $e'};
     }
   }
@@ -138,23 +117,13 @@ class PengumumanApiService {
   static Future<Map<String, dynamic>> updatePengumuman(int id, Map<String, dynamic> data) async {
     try {
       final headers = await _getHeaders();
-      
-      print('=== UPDATE PENGUMUMAN ===');
-      print('ID: $id');
-      print('Data: $data');
-      
       final response = await http.put(
         Uri.parse('$baseUrl/guru/pengumuman/$id'),
         headers: headers,
         body: json.encode(data),
       );
-      
-      print('UPDATE Pengumuman Status: ${response.statusCode}');
-      print('UPDATE Pengumuman Response: ${response.body}');
-      
       return json.decode(response.body);
     } catch (e) {
-      print('Error updatePengumuman: $e');
       return {'success': false, 'message': 'Error: $e'};
     }
   }
@@ -166,13 +135,8 @@ class PengumumanApiService {
         Uri.parse('$baseUrl/guru/pengumuman/$id'),
         headers: headers,
       );
-      
-      print('DELETE Pengumuman Status: ${response.statusCode}');
-      print('DELETE Pengumuman Response: ${response.body}');
-      
       return json.decode(response.body);
     } catch (e) {
-      print('Error deletePengumuman: $e');
       return {'success': false, 'message': 'Error: $e'};
     }
   }
@@ -185,21 +149,16 @@ class PengumumanApiService {
         headers: headers,
       );
       
-      print('Dropdown Data Status: ${response.statusCode}');
-      print('Dropdown Data Response: ${response.body}');
-      
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
       return {'success': false, 'message': 'Failed to load dropdown data'};
     } catch (e) {
-      print('Error getDropdownData: $e');
       return {'success': false, 'message': 'Error: $e'};
     }
   }
 }
 
-// Main Pengumuman Page
 class PengumumanPage extends StatefulWidget {
   const PengumumanPage({Key? key}) : super(key: key);
 
@@ -284,14 +243,11 @@ class _MobilePengumumanWithNavState extends State<MobilePengumumanWithNav> {
   }
 }
 
-class MobilePengumumanContent extends StatefulWidget {
-  const MobilePengumumanContent({super.key});
-
-  @override
-  State<MobilePengumumanContent> createState() => _MobilePengumumanContentState();
+abstract class BasePengumumanContent extends StatefulWidget {
+  const BasePengumumanContent({super.key});
 }
 
-class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
+abstract class BasePengumumanContentState<T extends BasePengumumanContent> extends State<T> {
   List<PengumumanModel> _apiPengumumanList = [];
   bool _showForm = false;
   PengumumanModel? _editingPengumuman;
@@ -305,6 +261,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
   List<Map<String, dynamic>> _kelasOptions = [];
   List<Map<String, dynamic>> _siswaOptions = [];
   bool _isLoading = false;
+
+  bool get isMobile;
 
   @override
   void initState() {
@@ -334,7 +292,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     final response = await PengumumanApiService.getDropdownData();
     if (response['success'] == true) {
       setState(() {
-        // KELAS: Hanya akan ada 0 atau 1 kelas (kelas guru sendiri)
         final kelasList = response['data']['kelas'] as List;
         if (kelasList.isNotEmpty) {
           _kelasOptions = [{
@@ -342,7 +299,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
             'Nama_Kelas': kelasList[0]['Nama_Kelas']
           }];
           
-          // OTOMATIS SET KELAS JIKA ADA (untuk perkelas)
           if (_selectedTipe == "Perkelas" && _selectedKelas == null) {
             _selectedKelas = _kelasOptions[0];
           }
@@ -350,7 +306,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
           _kelasOptions = [];
         }
         
-        // SISWA: dari kelas guru
         _siswaOptions = (response['data']['siswa'] as List)
             .map((siswa) => {
                   'Siswa_Id': siswa['Siswa_Id'],
@@ -373,7 +328,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     _isiController.clear();
     _selectedTipe = "Umum";
     
-    // Reset kelas hanya jika bukan perkelas
     if (_selectedTipe != "Perkelas") {
       _selectedKelas = null;
     }
@@ -400,40 +354,24 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
         _selectedTipe = "Umum";
       }
       
-      print('=== DEBUG EDIT PENGUMUMAN ===');
-      print('Tipe dari DB: $tipeFromDb, Tipe di dropdown: $_selectedTipe');
-      print('Tanggal: $_selectedDate');
-      print('Kelas dari DB: ${pengumuman.kelas}');
-      print('Siswa dari DB: ${pengumuman.siswa}');
-      
-      // Reset pilihan
       _selectedKelas = null;
       _selectedSiswa = null;
-    
+      
       if (_selectedTipe == "Personal" && pengumuman.siswa != null) {
         try {
           _selectedSiswa = _siswaOptions.firstWhere(
             (siswa) => siswa['Siswa_Id'] == pengumuman.siswa!['Siswa_Id']
           );
-          print('Siswa ditemukan: $_selectedSiswa');
         } catch (e) {
-          print('Siswa tidak ditemukan di options: $e');
           _selectedSiswa = null;
         }
       } 
       
-      // PERUBAHAN PENTING: Untuk perkelas, otomatis pakai kelas guru (jika ada)
       if (_selectedTipe == "Perkelas") {
         if (_kelasOptions.isNotEmpty) {
-          // OTOMATIS pakai kelas pertama (kelas guru)
           _selectedKelas = _kelasOptions[0];
-          print('Kelas otomatis dipilih: $_selectedKelas');
-        } else {
-          print('ERROR: Guru tidak memiliki kelas untuk pengumuman perkelas');
         }
       }
-
-      print('Hasil akhir - Kelas: $_selectedKelas, Siswa: $_selectedSiswa');
     });
   }
 
@@ -475,17 +413,7 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
   }
 
   void _publishPengumuman() {
-    print('=== DEBUG SEBELUM VALIDASI ===');
-    print('Judul: "${_judulController.text}"');
-    print('Isi: "${_isiController.text}"');
-    print('Tipe: "$_selectedTipe"');
-    print('Tanggal: $_selectedDate');
-    print('Tanggal is null: ${_selectedDate == null}');
-    print('Kelas: $_selectedKelas');
-    print('Siswa: $_selectedSiswa');
-    
     if (_selectedDate == null) {
-      print('WARNING: Tanggal null, menggunakan tanggal sekarang');
       _selectedDate = DateTime.now();
     }
     
@@ -503,7 +431,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       return;
     }
     
-    // PERUBAHAN: Untuk perkelas, validasi apakah guru punya kelas
     if (_selectedTipe == "Perkelas") {
       if (_kelasOptions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -511,7 +438,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
         );
         return;
       }
-      // OTOMATIS pakai kelas guru
       if (_selectedKelas == null) {
         _selectedKelas = _kelasOptions[0];
       }
@@ -526,7 +452,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       'Tanggal': _selectedDate!.toIso8601String().split('.').first,
     };
 
-    // PERUBAHAN: Untuk perkelas, otomatis kirim Kelas_Id dari kelas guru
     if (_selectedTipe == 'Perkelas' && _selectedKelas != null) {
       pengumumanData['Kelas_Id'] = _selectedKelas!['Kelas_Id'];
     }
@@ -535,7 +460,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       pengumumanData['Siswa_Id'] = _selectedSiswa!['Siswa_Id'];
     }
 
-    print('Data final yang dikirim: $pengumumanData');
     _publishPengumumanToApi(pengumumanData);
   }
 
@@ -548,8 +472,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
           : await PengumumanApiService.createPengumuman(data);
 
       setState(() => _isLoading = false);
-
-      print('Response dari API: $response');
 
       if (response['success'] == true) {
         _loadPengumumanFromApi();
@@ -600,6 +522,15 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
 
   String _getMonthName(int month) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][month];
 
+  Widget buildHeaderWithAddButton();
+  Widget buildPengumumanList();
+  Widget buildPengumumanForm();
+  Widget buildFormField({required TextEditingController controller, required String label, required String hint, int maxLines = 1});
+  Widget buildTipeDropdown();
+  Widget buildKelasInfo();
+  Widget buildSiswaDropdown();
+  Widget buildDateField();
+
   @override
   Widget build(BuildContext context) {
     if (!_tipeOptions.contains(_selectedTipe)) {
@@ -614,11 +545,11 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       children: [
         SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(children: [
-            if (!_showForm) _buildHeaderWithAddButton(),
-            if (!_showForm) _buildPengumumanList() else _buildPengumumanForm(),
-            const SizedBox(height: 20),
+          padding: isMobile ? const EdgeInsets.all(16) : const EdgeInsets.all(32),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (!isMobile || !_showForm) buildHeaderWithAddButton(),
+            if (!_showForm) buildPengumumanList() else buildPengumumanForm(),
+            SizedBox(height: isMobile ? 20 : 40),
           ]),
         ),
         if (_isLoading)
@@ -631,8 +562,24 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       ],
     );
   }
+}
 
-  Widget _buildHeaderWithAddButton() => Padding(
+class MobilePengumumanContent extends BasePengumumanContent {
+  const MobilePengumumanContent({super.key});
+
+  @override
+  bool get isMobile => true;
+
+  @override
+  State<MobilePengumumanContent> createState() => _MobilePengumumanContentState();
+}
+
+class _MobilePengumumanContentState extends BasePengumumanContentState<MobilePengumumanContent> {
+  @override
+  bool get isMobile => true;
+
+  @override
+  Widget buildHeaderWithAddButton() => Padding(
     padding: const EdgeInsets.only(bottom: 16),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Pengumuman Sekolah', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
@@ -650,7 +597,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     ]),
   );
 
-  Widget _buildPengumumanList() => _isLoading 
+  @override
+  Widget buildPengumumanList() => _isLoading 
     ? const Center(child: CircularProgressIndicator(color: Color(0xFF465940)))
     : _apiPengumumanList.isEmpty 
       ? const Center(
@@ -726,7 +674,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     ),
   );
 
-  Widget _buildPengumumanForm() => Card(
+  @override
+  Widget buildPengumumanForm() => Card(
     elevation: 2,
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -734,21 +683,21 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
         Text(_editingPengumuman == null ? 'Buat Pengumuman Baru' : 'Edit Pengumuman', 
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
         const SizedBox(height: 20),
-        _buildFormField(controller: _judulController, label: 'Judul Pengumuman', hint: 'Masukkan judul pengumuman'),
+        buildFormField(controller: _judulController, label: 'Judul Pengumuman', hint: 'Masukkan judul pengumuman'),
         const SizedBox(height: 16),
-        _buildFormField(controller: _isiController, label: 'Isi Pengumuman', hint: 'Masukkan isi pengumuman', maxLines: 4),
+        buildFormField(controller: _isiController, label: 'Isi Pengumuman', hint: 'Masukkan isi pengumuman', maxLines: 4),
         const SizedBox(height: 16),
-        _buildTipeDropdown(),
+        buildTipeDropdown(),
         if (_selectedTipe == "Perkelas") ...[
           const SizedBox(height: 16),
-          _buildKelasInfo(),
+          buildKelasInfo(),
         ],
         if (_selectedTipe == "Personal") ...[
           const SizedBox(height: 16),
-          _buildSiswaDropdown(),
+          buildSiswaDropdown(),
         ],
         const SizedBox(height: 16),
-        _buildDateField(),
+        buildDateField(),
         const SizedBox(height: 20),
         Row(children: [
           Expanded(child: ElevatedButton(
@@ -772,7 +721,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     ),
   );
 
-  Widget _buildFormField({required TextEditingController controller, required String label, required String hint, int maxLines = 1}) => Column(
+  @override
+  Widget buildFormField({required TextEditingController controller, required String label, required String hint, int maxLines = 1}) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
@@ -790,7 +740,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     ],
   );
 
-  Widget _buildTipeDropdown() {
+  @override
+  Widget buildTipeDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -820,7 +771,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
                     _selectedSiswa = null;
                   }
                   
-                  // PERUBAHAN PENTING: Untuk perkelas, otomatis set kelas guru (jika ada)
                   if (_selectedTipe == "Perkelas") {
                     if (_kelasOptions.isNotEmpty) {
                       _selectedKelas = _kelasOptions[0];
@@ -844,8 +794,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     );
   }
 
-  Widget _buildKelasInfo() {
-    // Jika guru tidak punya kelas
+  @override
+  Widget buildKelasInfo() {
     if (_kelasOptions.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -869,7 +819,6 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
       );
     }
     
-    // Jika guru punya kelas, tampilkan info (bukan dropdown)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -914,7 +863,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     );
   }
 
-  Widget _buildSiswaDropdown() => Column(
+  @override
+  Widget buildSiswaDropdown() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       const Text('Pilih Siswa', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
@@ -943,7 +893,8 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
     ],
   );
 
-  Widget _buildDateField() {
+  @override
+  Widget buildDateField() {
     final displayDate = _selectedDate ?? DateTime.now();
     
     return Column(
@@ -975,324 +926,22 @@ class _MobilePengumumanContentState extends State<MobilePengumumanContent> {
   }
 }
 
-// Web Content
-class WebPengumumanContent extends StatefulWidget {
+class WebPengumumanContent extends BasePengumumanContent {
   const WebPengumumanContent({super.key});
+
+  @override
+  bool get isMobile => false;
 
   @override
   State<WebPengumumanContent> createState() => _WebPengumumanContentState();
 }
 
-class _WebPengumumanContentState extends State<WebPengumumanContent> {
-  List<PengumumanModel> _apiPengumumanList = [];
-  bool _showForm = false;
-  PengumumanModel? _editingPengumuman;
-  final _judulController = TextEditingController();
-  final _isiController = TextEditingController();
-  String _selectedTipe = "Umum";
-  Map<String, dynamic>? _selectedKelas;
-  Map<String, dynamic>? _selectedSiswa;
-  DateTime? _selectedDate;
-  final List<String> _tipeOptions = ["Umum", "Perkelas", "Personal"];
-  List<Map<String, dynamic>> _kelasOptions = [];
-  List<Map<String, dynamic>> _siswaOptions = [];
-  bool _isLoading = false;
+class _WebPengumumanContentState extends BasePengumumanContentState<WebPengumumanContent> {
+  @override
+  bool get isMobile => false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadPengumumanFromApi();
-    _loadDropdownDataFromApi();
-    _selectedDate = DateTime.now();
-  }
-
-  @override
-  void dispose() {
-    _judulController.dispose();
-    _isiController.dispose();
-    super.dispose();
-  }
-
-  void _loadPengumumanFromApi() async {
-    setState(() => _isLoading = true);
-    final pengumuman = await PengumumanApiService.getPengumumanGuru();
-    setState(() {
-      _apiPengumumanList = pengumuman;
-      _isLoading = false;
-    });
-  }
-
-  void _loadDropdownDataFromApi() async {
-    final response = await PengumumanApiService.getDropdownData();
-    if (response['success'] == true) {
-      setState(() {
-        final kelasList = response['data']['kelas'] as List;
-        if (kelasList.isNotEmpty) {
-          _kelasOptions = [{
-            'Kelas_Id': kelasList[0]['Kelas_Id'],
-            'Nama_Kelas': kelasList[0]['Nama_Kelas']
-          }];
-          
-          if (_selectedTipe == "Perkelas" && _selectedKelas == null) {
-            _selectedKelas = _kelasOptions[0];
-          }
-        } else {
-          _kelasOptions = [];
-        }
-        
-        _siswaOptions = (response['data']['siswa'] as List)
-            .map((siswa) => {
-                  'Siswa_Id': siswa['Siswa_Id'],
-                  'Nama': siswa['Nama']
-                })
-            .toList();
-      });
-    }
-  }
-
-  void _toggleForm() {
-    setState(() {
-      _showForm = !_showForm;
-      if (!_showForm) _resetForm();
-    });
-  }
-
-  void _resetForm() {
-    _judulController.clear();
-    _isiController.clear();
-    _selectedTipe = "Umum";
-    
-    if (_selectedTipe != "Perkelas") {
-      _selectedKelas = null;
-    }
-    
-    _selectedSiswa = null;
-    _selectedDate = DateTime.now();
-    _editingPengumuman = null;
-  }
-
-  void _editPengumuman(PengumumanModel pengumuman) {
-    setState(() {
-      _editingPengumuman = pengumuman;
-      _judulController.text = pengumuman.judul;
-      _isiController.text = pengumuman.isi;
-      _selectedDate = pengumuman.tanggal;
-      _showForm = true;
-
-      final tipeFromDb = pengumuman.tipe;
-      if (tipeFromDb.toLowerCase() == 'personal') {
-        _selectedTipe = "Personal";
-      } else if (tipeFromDb.toLowerCase() == 'perkelas') {
-        _selectedTipe = "Perkelas"; 
-      } else {
-        _selectedTipe = "Umum";
-      }
-      
-      _selectedKelas = null;
-      _selectedSiswa = null;
-      
-      if (_selectedTipe == "Personal" && pengumuman.siswa != null) {
-        try {
-          _selectedSiswa = _siswaOptions.firstWhere(
-            (siswa) => siswa['Siswa_Id'] == pengumuman.siswa!['Siswa_Id']
-          );
-        } catch (e) {
-          _selectedSiswa = null;
-        }
-      } 
-      
-      if (_selectedTipe == "Perkelas") {
-        if (_kelasOptions.isNotEmpty) {
-          _selectedKelas = _kelasOptions[0];
-        }
-      }
-    });
-  }
-
-  void _deletePengumuman(int id) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Pengumuman'),
-        content: const Text('Apakah Anda yakin ingin menghapus pengumuman ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context), 
-            child: const Text('Batal')
-          ),
-          TextButton(
-            onPressed: () {
-              _deletePengumumanFromApi(id);
-              Navigator.pop(context);
-            },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _deletePengumumanFromApi(int id) async {
-    final response = await PengumumanApiService.deletePengumuman(id);
-    if (response['success'] == true) {
-      _loadPengumumanFromApi();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? 'Pengumuman berhasil dihapus')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal: ${response['message']}')),
-      );
-    }
-  }
-
-  void _publishPengumuman() {
-    if (_selectedDate == null) {
-      _selectedDate = DateTime.now();
-    }
-    
-    if (_judulController.text.isEmpty || _isiController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Judul dan isi harus diisi'))
-      );
-      return;
-    }
-    
-    if (_selectedTipe == "Personal" && _selectedSiswa == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pilih siswa untuk pengumuman personal'))
-      );
-      return;
-    }
-    
-    if (_selectedTipe == "Perkelas") {
-      if (_kelasOptions.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Guru belum memiliki kelas untuk membuat pengumuman perkelas'))
-        );
-        return;
-      }
-      if (_selectedKelas == null) {
-        _selectedKelas = _kelasOptions[0];
-      }
-    }
-    
-    final tipeForApi = _selectedTipe.toLowerCase();
-
-    final Map<String, dynamic> pengumumanData = {
-      'Judul': _judulController.text,
-      'Isi': _isiController.text,
-      'Tipe': tipeForApi, 
-      'Tanggal': _selectedDate!.toIso8601String().split('.').first,
-    };
-
-    if (_selectedTipe == 'Perkelas' && _selectedKelas != null) {
-      pengumumanData['Kelas_Id'] = _selectedKelas!['Kelas_Id'];
-    }
-
-    if (_selectedTipe == 'Personal' && _selectedSiswa != null) {
-      pengumumanData['Siswa_Id'] = _selectedSiswa!['Siswa_Id'];
-    }
-
-    print('Data final yang dikirim: $pengumumanData');
-    _publishPengumumanToApi(pengumumanData);
-  }
-
-  void _publishPengumumanToApi(Map<String, dynamic> data) async {
-    setState(() => _isLoading = true);
-    
-    try {
-      final response = _editingPengumuman != null 
-          ? await PengumumanApiService.updatePengumuman(_editingPengumuman!.pengumumanId, data)
-          : await PengumumanApiService.createPengumuman(data);
-
-      setState(() => _isLoading = false);
-
-      print('Response dari API: $response');
-
-      if (response['success'] == true) {
-        _loadPengumumanFromApi();
-        setState(() {
-          _showForm = false;
-          _resetForm();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['message'] ?? 'Pengumuman berhasil dipublikasikan')),
-        );
-      } else {
-        final errorMessage = response['message'] ?? 'Terjadi kesalahan';
-        final errors = response['errors'] ?? {};
-        
-        String detailedError = errorMessage;
-        if (errors.isNotEmpty) {
-          detailedError += '\nDetail: $errors';
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal: $detailedError'),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context, 
-      initialDate: _selectedDate ?? DateTime.now(), 
-      firstDate: DateTime(2000), 
-      lastDate: DateTime(2100)
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-    }
-  }
-
-  String _formatDate(DateTime date) => '${date.day.toString().padLeft(2, '0')} ${_getMonthName(date.month)} ${date.year}';
-
-  String _getMonthName(int month) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][month];
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_tipeOptions.contains(_selectedTipe)) {
-      final matchedTipe = _tipeOptions.firstWhere(
-        (option) => option.toLowerCase() == _selectedTipe.toLowerCase(),
-        orElse: () => _tipeOptions.first
-      );
-      _selectedTipe = matchedTipe;
-    }
-    
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(32),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _buildHeaderWithAddButton(),
-            const SizedBox(height: 24),
-            if (!_showForm) _buildPengumumanList() else _buildPengumumanForm(),
-            const SizedBox(height: 40),
-          ]),
-        ),
-        if (_isLoading)
-          Container(
-            color: Colors.black54,
-            child: const Center(
-              child: CircularProgressIndicator(color: Color(0xFF465940)),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildHeaderWithAddButton() => Row(
+  Widget buildHeaderWithAddButton() => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
       const Text('Pengumuman Sekolah', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
@@ -1309,7 +958,8 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     ],
   );
 
-  Widget _buildPengumumanList() => _isLoading 
+  @override
+  Widget buildPengumumanList() => _isLoading 
     ? const Center(child: CircularProgressIndicator(color: Color(0xFF465940)))
     : _apiPengumumanList.isEmpty 
       ? const Center(
@@ -1386,7 +1036,8 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     ),
   );
 
-  Widget _buildPengumumanForm() => Card(
+  @override
+  Widget buildPengumumanForm() => Card(
     elevation: 4,
     child: Padding(
       padding: const EdgeInsets.all(32),
@@ -1394,21 +1045,21 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
         Text(_editingPengumuman == null ? 'Buat Pengumuman Baru' : 'Edit Pengumuman', 
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2F3B1F))),
         const SizedBox(height: 24),
-        _buildFormField(controller: _judulController, label: 'Judul Pengumuman', hint: 'Masukkan judul pengumuman'),
+        buildFormField(controller: _judulController, label: 'Judul Pengumuman', hint: 'Masukkan judul pengumuman'),
         const SizedBox(height: 20),
-        _buildFormField(controller: _isiController, label: 'Isi Pengumuman', hint: 'Masukkan isi pengumuman', maxLines: 5),
+        buildFormField(controller: _isiController, label: 'Isi Pengumuman', hint: 'Masukkan isi pengumuman', maxLines: 5),
         const SizedBox(height: 20),
-        _buildTipeDropdown(),
+        buildTipeDropdown(),
         if (_selectedTipe == "Perkelas") ...[
           const SizedBox(height: 20),
-          _buildKelasInfo(),
+          buildKelasInfo(),
         ],
         if (_selectedTipe == "Personal") ...[
           const SizedBox(height: 20),
-          _buildSiswaDropdown(),
+          buildSiswaDropdown(),
         ],
         const SizedBox(height: 20),
-        _buildDateField(),
+        buildDateField(),
         const SizedBox(height: 24),
         Row(children: [
           ElevatedButton(
@@ -1437,7 +1088,8 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     ),
   );
 
-  Widget _buildFormField({required TextEditingController controller, required String label, required String hint, int maxLines = 1}) => Column(
+  @override
+  Widget buildFormField({required TextEditingController controller, required String label, required String hint, int maxLines = 1}) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
@@ -1455,7 +1107,8 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     ],
   );
 
-  Widget _buildTipeDropdown() {
+  @override
+  Widget buildTipeDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1508,7 +1161,8 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     );
   }
 
-  Widget _buildKelasInfo() {
+  @override
+  Widget buildKelasInfo() {
     if (_kelasOptions.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1577,7 +1231,8 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     );
   }
 
-  Widget _buildSiswaDropdown() => Column(
+  @override
+  Widget buildSiswaDropdown() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       const Text('Pilih Siswa', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF2F3B1F))),
@@ -1606,7 +1261,8 @@ class _WebPengumumanContentState extends State<WebPengumumanContent> {
     ],
   );
 
-  Widget _buildDateField() {
+  @override
+  Widget buildDateField() {
     final displayDate = _selectedDate ?? DateTime.now();
     
     return Column(

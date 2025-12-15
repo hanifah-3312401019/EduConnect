@@ -71,7 +71,7 @@ class AgendaApiService {
   
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
+    final token = prefs.getString('token');
     final guruId = prefs.getInt('Guru_Id');
     
     final headers = {

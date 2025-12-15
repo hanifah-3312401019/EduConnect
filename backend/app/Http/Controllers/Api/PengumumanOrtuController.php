@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pengumuman;
+use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PengumumanOrtuController extends Controller
 {
-    public function index(Request $request)
+    public function showByKategori(Request $request, $kategori = 'semua')
     {
+        Log::info('=== PENGUMUMAN ORTU CONTROLLER ===', ['kategori' => $kategori]);
+
         $orangTua = Auth::user();
         
         if (!$orangTua) {
@@ -20,90 +24,69 @@ class PengumumanOrtuController extends Controller
             ], 401);
         }
 
-        $pengumuman = $this->getPengumumanForOrtu($orangTua);
+        $siswa = $orangTua->siswa;
+        
+        Log::info('Siswa dari relasi:', [
+            'siswa_id' => $siswa ? $siswa->Siswa_Id : null,
+            'nama' => $siswa ? $siswa->Nama : null
+        ]);
+
+        if (!$siswa) {
+            Log::warning('Siswa tidak ditemukan untuk orangtua ID: ' . $orangTua->OrangTua_Id);
+            return response()->json([
+                'success' => false,
+                'message' => 'Data siswa tidak ditemukan'
+            ], 404);
+        }
+
+        $pengumuman = $this->getPengumumanForOrtu($siswa, $kategori);
 
         return response()->json([
             'success' => true,
-            'data' => $pengumuman
+            'data' => $pengumuman,
+            'debug' => [
+                'siswa_id' => $siswa->Siswa_Id,
+                'kelas_id' => $siswa->Kelas_Id,
+                'total' => $pengumuman->count()
+            ]
         ]);
     }
 
-    public function showByKategori(Request $request, $kategori = 'semua')
-{
-    $orangTua = Auth::user();
-    if (!$orangTua) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unauthorized'
-        ], 401);
-    }
-
-    $pengumuman = $this->getPengumumanForOrtuByKategori($orangTua, $kategori);
-
-    return response()->json([
-        'success' => true,
-        'data' => $pengumuman
-    ]);
-}
-
-    private function getPengumumanForOrtu($orangTua)
+    private function getPengumumanForOrtu($siswa, $kategori)
     {
-        $anak = $orangTua->anak;
-        if (!$anak) return [];
-
-        return Pengumuman::with('guru')
-            ->where(function($query) use ($anak) {
-                $query->where('Tipe', 'umum')
-                      ->orWhere(function($q) use ($anak) {
-                          $q->where('Tipe', 'perkelas')
-                            ->where('Kelas_Id', $anak->Kelas_Id);
-                      })
-                      ->orWhere(function($q) use ($anak) {
-                          $q->where('Tipe', 'personal')
-                            ->where('Siswa_Id', $anak->Siswa_Id);
-                      });
-            })
-            ->orderBy('Tanggal', 'desc')
-            ->get();
-    }
-
-    private function getPengumumanForOrtuByKategori($orangTua, $kategori)
-    {
-        $anak = $orangTua->anak;
-        if (!$anak) return [];
-
-        $query = Pengumuman::with('guru');
+        $query = Pengumuman::with(['guru', 'kelas', 'siswa']);
 
         switch ($kategori) {
             case 'umum':
                 $query->where('Tipe', 'umum');
                 break;
 
-            case 'kelas':
-            case 'perkelas':  // FIX
+            case 'perkelas':
                 $query->where('Tipe', 'perkelas')
-                      ->where('Kelas_Id', $anak->Kelas_Id);
+                      ->where('Kelas_Id', $siswa->Kelas_Id);
                 break;
 
             case 'personal':
                 $query->where('Tipe', 'personal')
-                      ->where('Siswa_Id', $anak->Siswa_Id);
+                      ->where('Siswa_Id', $siswa->Siswa_Id);
                 break;
 
-            default:
-                $query->where(function($q) use ($anak) {
+            default: // semua
+                $query->where(function($q) use ($siswa) {
                     $q->where('Tipe', 'umum')
-                      ->orWhere(function($r) use ($anak) {
+                      ->orWhere(function($r) use ($siswa) {
                           $r->where('Tipe', 'perkelas')
-                            ->where('Kelas_Id', $anak->Kelas_Id);
+                            ->where('Kelas_Id', $siswa->Kelas_Id);
                       })
-                      ->orWhere(function($r) use ($anak) {
+                      ->orWhere(function($r) use ($siswa) {
                           $r->where('Tipe', 'personal')
-                            ->where('Siswa_Id', $anak->Siswa_Id);
+                            ->where('Siswa_Id', $siswa->Siswa_Id);
                       });
                 });
         }
 
-        return $query->orderBy('Tanggal', 'desc')->get();
+        return $query->orderBy('Tanggal', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->get();
     }
 }

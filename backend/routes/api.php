@@ -38,15 +38,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // ADMIN - Orang Tua
     Route::post('/admin/orangtua/create', [AdminController::class, 'createOrangTua']);
     Route::get('/admin/orangtua/list', [AdminController::class, 'getAllOrangTua']);
-    
-    // ADMIN - Guru
-    Route::post('/admin/guru/create', [AdminController::class, 'createGuru']);
-    Route::get('/admin/guru/list', [AdminController::class, 'getAllGuru']);
-    Route::get('/admin/guru/detail/{id}', [AdminController::class, 'getGuruDetail']);
-    Route::put('/admin/guru/update/{id}', [AdminController::class, 'updateGuru']);
-    Route::delete('/admin/guru/delete/{id}', [AdminController::class, 'deleteGuru']);
-    Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
 });
+
+// ADMIN - Guru
+Route::post('/admin/guru/create', [AdminController::class, 'createGuru']);
+Route::get('/admin/guru/list', [AdminController::class, 'getAllGuru']);
+Route::get('/admin/guru/detail/{id}', [AdminController::class, 'getGuruDetail']);
+Route::put('/admin/guru/update/{id}', [AdminController::class, 'updateGuru']);
+Route::delete('/admin/guru/delete/{id}', [AdminController::class, 'deleteGuru']);
+Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
 
 // ROUTE PENGUMUMAN GURU
 Route::middleware('auth:sanctum')->group(function () {

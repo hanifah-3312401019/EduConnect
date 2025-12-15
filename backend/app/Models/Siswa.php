@@ -20,7 +20,7 @@ class Siswa extends Model
         'Agama',
         'Ekstrakulikuler_Id',
         'OrangTua_Id',
-        'Id_Kelas',
+        'Kelas_Id',
     ];
 
     protected $casts = [
@@ -34,7 +34,7 @@ class Siswa extends Model
 
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class, 'Id_Kelas', 'Id_Kelas');
+        return $this->belongsTo(Kelas::class, 'Kelas_Id', 'Kelas_Id');
     }
 
     public function ekstrakulikuler()
