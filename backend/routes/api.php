@@ -39,6 +39,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // ADMIN - Orang Tua
     Route::post('/admin/orangtua/create', [AdminController::class, 'createOrangTua']);
     Route::get('/admin/orangtua/list', [AdminController::class, 'getAllOrangTua']);
+    Route::put('/admin/orangtua/update/{id}', [AdminController::class, 'updateOrangTua']);
+    Route::delete('/admin/orangtua/delete/{id}', [AdminController::class, 'deleteOrangTua']);
 });
 
 // ADMIN - Guru

@@ -9,9 +9,13 @@ import 'package:frontend/widgets/sidebarAdmin.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/env/api_base_url.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
 
 // DATA LOKAL SEMENTARA
 List<Map<String, String>> dataOrangTua = [];
+
+int min(int a, int b) => a < b ? a : b;
 
 List<String> kelasList = [
   "Semua",
@@ -42,45 +46,66 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   bool _sortAscending = true;
 
   // =========================================================
+  // FUNGSI UNTUK MENGAMBIL TOKEN
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
+
+  // =========================================================
   // FUNGSI POST API → TAMBAH ORANG TUA
   Future<bool> tambahOrangTua(Map<String, dynamic> data) async {
-    try {
-      final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/create");
-
-      final res = await http.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: jsonEncode(data),
-      );
-
-      print("STATUS: ${res.statusCode}");
-      print("BODY: ${res.body}");
-
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final resBody = jsonDecode(res.body);
-        return resBody["success"] == true;
-      }
-
-      return false;
-    } catch (e) {
-      print("Error tambah orang tua: $e");
+  try {
+    final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/create");
+    final token = await _getToken(); // <-- AMBIL TOKEN
+    
+    if (token == null) {
+      print("ERROR: Token tidak ditemukan");
       return false;
     }
+
+    final res = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer $token", // <-- TAMBAHKAN INI
+      },
+      body: jsonEncode(data),
+    );
+
+    print("STATUS: ${res.statusCode}");
+    print("BODY: ${res.body}");
+
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      final resBody = jsonDecode(res.body);
+      return resBody["success"] == true;
+    }
+
+    return false;
+  } catch (e) {
+    print("Error tambah orang tua: $e");
+    return false;
   }
+}
 
   // =========================================================
   // FUNGSI UPDATE API → UBAH DATA ORANG TUA
   Future<bool> updateOrangTua(String id, Map<String, dynamic> data) async {
   final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/update/$id");
+  final token = await _getToken(); // <-- TAMBAHKAN INI
+  
+  if (token == null) {
+    print("ERROR: Token tidak ditemukan untuk update");
+    return false;
+  }
 
   final res = await http.put(
     url,
     headers: {
       "Content-Type": "application/json",
       "Accept": "application/json",
+      "Authorization": "Bearer $token", // <-- TAMBAHKAN INI
     },
     body: jsonEncode(data),
   );
@@ -95,12 +120,20 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   // FUNGSI DELETE API → HAPUS DATA ORANG TUA
   Future<bool> deleteOrangTua(String id) async {
   final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/delete/$id");
+  final token = await _getToken(); // <-- TAMBAHKAN INI
+  
+  if (token == null) {
+    print("ERROR: Token tidak ditemukan untuk delete");
+    return false;
+  }
 
   final res = await http.delete(url, headers: {
     "Accept": "application/json",
+    "Authorization": "Bearer $token", // <-- TAMBAHKAN INI
   });
 
   print("DELETE STATUS: ${res.statusCode}");
+  print("DELETE RESPONSE: ${res.body}");
 
   return res.statusCode == 200;
 }
@@ -108,17 +141,33 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   // =========================================================
   // FUNGSI GET API → AMBIL DATA ORANG TUA
   Future<void> loadDataOrangTua() async {
-    try {
-      final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/list");
+  try {
+    final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/list");
+    
+    // AMBIL TOKEN
+    final token = await _getToken();
+    
+    if (token == null || token.isEmpty) {
+      print("ERROR: Token tidak ditemukan. Pastikan sudah login sebagai admin.");
+      return;
+    }
 
-      final res = await http.get(url, headers: {
+    print("Token yang digunakan: ${token.substring(0, min(20, token.length))}...");
+
+    final res = await http.get(
+      url,
+      headers: {
         "Accept": "application/json",
-      });
+        "Authorization": "Bearer $token", // <-- INI YANG PENTING
+      },
+    );
 
-      print("GET STATUS: ${res.statusCode}");
+    print("GET STATUS: ${res.statusCode}");
+    print("RESPONSE BODY: ${res.body}");
 
-      if (res.statusCode == 200) {
-        final body = jsonDecode(res.body);
+    if (res.statusCode == 200) {
+      final body = jsonDecode(res.body);
+      if (body['success'] == true) {
         final list = body["data"] as List;
 
         setState(() {
@@ -134,13 +183,18 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
             };
           }).toList();
         });
+        print("Data berhasil dimuat: ${dataOrangTua.length} records");
       } else {
-        print("Gagal memuat data. Status: ${res.statusCode}");
+        print("API mengembalikan success: false - ${body['message']}");
       }
-    } catch (e) {
-      print("ERROR FETCH DATA ORANG TUA: $e");
+    } else {
+      print("Gagal memuat data. Status: ${res.statusCode}");
+      print("Response: ${res.body}");
     }
+  } catch (e) {
+    print("ERROR FETCH DATA ORANG TUA: $e");
   }
+}
 
   @override
   void initState() {
