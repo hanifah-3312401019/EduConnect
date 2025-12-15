@@ -69,7 +69,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "Authorization": "Bearer $token", // <-- TAMBAHKAN INI
+        "Authorization": "Bearer $token", 
       },
       body: jsonEncode(data),
     );
@@ -93,7 +93,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   // FUNGSI UPDATE API → UBAH DATA ORANG TUA
   Future<bool> updateOrangTua(String id, Map<String, dynamic> data) async {
   final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/update/$id");
-  final token = await _getToken(); // <-- TAMBAHKAN INI
+  final token = await _getToken();
   
   if (token == null) {
     print("ERROR: Token tidak ditemukan untuk update");
@@ -105,7 +105,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
     headers: {
       "Content-Type": "application/json",
       "Accept": "application/json",
-      "Authorization": "Bearer $token", // <-- TAMBAHKAN INI
+      "Authorization": "Bearer $token",
     },
     body: jsonEncode(data),
   );
@@ -120,7 +120,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   // FUNGSI DELETE API → HAPUS DATA ORANG TUA
   Future<bool> deleteOrangTua(String id) async {
   final url = Uri.parse("${ApiConfig.baseUrl}/api/admin/orangtua/delete/$id");
-  final token = await _getToken(); // <-- TAMBAHKAN INI
+  final token = await _getToken();
   
   if (token == null) {
     print("ERROR: Token tidak ditemukan untuk delete");
@@ -129,7 +129,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
 
   final res = await http.delete(url, headers: {
     "Accept": "application/json",
-    "Authorization": "Bearer $token", // <-- TAMBAHKAN INI
+    "Authorization": "Bearer $token",
   });
 
   print("DELETE STATUS: ${res.statusCode}");
@@ -158,7 +158,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
       url,
       headers: {
         "Accept": "application/json",
-        "Authorization": "Bearer $token", // <-- INI YANG PENTING
+        "Authorization": "Bearer $token",
       },
     );
 
@@ -523,6 +523,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
 Widget _buildModernTable() {
   return Card(
     elevation: 4,
+     color: Colors.white,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
     ),
@@ -530,7 +531,7 @@ Widget _buildModernTable() {
       height: MediaQuery.of(context).size.height * 0.6, // Atur tinggi tetap
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView( // ← TAMBAHKAN INI UNTUK SCROLL VERTICAL
+        child: SingleChildScrollView( 
           scrollDirection: Axis.vertical,
           child: Container(
             constraints: BoxConstraints(
@@ -538,7 +539,7 @@ Widget _buildModernTable() {
             ),
             child: Theme(
               data: Theme.of(context).copyWith(
-                dividerColor: Colors.transparent,
+                dividerColor: Colors.grey[300],
               ),
               child: DataTable(
                 dividerThickness: 0,
@@ -548,9 +549,9 @@ Widget _buildModernTable() {
                 dataRowColor: WidgetStateProperty.resolveWith<Color?>(
                   (Set<WidgetState> states) {
                     if (states.contains(WidgetState.selected)) {
-                      return Colors.grey[100];
+                      return Color(0xFF465940);
                     }
-                    return Colors.transparent;
+                    return Colors.white;
                   },
                 ),
                 headingTextStyle: const TextStyle(
@@ -805,6 +806,7 @@ Widget _buildModernTable() {
   Widget _buildStatsHeader() {
     return Card(
       elevation: 2,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -878,7 +880,7 @@ Widget _buildModernTable() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFFDFBF0),
       body: Row(
         children: [
           SidebarAdmin(onMenuSelected: handleMenu),

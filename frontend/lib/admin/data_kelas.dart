@@ -357,63 +357,83 @@ class _DataKelasPageState extends State<DataKelasPage> {
             )
           ],
         ),
+        constraints: BoxConstraints(
+          minHeight: 220,
+          maxHeight: 280,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Row(
-                children: [
-                  const Icon(Icons.person_pin, color: Color(0xFF465940), size: 18),
-                  const SizedBox(width: 8),
-                  Text(data["wali"],
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF465940))),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3B6B46), Color(0xFF465940)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   children: [
-                    Text(data["jumlah"].toString(),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.people, size: 14, color: Colors.white),
+                    const Icon(Icons.person_pin, color: Color(0xFF465940), size: 18),
+                    const SizedBox(width: 8),
+                    Text(data["wali"],
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF465940))),
                   ],
                 ),
-              )
-            ]),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B6B46), Color(0xFF465940)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(data["jumlah"].toString(),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.people, size: 14, color: Colors.white),
+                    ],
+                  ),
+                )
+              ],
+            ),
             const SizedBox(height: 12),
             Text(data["kelas"], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-            Text("Tahun ajar ${data["tahun"]}",
-                style: const TextStyle(color: Colors.black54)),
+            Text("Tahun ajar ${data["tahun"]}", style: const TextStyle(color: Colors.black54)),
             const SizedBox(height: 12),
 
-            const Text("Daftar Siswa :", style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Daftar Siswa :", style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
 
-            ..._buildSiswaPreview(data),
-            const SizedBox(height: 6),
-            Text("... dan ${data["jumlah"] - _previewCount(data)} siswa lainnya",
-                style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                    ..._buildSiswaPreview(data),
+                    const SizedBox(height: 6),
+                    
+                    if (data["jumlah"] > _previewCount(data))
+                      Text("... dan ${data["jumlah"] - _previewCount(data)} siswa lainnya",
+                          style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
 
-            const Spacer(),
+            const SizedBox(height: 12),
 
-            Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              _actionIconButton(Icons.edit,
-                  onPressed: () => _showEditKelas(index, data)),
-              const SizedBox(width: 10),
-              _actionIconButton(Icons.delete,
-                  color: Colors.redAccent,
-                  onPressed: () => _hapusKelas(index)),
-            ])
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _actionIconButton(Icons.edit, onPressed: () => _showEditKelas(index, data)),
+                const SizedBox(width: 10),
+                _actionIconButton(Icons.delete,
+                    color: Colors.redAccent, onPressed: () => _hapusKelas(index)),
+              ],
+            )
           ],
         ),
       ),
