@@ -547,7 +547,7 @@ abstract class BasePengumumanContentState<T extends BasePengumumanContent> exten
           physics: const AlwaysScrollableScrollPhysics(),
           padding: isMobile ? const EdgeInsets.all(16) : const EdgeInsets.all(32),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (!isMobile || !_showForm) buildHeaderWithAddButton(),
+            if (!_showForm) buildHeaderWithAddButton(),
             if (!_showForm) buildPengumumanList() else buildPengumumanForm(),
             SizedBox(height: isMobile ? 20 : 40),
           ]),
