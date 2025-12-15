@@ -65,6 +65,10 @@ class _PerizinanPageState extends State<PerizinanPage> {
         final data = json.decode(response.body);
         setState(() {
           _listAnak = data['data'] ?? [];
+          // AUTO SELECT JIKA HANYA 1 ANAK
+          if (_listAnak.length == 1) {
+            _selectedAnakId = _listAnak[0]['Siswa_Id'].toString();
+          }
         });
       } else {
         _showError('Gagal memuat data anak');
@@ -225,7 +229,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
       _buktiBytesWeb = null;
       _buktiFileName = null;
       _jenisIzin = 'Sakit';
-      _selectedAnakId = null;
+      // Jangan reset selectedAnakId karena sudah otomatis terpilih
       _alasanController.clear();
     });
   }
@@ -258,25 +262,75 @@ class _PerizinanPageState extends State<PerizinanPage> {
   Widget _buildImagePreview() {
     if (kIsWeb) {
       return _buktiBytesWeb != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.memory(
-                _buktiBytesWeb!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+          ? Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(
+                      _buktiBytesWeb!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(
+                        Icons.photo,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             )
           : _buildEmptyUpload();
     } else {
       return _buktiFileMobile != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                _buktiFileMobile!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+          ? Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _buktiFileMobile!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(
+                        Icons.photo,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             )
           : _buildEmptyUpload();
@@ -284,24 +338,40 @@ class _PerizinanPageState extends State<PerizinanPage> {
   }
 
   Widget _buildEmptyUpload() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.cloud_upload, color: Color(0xFF465940), size: 40),
-          SizedBox(height: 8),
-          Text(
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: const Color(0xFF465940).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: const Icon(
+              Icons.cloud_upload_outlined,
+              color: Color(0xFF465940),
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
             "Upload Bukti Perizinan",
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF465940),
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
-          SizedBox(height: 4),
-          Text(
-            "JPG, PNG, PDF (Max 5MB)",
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+          const SizedBox(height: 4),
+          const Text(
+            "JPG, PNG, PDF (Maks 5MB)",
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -312,6 +382,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
   Widget build(BuildContext context) {
     const greenColor = Color(0xFF465940);
     const backgroundColor = Color(0xFFFDFBF0);
+    const lightGreen = Color(0xFFE9EFE5);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -321,7 +392,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
         centerTitle: true,
         iconTheme: const IconThemeData(color: greenColor),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -334,209 +405,423 @@ class _PerizinanPageState extends State<PerizinanPage> {
         ),
       ),
       body: _loadingAnak
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(greenColor),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Memuat data...',
+                    style: TextStyle(
+                      color: greenColor,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : _listAnak.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.info_outline,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Belum ada data anak',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: greenColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: const Icon(
+                            Icons.person_outline,
+                            size: 50,
+                            color: greenColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Silakan hubungi admin untuk\nmenambahkan data anak',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Belum ada data anak',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: greenColor,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 40),
+                          child: Text(
+                            'Silakan hubungi admin untuk menambahkan data anak Anda ke dalam sistem',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Card(
-                          elevation: 3,
+                  child: Column(
+                    children: [
+                      // HEADER INFO
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: lightGreen,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: greenColor.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: greenColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.info_outline_rounded,
+                                color: greenColor,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Informasi",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: greenColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Mohon isi formulir dengan data yang valid",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // FORM CARD
+                      Form(
+                        key: _formKey,
+                        child: Card(
+                          elevation: 2,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: greenColor.withOpacity(0.1),
+                            ),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(24),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Ajukan Izin Siswa",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: greenColor,
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.description_outlined,
+                                      color: greenColor,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Formulir Perizinan",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: greenColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+
+                                // DATA ANAK SECTION
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    "Data Anak",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: greenColor,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: greenColor.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: greenColor.withOpacity(0.1),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: greenColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: const Icon(
+                                          Icons.person_outline,
+                                          color: greenColor,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _listAnak.isNotEmpty 
+                                                  ? _listAnak[0]['Nama'] ?? 'Tanpa Nama'
+                                                  : 'Tidak ada data anak',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            if (_listAnak.isNotEmpty && _listAnak[0]['Kelas'] != null)
+                                              Text(
+                                                "Kelas ${_listAnak[0]['Kelas']}",
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (_listAnak.length == 1)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Row(
+                                            children: [
+                                              Icon(
+                                                Icons.check_circle,
+                                                color: Colors.green,
+                                                size: 14,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                "Terpilih",
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // JENIS IZIN
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    "Jenis Izin *",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: greenColor,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: DropdownButtonFormField<String>(
+                                    value: _jenisIzin,
+                                    decoration: _inputDecoration(
+                                      hint: "Pilih jenis izin...",
+                                    ),
+                                    hint: const Text("Pilih jenis izin..."),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: "Sakit",
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.medical_services_outlined,
+                                              size: 18,
+                                              color: greenColor,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("Sakit"),
+                                          ],
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: "Acara Keluarga",
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.celebration_outlined,
+                                              size: 18,
+                                              color: greenColor,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("Acara Keluarga"),
+                                          ],
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: "Lainnya",
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.more_horiz,
+                                              size: 18,
+                                              color: greenColor,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text("Lainnya"),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    onChanged: (value) {
+                                      setState(() => _jenisIzin = value);
+                                    },
                                   ),
                                 ),
                                 const SizedBox(height: 20),
 
-                                // PILIH ANAK
-                                const Text(
-                                  "Pilih Anak *",
-                                  style: TextStyle(
-                                    color: greenColor,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                DropdownButtonFormField<String>(
-                                  value: _selectedAnakId,
-                                  decoration: _inputDecoration(
-                                    hint: "Pilih anak...",
-                                  ),
-                                  items: _listAnak.map<DropdownMenuItem<String>>((anak) {
-                                    return DropdownMenuItem<String>(
-                                      value: anak['Siswa_Id'].toString(),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            anak['Nama'] ?? 'Tanpa Nama',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                          if (anak['Kelas'] != null)
-                                            Text(
-                                              "Kelas: ${anak['Kelas']}",
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _selectedAnakId = value;
-                                    });
-                                  },
-                                  validator: (value) {
-                                    if (value == null) {
-                                      return 'Pilih anak terlebih dahulu';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-
-                                // JENIS IZIN
-                                const Text(
-                                  "Jenis Izin *",
-                                  style: TextStyle(
-                                    color: greenColor,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                DropdownButtonFormField<String>(
-                                  value: _jenisIzin,
-                                  decoration: _inputDecoration(
-                                    hint: "Pilih jenis izin...",
-                                  ),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: "Sakit",
-                                      child: Text("Sakit"),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: "Acara Keluarga",
-                                      child: Text("Acara Keluarga"),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: "Lainnya",
-                                      child: Text("Lainnya"),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() => _jenisIzin = value);
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-
                                 // TANGGAL IZIN
-                                const Text(
-                                  "Tanggal Izin *",
-                                  style: TextStyle(
-                                    color: greenColor,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    "Tanggal Izin *",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: greenColor,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
                                 InkWell(
                                   onTap: _pilihTanggal,
-                                  child: InputDecorator(
-                                    decoration: _inputDecoration(
-                                      hint: "Pilih tanggal...",
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    height: 56,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: greenColor.withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: greenColor.withOpacity(0.2),
+                                      ),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          _tanggal == null
-                                              ? "Pilih tanggal..."
-                                              : "${_tanggal!.day}/${_tanggal!.month}/${_tanggal!.year}",
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            color: _tanggal == null
-                                                ? Colors.grey[500]
-                                                : Colors.black,
-                                          ),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_today,
+                                              color: greenColor.withOpacity(0.7),
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              _tanggal == null
+                                                  ? "Pilih tanggal izin"
+                                                  : "${_tanggal!.day}/${_tanggal!.month}/${_tanggal!.year}",
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                color: _tanggal == null
+                                                    ? Colors.grey[500]
+                                                    : Colors.black,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const Icon(
-                                          Icons.calendar_today,
-                                          color: greenColor,
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: greenColor.withOpacity(0.7),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
 
                                 // KETERANGAN
-                                const Text(
-                                  "Keterangan / Alasan *",
-                                  style: TextStyle(
-                                    color: greenColor,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    "Keterangan / Alasan *",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: greenColor,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _alasanController,
                                   maxLines: 4,
                                   minLines: 3,
                                   decoration: _inputDecoration(
                                     hint: "Tulis alasan izin dengan jelas...",
+                                  ).copyWith(
+                                    prefixIcon: const Icon(
+                                      Icons.edit_outlined,
+                                      color: greenColor,
+                                      size: 20,
+                                    ),
                                   ),
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
@@ -547,78 +832,105 @@ class _PerizinanPageState extends State<PerizinanPage> {
                                     }
                                     return null;
                                   },
+                                  style: const TextStyle(fontSize: 14),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
 
                                 // BUKTI PERIZINAN
-                                const Text(
-                                  "Bukti Perizinan *",
-                                  style: TextStyle(
-                                    color: greenColor,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    "Bukti Perizinan *",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: greenColor,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
                                 GestureDetector(
                                   onTap: _pilihFotoGaleri,
                                   child: Container(
-                                    height: 160,
+                                    height: 180,
                                     decoration: BoxDecoration(
-                                      color: greenColor.withOpacity(0.15),
+                                      color: greenColor.withOpacity(0.05),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: (kIsWeb
                                                 ? _buktiBytesWeb
                                                 : _buktiFileMobile) ==
                                             null
-                                            ? greenColor.withOpacity(0.5)
-                                            : Colors.green,
-                                        width: 1,
+                                            ? greenColor.withOpacity(0.2)
+                                            : Colors.green.withOpacity(0.3),
+                                        width: 2,
                                       ),
                                     ),
-                                    child: _buildImagePreview(),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: _buildImagePreview(),
+                                    ),
                                   ),
                                 ),
                                 if (_buktiFileName != null) ...[
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Expanded(
-                                        child: Text(
-                                          _buktiFileName!,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.close,
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
                                           size: 18,
                                         ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _buktiFileMobile = null;
-                                            _buktiBytesWeb = null;
-                                            _buktiFileName = null;
-                                          });
-                                        },
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                "File terpilih:",
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                              Text(
+                                                _buktiFileName!,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.close,
+                                            size: 18,
+                                            color: Colors.grey[600],
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              _buktiFileMobile = null;
+                                              _buktiBytesWeb = null;
+                                              _buktiFileName = null;
+                                            });
+                                          },
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 30),
 
                                 // TOMBOL KIRIM
                                 SizedBox(
@@ -627,39 +939,78 @@ class _PerizinanPageState extends State<PerizinanPage> {
                                     onPressed: _loading ? null : _kirimIzin,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: greenColor,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 16,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      elevation: 4,
+                                      elevation: 2,
+                                      shadowColor: greenColor.withOpacity(0.3),
                                     ),
-                                    child: _loading
-                                        ? const SizedBox(
-                                            height: 24,
-                                            width: 24,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        if (_loading)
+                                          const SizedBox(
+                                            height: 20,
+                                            width: 20,
                                             child: CircularProgressIndicator(
                                               color: Colors.white,
-                                              strokeWidth: 3,
+                                              strokeWidth: 2.5,
                                             ),
                                           )
-                                        : const Text(
-                                            "Kirim Permohonan Izin",
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        else
+                                          const Icon(
+                                            Icons.send_outlined,
+                                            size: 20,
                                           ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          _loading
+                                              ? "Mengirim..."
+                                              : "Kirim Permohonan Izin",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+
+                                // FOOTER NOTE
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.lightbulb_outline,
+                                        size: 14,
+                                        color: greenColor.withOpacity(0.7),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          "Permohonan akan diverifikasi oleh admin sekolah",
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
     );
@@ -669,18 +1020,24 @@ class _PerizinanPageState extends State<PerizinanPage> {
     const greenColor = Color(0xFF465940);
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey[500]),
+      hintStyle: TextStyle(
+        color: Colors.grey[500],
+        fontSize: 14,
+      ),
       filled: true,
-      fillColor: greenColor.withOpacity(0.1),
+      fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+        borderSide: BorderSide(
+          color: greenColor.withOpacity(0.2),
+          width: 1.5,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: greenColor.withOpacity(0.3),
-          width: 1,
+          color: greenColor.withOpacity(0.2),
+          width: 1.5,
         ),
       ),
       focusedBorder: OutlineInputBorder(
@@ -694,7 +1051,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(
           color: Colors.red,
-          width: 1,
+          width: 1.5,
         ),
       ),
       focusedErrorBorder: OutlineInputBorder(
@@ -706,7 +1063,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
       ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: 12,
+        vertical: 14,
       ),
     );
   }
