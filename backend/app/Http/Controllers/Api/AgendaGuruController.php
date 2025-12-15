@@ -41,7 +41,6 @@ class AgendaGuruController extends Controller
         return $guruId;
     }
 
-    // Pada method sendAgendaNotification() di AgendaGuruController.php
 private function sendAgendaNotification($agenda, $tipe)
 {
     Log::info('Mengirim notifikasi agenda', [
@@ -118,7 +117,6 @@ private function sendAgendaNotification($agenda, $tipe)
         
         foreach ($orangtuaIds as $orangtuaId) {
             try {
-                // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
                 $notifikasi = Notifikasi::create([
                     'OrangTua_Id' => $orangtuaId,
                     'Judul' => 'Agenda Baru: ' . $judulAgenda,
@@ -150,7 +148,6 @@ private function sendAgendaNotification($agenda, $tipe)
     }
 }
 
-    // Get semua agenda guru dengan filter tipe
     public function index(Request $request)
     {
         $guruId = $this->getGuruId();
@@ -177,7 +174,6 @@ private function sendAgendaNotification($agenda, $tipe)
         ]);
     }
 
-    // BUAT AGENDA BARU DENGAN NOTIFIKASI
     public function store(Request $request)
     {
         Log::info('Store request received', $request->all());
@@ -267,13 +263,10 @@ private function sendAgendaNotification($agenda, $tipe)
         DB::beginTransaction();
         
         try {
-            // BUAT AGENDA
             $agenda = Agenda::create($data);
             
-            // LOAD RELATIONSHIPS
             $agenda->load(['guru', 'kelas', 'ekstrakulikuler']);
             
-            // KIRIM NOTIFIKASI KE ORANGTUA
             $jumlahPenerima = $this->sendAgendaNotification($agenda, $request->Tipe);
             
             DB::commit();
@@ -347,7 +340,6 @@ private function sendAgendaNotification($agenda, $tipe)
             ], 422);
         }
 
-        // Prepare data berdasarkan tipe
         $data = [
             'Judul' => $request->Judul,
             'Deskripsi' => $request->Deskripsi,
@@ -415,7 +407,6 @@ private function sendAgendaNotification($agenda, $tipe)
         }
     }
 
-    // Hapus agenda BESERTA NOTIFIKASINYA
     public function destroy($id)
     {
         $guruId = $this->getGuruId();
@@ -438,7 +429,6 @@ private function sendAgendaNotification($agenda, $tipe)
         DB::beginTransaction();
         
         try {
-            // Hapus notifikasi terkait agenda ini
             Notifikasi::where('Agenda_Id', $id)->delete();
             
             // Hapus agenda
@@ -463,7 +453,6 @@ private function sendAgendaNotification($agenda, $tipe)
         }
     }
 
-    // Get dropdown data (kelas, ekskul)
     public function getDropdownData()
     {
         $guruId = $this->getGuruId();
@@ -472,22 +461,18 @@ private function sendAgendaNotification($agenda, $tipe)
             return $guruId;
         }
 
-        // Ambil kelas guru (1 guru = 1 kelas)
         $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
         
-        // Ambil SEMUA ekskul di sekolah (untuk dropdown ekskul)
         $semuaEkskul = Ekstrakulikuler::orderBy('nama')->get();
 
         return response()->json([
             'success' => true,
             'data' => [
-                // Kelas guru (bisa null jika guru belum punya kelas)
                 'kelas_guru' => $kelasGuru ? [
                     'Kelas_Id' => $kelasGuru->Kelas_Id,
                     'nama_kelas' => $kelasGuru->Nama_Kelas
                 ] : null,
 
-                // Semua ekskul sekolah (untuk dropdown ekskul)
                 'ekstrakulikuler' => $semuaEkskul->map(function($ekskul) {
                     return [
                         'Ekstrakulikuler_Id' => $ekskul->Ekstrakulikuler_Id,

@@ -76,16 +76,16 @@ class _JadwalPageState extends State<JadwalPage> {
           ],
         ),
         actions: [
-  NotifikasiBadge(
-    iconColor: greenColor,
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const NotifikasiPage()),
-      );
-    },
-  ),
-],
+        NotifikasiBadge(
+          iconColor: greenColor,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+            );
+          },
+        ),
+      ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),

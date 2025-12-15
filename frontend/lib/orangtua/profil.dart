@@ -139,16 +139,16 @@ class _ProfilPageState extends State<ProfilPage> {
           ],
         ),
         actions: [
-  NotifikasiBadge(
-    iconColor: greenColor,
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const NotifikasiPage()),
-      );
-    },
-  ),
-],
+        NotifikasiBadge(
+          iconColor: greenColor,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+            );
+          },
+        ),
+      ],
 
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),

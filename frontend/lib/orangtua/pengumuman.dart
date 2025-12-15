@@ -200,16 +200,16 @@ class _PengumumanPageState extends State<PengumumanPage> {
           ],
         ),
         actions: [
-  NotifikasiBadge(
-    iconColor: greenColor,
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const NotifikasiPage()),
-      );
-    },
-  ),
-],
+        NotifikasiBadge(
+          iconColor: greenColor,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+            );
+          },
+        ),
+      ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black12, height: 1.0),

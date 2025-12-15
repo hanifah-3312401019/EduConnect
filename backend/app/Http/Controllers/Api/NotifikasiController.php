@@ -33,7 +33,6 @@ class NotifikasiController extends Controller
                 ], 403);
             }
 
-            // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
             $notifications = Notifikasi::with(['agenda', 'pengumuman'])
                 ->where('OrangTua_Id', $orangtua->OrangTua_Id)
                 ->orderBy('created_at', 'desc')
@@ -53,14 +52,12 @@ class NotifikasiController extends Controller
                         $data['target_id'] = null;
                     }
                     
-                    // Format tanggal untuk frontend
                     $data['created_at_formatted'] = $notif->created_at->format('Y-m-d H:i:s');
                     $data['created_at_human'] = $notif->created_at->diffForHumans();
                     
                     return $data;
                 });
 
-            // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
             $unreadCount = Notifikasi::where('OrangTua_Id', $orangtua->OrangTua_Id)
                 ->where('dibaca', false)
                 ->count();
@@ -88,7 +85,6 @@ class NotifikasiController extends Controller
         }
     }
 
-    // Tandai notifikasi sebagai dibaca
     public function markAsRead(Request $request, $id)
     {
         try {
@@ -119,7 +115,6 @@ class NotifikasiController extends Controller
                 ], 404);
             }
 
-            // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
             if ($notifikasi->OrangTua_Id != $orangtua->OrangTua_Id) {
                 return response()->json([
                     'success' => false,
@@ -166,7 +161,6 @@ class NotifikasiController extends Controller
                 ], 403);
             }
 
-            // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
             $updated = Notifikasi::where('OrangTua_Id', $orangtua->OrangTua_Id)
                 ->where('dibaca', false)
                 ->update(['dibaca' => true]);
@@ -207,7 +201,6 @@ class NotifikasiController extends Controller
                 ], 403);
             }
 
-            // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
             $unreadCount = Notifikasi::where('OrangTua_Id', $orangtua->OrangTua_Id)
                 ->where('dibaca', false)
                 ->count();
@@ -251,7 +244,6 @@ class NotifikasiController extends Controller
                 ], 403);
             }
 
-            // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
             $notifikasi = Notifikasi::where('Notifikasi_Id', $id)
                 ->where('OrangTua_Id', $orangtua->OrangTua_Id)
                 ->first();
@@ -279,7 +271,6 @@ class NotifikasiController extends Controller
         }
     }
 
-    // API untuk clear all notifications
     public function clearAllNotifications(Request $request)
     {
         try {
@@ -301,7 +292,6 @@ class NotifikasiController extends Controller
                 ], 403);
             }
 
-            // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
             $deleted = Notifikasi::where('OrangTua_Id', $orangtua->OrangTua_Id)
                 ->delete();
 
