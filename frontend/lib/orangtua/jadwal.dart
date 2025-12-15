@@ -6,6 +6,7 @@ import 'pembayaran.dart';
 import 'profil.dart';
 import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
+import 'package:frontend/widgets/notifikasi_widgets.dart';
 
 class JadwalPage extends StatefulWidget {
   const JadwalPage({super.key});
@@ -75,15 +76,16 @@ class _JadwalPageState extends State<JadwalPage> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.notifications_none, color: greenColor),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tidak ada notifikasi baru')),
-              );
-            },
-          ),
-        ],
+  NotifikasiBadge(
+    iconColor: greenColor,
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+      );
+    },
+  ),
+],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),

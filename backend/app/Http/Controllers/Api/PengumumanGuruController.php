@@ -7,9 +7,13 @@ use App\Models\Pengumuman;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\Siswa;
+use App\Models\Notifikasi;
+use App\Models\OrangTua;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PengumumanGuruController extends Controller
 {
@@ -25,7 +29,6 @@ class PengumumanGuruController extends Controller
             ], 400);
         }
 
-        // Validasi guru exists
         $guru = Guru::find($guruId);
         if (!$guru) {
             return response()->json([
@@ -35,6 +38,127 @@ class PengumumanGuruController extends Controller
         }
 
         return $guruId;
+    }
+
+    private function sendPengumumanNotification($pengumuman, $tipe)
+    {
+        Log::info('Mulai kirim notifikasi pengumuman', [
+            'pengumuman_id' => $pengumuman->Pengumuman_Id,
+            'tipe' => $tipe,
+            'judul' => $pengumuman->Judul,
+            'kelas_id' => $pengumuman->Kelas_Id,
+            'siswa_id' => $pengumuman->Siswa_Id
+        ]);
+        
+        try {
+            $guruNama = $pengumuman->guru->Nama ?? 'Guru';
+            $judulPengumuman = $pengumuman->Judul;
+            
+            $orangtuaIds = [];
+            
+            if ($tipe === 'umum') {
+                $orangtuaIds = OrangTua::pluck('OrangTua_Id')->toArray();
+                Log::info('Pengumuman UMUM: Kirim ke ' . count($orangtuaIds) . ' orangtua');
+            } 
+            elseif ($tipe === 'perkelas') {
+                if (!$pengumuman->Kelas_Id) {
+                    Log::error('Pengumuman PERKELAS: Kelas_Id NULL', $pengumuman->toArray());
+                    return 0;
+                }
+                
+                if (!$pengumuman->relationLoaded('kelas')) {
+                    $pengumuman->load('kelas');
+                }
+                
+                $kelasId = $pengumuman->Kelas_Id;
+                $namaKelas = $pengumuman->kelas ? $pengumuman->kelas->Nama_Kelas : 'Kelas ' . $kelasId;
+                
+                Log::info('Pengumuman PERKELAS: Mencari siswa di kelas ' . $namaKelas . ' (ID: ' . $kelasId . ')');
+                
+                $siswaIds = Siswa::where('Kelas_Id', $kelasId)
+                    ->pluck('Siswa_Id')
+                    ->toArray();
+                
+                Log::info('Pengumuman PERKELAS: Ditemukan ' . count($siswaIds) . ' siswa');
+                
+                if (empty($siswaIds)) {
+                    Log::warning('Pengumuman PERKELAS: Tidak ada siswa di kelas ini');
+                    return 0;
+                }
+                
+                $orangtuaIds = OrangTua::whereIn('Siswa_Id', $siswaIds)
+                    ->pluck('OrangTua_Id')
+                    ->toArray();
+                    
+                Log::info('Pengumuman PERKELAS: Ditemukan ' . count($orangtuaIds) . ' orangtua');
+                
+                if (empty($orangtuaIds)) {
+                    Log::warning('Pengumuman PERKELAS: Tidak ada orangtua untuk siswa di kelas ini');
+                    Log::info('Detail siswa IDs: ' . implode(', ', $siswaIds));
+                    
+                    foreach ($siswaIds as $siswaId) {
+                        $siswa = Siswa::find($siswaId);
+                        $orangtua = OrangTua::where('Siswa_Id', $siswaId)->first();
+                        Log::debug('Siswa: ' . ($siswa ? $siswa->Nama : 'ID:' . $siswaId) . 
+                                  ' -> OrangTua: ' . ($orangtua ? $orangtua->Nama . ' (ID:' . $orangtua->OrangTua_Id . ')' : 'TIDAK ADA'));
+                    }
+                }
+            }
+            elseif ($tipe === 'personal') {
+                if (!$pengumuman->Siswa_Id) {
+                    Log::error('Pengumuman PERSONAL: Siswa_Id NULL');
+                    return 0;
+                }
+                
+                $orangtua = OrangTua::where('Siswa_Id', $pengumuman->Siswa_Id)->first();
+                
+                if ($orangtua) {
+                    $orangtuaIds = [$orangtua->OrangTua_Id];
+                    Log::info('Pengumuman PERSONAL: Kirim ke orangtua ID ' . $orangtua->OrangTua_Id);
+                } else {
+                    Log::warning('Pengumuman PERSONAL: Tidak ditemukan orangtua untuk siswa ID ' . $pengumuman->Siswa_Id);
+                    return 0;
+                }
+            }
+
+            $createdCount = 0;
+            foreach ($orangtuaIds as $orangtuaId) {
+                try {
+                    $notifikasi = Notifikasi::create([
+                        'OrangTua_Id' => $orangtuaId,
+                        'Judul' => 'Pengumuman Baru: ' . $judulPengumuman,
+                        'Pesan' => 'Guru ' . $guruNama . ' mengirim pengumuman baru: ' . $judulPengumuman,
+                        'Jenis' => 'pengumuman',
+                        'Pengumuman_Id' => $pengumuman->Pengumuman_Id,
+                        'dibaca' => false,
+                    ]);
+                    
+                    $createdCount++;
+                    Log::debug('Notifikasi dibuat untuk orangtua ID: ' . $orangtuaId);
+                    
+                } catch (\Exception $e) {
+                    Log::error('Gagal buat notifikasi untuk orangtua ' . $orangtuaId . ': ' . $e->getMessage());
+                }
+            }
+
+            Log::info('Notifikasi pengumuman berhasil dikirim', [
+                'pengumuman_id' => $pengumuman->Pengumuman_Id,
+                'tipe' => $tipe,
+                'jumlah_penerima' => count($orangtuaIds),
+                'berhasil_dibuat' => $createdCount
+            ]);
+
+            return $createdCount;
+
+        } catch (\Exception $e) {
+            Log::error('Gagal mengirim notifikasi pengumuman: ' . $e->getMessage(), [
+                'pengumuman_id' => $pengumuman->Pengumuman_Id ?? 'unknown',
+                'tipe' => $tipe,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return 0;
+        }
     }
 
     public function getKelasSaya()
@@ -129,7 +253,6 @@ class PengumumanGuruController extends Controller
         ]);
 
         if ($request->Tipe === 'perkelas') {
-            // Validasi: hanya jika guru punya kelas
             if ($kelasGuruList->isEmpty()) {
                 return response()->json([
                     'success' => false,
@@ -142,7 +265,6 @@ class PengumumanGuruController extends Controller
                     'required',
                     'exists:kelas,Kelas_Id',
                     function ($attribute, $value, $fail) use ($kelasGuruList) {
-                        // Validasi bahwa kelas tersebut dimiliki guru
                         $kelasMilikGuru = $kelasGuruList->contains('Kelas_Id', $value);
                         
                         if (!$kelasMilikGuru) {
@@ -153,7 +275,6 @@ class PengumumanGuruController extends Controller
             ]);
             
         } elseif ($request->Tipe === 'personal') {
-            // Validasi: hanya jika guru punya kelas
             if ($kelasGuruList->isEmpty()) {
                 return response()->json([
                     'success' => false,
@@ -166,7 +287,6 @@ class PengumumanGuruController extends Controller
                     'required',
                     'exists:siswa,Siswa_Id',
                     function ($attribute, $value, $fail) use ($kelasGuruList) {
-                        // Validasi bahwa siswa tersebut berada di kelas guru
                         $siswa = Siswa::find($value);
                         
                         if (!$siswa) {
@@ -206,22 +326,42 @@ class PengumumanGuruController extends Controller
         } 
         elseif ($request->Tipe === 'personal') {
             $data['Siswa_Id'] = $request->Siswa_Id;
-            // Ambil kelas_id dari siswa
             $siswa = Siswa::find($request->Siswa_Id);
             $data['Kelas_Id'] = $siswa->Kelas_Id;
         } 
-        else { // Tipe umum
+        else { 
             $data['Kelas_Id'] = null;
             $data['Siswa_Id'] = null;
         }
 
-        $pengumuman = Pengumuman::create($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengumuman berhasil dibuat',
-            'data' => $pengumuman->load(['guru', 'kelas', 'siswa'])
-        ], 201);
+        DB::beginTransaction();
+        
+        try {
+            $pengumuman = Pengumuman::create($data);
+            
+            $pengumuman->load(['guru', 'kelas', 'siswa']);
+            
+            $jumlahPenerima = $this->sendPengumumanNotification($pengumuman, $request->Tipe);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengumuman berhasil dibuat' . 
+                           ($jumlahPenerima > 0 ? ' dan notifikasi dikirim ke ' . $jumlahPenerima . ' orangtua' : ''),
+                'data' => $pengumuman
+            ], 201);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Gagal membuat pengumuman: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat pengumuman: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)
@@ -333,13 +473,29 @@ class PengumumanGuruController extends Controller
             $updateData['Siswa_Id'] = null;
         }
 
-        $pengumuman->update($updateData);
+        DB::beginTransaction();
+        
+        try {
+            $pengumuman->update($updateData);
+            
+            DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengumuman berhasil diupdate',
-            'data' => $pengumuman->load(['guru', 'kelas', 'siswa'])
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengumuman berhasil diupdate',
+                'data' => $pengumuman->load(['guru', 'kelas', 'siswa'])
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Gagal update pengumuman: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update pengumuman: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy($id)
@@ -361,12 +517,30 @@ class PengumumanGuruController extends Controller
             ], 404);
         }
 
-        $pengumuman->delete();
+        DB::beginTransaction();
+        
+        try {
+            Notifikasi::where('Pengumuman_Id', $id)->delete();
+            
+            $pengumuman->delete();
+            
+            DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengumuman berhasil dihapus'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengumuman berhasil dihapus beserta notifikasinya'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Gagal hapus pengumuman: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus pengumuman: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getDropdownData()

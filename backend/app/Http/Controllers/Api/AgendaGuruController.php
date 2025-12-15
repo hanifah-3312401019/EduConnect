@@ -7,8 +7,14 @@ use App\Models\Agenda;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\Ekstrakulikuler;
+use App\Models\Notifikasi;
+use App\Models\OrangTua;
+use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class AgendaGuruController extends Controller
 {
@@ -34,6 +40,115 @@ class AgendaGuruController extends Controller
 
         return $guruId;
     }
+
+    // Pada method sendAgendaNotification() di AgendaGuruController.php
+private function sendAgendaNotification($agenda, $tipe)
+{
+    Log::info('Mengirim notifikasi agenda', [
+        'agenda_id' => $agenda->Agenda_Id,
+        'tipe' => $tipe,
+        'judul' => $agenda->Judul
+    ]);
+    
+    try {
+        $guruNama = $agenda->guru ? $agenda->guru->Nama : 'Guru';
+        $judulAgenda = $agenda->Judul;
+        $tanggalAgenda = $agenda->Tanggal;
+        $waktuMulai = $agenda->Waktu_Mulai;
+        
+        $orangtuaIds = [];
+        
+        if ($tipe === 'sekolah') {
+            $orangtuaIds = OrangTua::pluck('OrangTua_Id')->toArray();
+            Log::info('Agenda sekolah - kirim ke semua orangtua: ' . count($orangtuaIds));
+            
+        } elseif ($tipe === 'perkelas') {
+            if (!$agenda->kelas) {
+                Log::warning('Kelas tidak ditemukan di agenda');
+                return 0;
+            }
+            
+            $kelasId = $agenda->kelas->Kelas_Id;
+            $siswaIds = Siswa::where('Kelas_Id', $kelasId)
+                ->pluck('Siswa_Id')
+                ->toArray();
+                
+            $orangtuaIds = OrangTua::whereIn('Siswa_Id', $siswaIds)
+                ->pluck('OrangTua_Id')
+                ->toArray();
+                
+            Log::info("Agenda perkelas ID {$kelasId} - kirim ke " . count($orangtuaIds) . " orangtua");
+            
+        } elseif ($tipe === 'ekskul') {
+            if (!$agenda->ekstrakulikuler) {
+                Log::warning('Ekstrakulikuler tidak ditemukan di agenda');
+                return 0;
+            }
+            
+            $ekskulId = $agenda->ekstrakulikuler->Ekstrakulikuler_Id;
+            
+            $siswaIds = Siswa::where('Ekstrakulikuler_Id', $ekskulId)
+                ->pluck('Siswa_Id')
+                ->toArray();
+                
+            if (empty($siswaIds) && Schema::hasTable('ekskul_siswa')) {
+                try {
+                    $siswaIds = DB::table('ekskul_siswa')
+                        ->where('Ekstrakulikuler_Id', $ekskulId)
+                        ->pluck('Siswa_Id')
+                        ->toArray();
+                } catch (\Exception $e) {
+                    Log::warning('Error akses pivot: ' . $e->getMessage());
+                }
+            }
+            
+            if (empty($siswaIds)) {
+                Log::warning('Tidak ada siswa untuk ekskul ini!');
+                return 0;
+            }
+            
+            $orangtuaIds = OrangTua::whereIn('Siswa_Id', $siswaIds)
+                ->pluck('OrangTua_Id')
+                ->toArray();
+                
+            Log::info("Agenda ekskul ID {$ekskulId} - kirim ke " . count($orangtuaIds) . " orangtua");
+        }
+
+        $createdCount = 0;
+        
+        foreach ($orangtuaIds as $orangtuaId) {
+            try {
+                // ✅ PERBAIKAN: OrangTua_Id (huruf T besar)
+                $notifikasi = Notifikasi::create([
+                    'OrangTua_Id' => $orangtuaId,
+                    'Judul' => 'Agenda Baru: ' . $judulAgenda,
+                    'Pesan' => 'Guru ' . $guruNama . ' membuat agenda baru: ' . $judulAgenda . 
+                              ' pada ' . $tanggalAgenda . ' pukul ' . $waktuMulai,
+                    'Jenis' => 'agenda',
+                    'Agenda_Id' => $agenda->Agenda_Id,
+                    'dibaca' => false,
+                ]);
+                
+                $createdCount++;
+                
+            } catch (\Exception $e) {
+                Log::error('Gagal buat notifikasi agenda untuk orangtua ' . $orangtuaId . ': ' . $e->getMessage());
+            }
+        }
+
+        Log::info('Notifikasi agenda selesai', [
+            'agenda_id' => $agenda->Agenda_Id,
+            'total_penerima' => count($orangtuaIds),
+            'berhasil_dibuat' => $createdCount
+        ]);
+
+        return $createdCount;
+
+    } catch (\Exception $e) {
+        Log::error('Error sendAgendaNotification: ' . $e->getMessage());
+        return 0;
+    }
+}
 
     // Get semua agenda guru dengan filter tipe
     public function index(Request $request)
@@ -62,15 +177,18 @@ class AgendaGuruController extends Controller
         ]);
     }
 
-    // Buat agenda baru
+    // BUAT AGENDA BARU DENGAN NOTIFIKASI
     public function store(Request $request)
     {
+        Log::info('Store request received', $request->all());
+        
         $guruId = $this->getGuruId();
         
         if ($guruId instanceof \Illuminate\Http\JsonResponse) {
             return $guruId;
         }
 
+        // Validasi
         $validator = Validator::make($request->all(), [
             'Judul' => 'required|string|max:255',
             'Deskripsi' => 'required|string',
@@ -87,7 +205,6 @@ class AgendaGuruController extends Controller
 
         // Validasi tambahan
         $validator->after(function ($validator) use ($request, $guruId) {
-            // Validasi waktu selesai > waktu mulai
             if ($request->Waktu_Mulai && $request->Waktu_Selesai) {
                 if (strtotime($request->Waktu_Selesai) <= strtotime($request->Waktu_Mulai)) {
                     $validator->errors()->add('Waktu_Selesai', 'Waktu selesai harus setelah waktu mulai.');
@@ -96,6 +213,7 @@ class AgendaGuruController extends Controller
         });
 
         if ($validator->fails()) {
+            Log::warning('Validasi gagal', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
@@ -117,13 +235,11 @@ class AgendaGuruController extends Controller
         // Handle berdasarkan tipe
         switch ($request->Tipe) {
             case 'sekolah':
-                // Untuk sekolah: Kelas_Id NULL
                 $data['Kelas_Id'] = null;
                 $data['Ekstrakulikuler_Id'] = null;
                 break;
                 
             case 'perkelas':
-                // Untuk perkelas: pakai kelas guru jika ada, jika tidak error
                 $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
                 if (!$kelasGuru) {
                     return response()->json([
@@ -136,7 +252,6 @@ class AgendaGuruController extends Controller
                 break;
                 
             case 'ekskul':
-                // Untuk ekskul: pakai kelas guru jika ada, jika tidak error
                 $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
                 if (!$kelasGuru) {
                     return response()->json([
@@ -149,13 +264,37 @@ class AgendaGuruController extends Controller
                 break;
         }
 
-        $agenda = Agenda::create($data);
+        DB::beginTransaction();
+        
+        try {
+            // BUAT AGENDA
+            $agenda = Agenda::create($data);
+            
+            // LOAD RELATIONSHIPS
+            $agenda->load(['guru', 'kelas', 'ekstrakulikuler']);
+            
+            // KIRIM NOTIFIKASI KE ORANGTUA
+            $jumlahPenerima = $this->sendAgendaNotification($agenda, $request->Tipe);
+            
+            DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Agenda berhasil dibuat',
-            'data' => $agenda->load(['guru', 'kelas', 'ekstrakulikuler'])
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Agenda berhasil dibuat' . 
+                           ($jumlahPenerima > 0 ? ' dan notifikasi dikirim ke ' . $jumlahPenerima . ' orangtua' : ''),
+                'data' => $agenda
+            ], 201);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Gagal membuat agenda: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat agenda: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // Update agenda
@@ -193,7 +332,6 @@ class AgendaGuruController extends Controller
         ]);
 
         $validator->after(function ($validator) use ($request, $guruId) {
-            // Validasi waktu selesai > waktu mulai
             if ($request->Waktu_Mulai && $request->Waktu_Selesai) {
                 if (strtotime($request->Waktu_Selesai) <= strtotime($request->Waktu_Mulai)) {
                     $validator->errors()->add('Waktu_Selesai', 'Waktu selesai harus setelah waktu mulai.');
@@ -222,13 +360,11 @@ class AgendaGuruController extends Controller
         // Handle berdasarkan tipe
         switch ($request->Tipe) {
             case 'sekolah':
-                // Untuk sekolah: Kelas_Id NULL
                 $data['Kelas_Id'] = null;
                 $data['Ekstrakulikuler_Id'] = null;
                 break;
                 
             case 'perkelas':
-                // Untuk perkelas: pakai kelas guru jika ada, jika tidak error
                 $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
                 if (!$kelasGuru) {
                     return response()->json([
@@ -241,7 +377,6 @@ class AgendaGuruController extends Controller
                 break;
                 
             case 'ekskul':
-                // Untuk ekskul: pakai kelas guru jika ada, jika tidak error
                 $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
                 if (!$kelasGuru) {
                     return response()->json([
@@ -254,16 +389,33 @@ class AgendaGuruController extends Controller
                 break;
         }
 
-        $agenda->update($data);
+        DB::beginTransaction();
+        
+        try {
+            // Update agenda
+            $agenda->update($data);
+            
+            DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Agenda berhasil diupdate',
-            'data' => $agenda->load(['guru', 'kelas', 'ekstrakulikuler'])
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Agenda berhasil diupdate',
+                'data' => $agenda->load(['guru', 'kelas', 'ekstrakulikuler'])
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Gagal update agenda: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update agenda: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    // Hapus agenda
+    // Hapus agenda BESERTA NOTIFIKASINYA
     public function destroy($id)
     {
         $guruId = $this->getGuruId();
@@ -283,12 +435,32 @@ class AgendaGuruController extends Controller
             ], 404);
         }
 
-        $agenda->delete();
+        DB::beginTransaction();
+        
+        try {
+            // Hapus notifikasi terkait agenda ini
+            Notifikasi::where('Agenda_Id', $id)->delete();
+            
+            // Hapus agenda
+            $agenda->delete();
+            
+            DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Agenda berhasil dihapus'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Agenda berhasil dihapus beserta notifikasinya'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Gagal hapus agenda: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus agenda: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // Get dropdown data (kelas, ekskul)
@@ -319,7 +491,7 @@ class AgendaGuruController extends Controller
                 'ekstrakulikuler' => $semuaEkskul->map(function($ekskul) {
                     return [
                         'Ekstrakulikuler_Id' => $ekskul->Ekstrakulikuler_Id,
-                        'nama' => $ekskul->nama // sesuai field di database
+                        'nama' => $ekskul->nama
                     ];
                 })->toArray()
             ]

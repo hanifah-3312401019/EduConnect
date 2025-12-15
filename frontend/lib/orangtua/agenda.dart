@@ -7,11 +7,11 @@ import 'profil.dart';
 import 'package:frontend/auth/login.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:frontend/widgets/notifikasi_widgets.dart';
 
 // import sidebar reusable
 import 'package:frontend/widgets/sidebarOrangtua.dart';
 
-// MODEL AGENDA ORANGTUA
 class AgendaOrtuModel {
   final int agendaId;
   final String judul;
@@ -222,16 +222,17 @@ class _AgendaPageState extends State<AgendaPage> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: greenColor),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tidak ada notifikasi baru')),
-              );
-            },
-          ),
-        ],
+       actions: [
+  NotifikasiBadge(
+    iconColor: greenColor,
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+      );
+    },
+  ),
+],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black12, height: 1.0),

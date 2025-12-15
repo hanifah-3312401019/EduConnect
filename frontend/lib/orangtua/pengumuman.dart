@@ -8,6 +8,7 @@ import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:frontend/widgets/notifikasi_widgets.dart';
 
 // MODEL PENGUMUMAN
 
@@ -199,15 +200,16 @@ class _PengumumanPageState extends State<PengumumanPage> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: greenColor),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tidak ada notifikasi baru')),
-              );
-            },
-          ),
-        ],
+  NotifikasiBadge(
+    iconColor: greenColor,
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+      );
+    },
+  ),
+],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black12, height: 1.0),

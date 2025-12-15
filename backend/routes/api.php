@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AgendaGuruController;
 use App\Http\Controllers\Api\AgendaOrtuController;
 use App\Http\Controllers\Api\PerizinanOrtuController;
 use App\Http\Controllers\Api\PerizinanGuruController;
+use App\Http\Controllers\Api\NotifikasiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -76,6 +77,16 @@ Route::middleware('auth:sanctum')->prefix('guru')->group(function () {
 // ROUTE AGENDA ORANG TUA
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orangtua/agenda/{kategori?}', [AgendaOrtuController::class, 'index']);
+});
+
+// Notifikasi orangtua
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/orangtua/notifikasi', [NotifikasiController::class, 'getNotificationsForOrtu']);
+    Route::get('/orangtua/notifikasi/unread-count', [NotifikasiController::class, 'getUnreadCount']);
+    Route::post('/notifikasi/{id}/read', [NotifikasiController::class, 'markAsRead']);
+    Route::post('/notifikasi/mark-all-read', [NotifikasiController::class, 'markAllAsRead']);
+    Route::delete('/notifikasi/{id}', [NotifikasiController::class, 'deleteNotification']);
+    Route::delete('/notifikasi/clear-all', [NotifikasiController::class, 'clearAllNotifications']);
 });
 
 // ROUTE PERIZINAN ORANG TUA & GURU

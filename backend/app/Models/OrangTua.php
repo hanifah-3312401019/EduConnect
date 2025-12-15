@@ -39,4 +39,22 @@ class OrangTua extends Authenticatable
         return $this->hasOne(Siswa::class, 'OrangTua_Id', 'OrangTua_Id');
     }
 
+    // Relationship dengan Notifikasi
+    public function notifikasi()
+    {
+        return $this->hasMany(Notifikasi::class, 'OrangTua_Id', 'OrangTua_Id');
+    }
+
+    // Method untuk notifikasi belum dibaca
+    public function unreadNotifications()
+    {
+        return $this->notifikasi()->where('dibaca', false)->count();
+    }
+
+    // Method untuk semua notifikasi
+    public function allNotifications()
+    {
+        return $this->notifikasi()->orderBy('created_at', 'desc')->get();
+    }
+
 }

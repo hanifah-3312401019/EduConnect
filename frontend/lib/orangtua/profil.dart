@@ -14,6 +14,7 @@ import 'package:frontend/env/api_base_url.dart';
 import 'package:frontend/widgets/sidebarOrangtua.dart';
 import 'package:frontend/widgets/NavbarOrangtua.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/widgets/notifikasi_widgets.dart';
 
 String baseUrl = "http://localhost:8000/api";
 const Color greenColor = Color(0xFF465940);
@@ -138,15 +139,17 @@ class _ProfilPageState extends State<ProfilPage> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: greenColor),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tidak ada notifikasi baru')),
-              );
-            },
-          ),
-        ],
+  NotifikasiBadge(
+    iconColor: greenColor,
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+      );
+    },
+  ),
+],
+
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),

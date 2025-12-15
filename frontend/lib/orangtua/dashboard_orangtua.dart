@@ -4,6 +4,7 @@ import 'jadwal.dart';
 import 'pengumuman.dart';
 import 'pembayaran.dart';
 import 'profil.dart';
+import 'package:frontend/widgets/notifikasi_widgets.dart';
 
 class DashboardPage extends StatefulWidget {
   @override
@@ -73,11 +74,12 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.notifications_none, color: greenColor),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tidak ada notifikasi baru')),
+          NotifikasiBadge(
+            iconColor: greenColor,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotifikasiPage()),
               );
             },
           ),
