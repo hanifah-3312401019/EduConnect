@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import 'dashboard_orangtua.dart';
-import 'perizinan.dart';
 import 'jadwal.dart';
 import 'pengumuman.dart';
 import 'profil.dart';
-import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
+import 'package:frontend/env/api_base_url.dart';
+import 'package:frontend/storage/auth_storage.dart';
+import 'package:frontend/widgets/sidebarOrangtua.dart';
 import 'package:frontend/widgets/notifikasi_widgets.dart';
 
 class RincianPembayaranPage extends StatefulWidget {
@@ -17,8 +21,7 @@ class RincianPembayaranPage extends StatefulWidget {
 
 class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
   int _selectedIndex = 3;
-
-  final List<String> months = [
+  final List<String> months = const [
     'Januari',
     'Februari',
     'Maret',
@@ -32,27 +35,14 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
     'November',
     'Desember',
   ];
-
-  final List<String> years = List.generate(
-    11,
-    (index) => (2020 + index).toString(),
-  );
-
+  final List<String> years = List.generate(6, (i) => (2024 + i).toString());
   late String selectedMonth;
   late String selectedYear;
-
-  final Map<String, List<_PaymentItem>> paymentData = {
-    'Oktober 2025': [
-      _PaymentItem('SPP Bulanan', 'Rp. 500.000'),
-      _PaymentItem('Catering', 'Rp. 200.000'),
-      _PaymentItem('Ekstrakurikuler', 'Rp. 150.000'),
-    ],
-    'September 2025': [
-      _PaymentItem('SPP Bulanan', 'Rp. 500.000'),
-      _PaymentItem('Catering', 'Rp. 180.000'),
-      _PaymentItem('Ekstrakurikuler', 'Rp. 150.000'),
-    ],
-  };
+  List<_PaymentItem> items = [];
+  int totalBayar = 0;
+  bool loading = true;
+  final Color greenColor = const Color(0xFF465940);
+  final Color backgroundColor = const Color(0xFFFDFBF0);
 
   @override
   void initState() {
@@ -60,67 +50,169 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
     final now = DateTime.now();
     selectedMonth = months[now.month - 1];
     selectedYear = now.year.toString();
+    _initPembayaran();
+  }
+
+  Future<void> _initPembayaran() async {
+    final token = await AuthStorage.getToken();
+    if (token == null) {
+      debugPrint('TOKEN MASIH NULL, TUNGGU...');
+      await Future.delayed(const Duration(milliseconds: 500));
+      return _initPembayaran();
+    }
+    debugPrint('TOKEN SIAP, FETCH PEMBAYARAN');
+    await fetchPembayaran();
+  }
+
+  Future<void> fetchPembayaran() async {
+    setState(() => loading = true);
+    final token = await AuthStorage.getToken();
+    if (token == null) {
+      debugPrint('TOKEN NULL - SKIP REQUEST');
+      setState(() => loading = false);
+      return;
+    }
+
+    final response = await http.get(
+      Uri.parse(
+        '${ApiConfig.baseUrl}/api/orangtua/pembayaran'
+        '?bulan=$selectedMonth&tahun=$selectedYear',
+      ),
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      setState(() {
+        items = (json['items'] as List)
+            .map((e) => _PaymentItem(e['nama'], 'Rp ${e['nominal']}'))
+            .toList();
+        totalBayar = json['total_bayar'];
+        loading = false;
+      });
+    } else {
+      loading = false;
+      setState(() {});
+    }
   }
 
   void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
-    Widget? targetPage;
+    setState(() {
+      _selectedIndex = index;
+    });
     switch (index) {
       case 0:
-        targetPage = DashboardPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => DashboardPage()),
+        );
         break;
       case 1:
-        targetPage = JadwalPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => JadwalPage()),
+        );
         break;
       case 2:
-        targetPage = PengumumanPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => PengumumanPage()),
+        );
         break;
       case 3:
-        targetPage = RincianPembayaranPage();
+        // Tetap di halaman pembayaran
         break;
       case 4:
-        targetPage = ProfilPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => ProfilPage()),
+        );
         break;
     }
-    if (targetPage != null && targetPage.runtimeType != runtimeType) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => targetPage!,
-          transitionDuration: Duration.zero,
-        ),
-      );
-    }
+  }
+
+  Widget _buildPaymentCard(
+    String bulan,
+    List<_PaymentItem> items,
+    String total,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: greenColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            bulan,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(item.nama, style: const TextStyle(color: Colors.white)),
+                  Text(
+                    item.nominal,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          const Divider(color: Colors.white54, thickness: 1, height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Total",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                total,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color greenColor = const Color(0xFF465940);
-    final Color backgroundColor = const Color(0xFFFDFBF0);
-
-    String key = '$selectedMonth $selectedYear';
-    List<_PaymentItem> items =
-        paymentData[key] ??
-        [
-          _PaymentItem('SPP Bulanan', 'Rp. 500.000'),
-          _PaymentItem('Catering', 'Rp. 200.000'),
-          _PaymentItem('Ekstrakurikuler', 'Rp. 150.000'),
-        ];
-    paymentData.putIfAbsent(key, () => items);
-
     return Scaffold(
       backgroundColor: backgroundColor,
+      drawer: const sidebarOrangtua(), // Gunakan widget sidebar yang sudah ada
       appBar: AppBar(
         backgroundColor: backgroundColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: greenColor),
+        iconTheme: const IconThemeData(color: Color(0xFF465940)),
         centerTitle: true,
         title: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.school, color: greenColor),
-            const SizedBox(width: 6),
-            const Text(
+          children: const [
+            Icon(Icons.school, color: Color(0xFF465940)),
+            SizedBox(width: 6),
+            Text(
               "EduConnect",
               style: TextStyle(
                 color: Colors.black87,
@@ -130,84 +222,19 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
           ],
         ),
         actions: [
-        NotifikasiBadge(
-          iconColor: greenColor,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotifikasiPage()),
-            );
-          },
-        ),
-      ],
+          NotifikasiBadge(
+            iconColor: greenColor,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+              );
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black.withOpacity(0.2), height: 1.0),
-        ),
-      ),
-      drawer: Drawer(
-        backgroundColor: backgroundColor,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: greenColor),
-              child: const Center(
-                child: Text(
-                  "EduConnect Menu",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-            ),
-            _drawerItem(Icons.home, "Halaman Utama", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => DashboardPage()),
-              );
-            }),
-            _drawerItem(Icons.home, "Permohonan Izin", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => PerizinanPage()),
-              );
-            }),
-            _drawerItem(Icons.calendar_month, "Jadwal", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => JadwalPage()),
-              );
-            }),
-            _drawerItem(Icons.event_note, "Agenda", () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AgendaPage()),
-                );
-              }),
-            _drawerItem(Icons.campaign, "Pengumuman", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => PengumumanPage()),
-              );
-            }),
-            _drawerItem(
-              Icons.payment,
-              "Pembayaran",
-              () {},
-            ), // tetap di page ini
-            _drawerItem(Icons.person, "Profil", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => ProfilPage()),
-              );
-            }),
-            const Divider(),
-            _drawerItem(Icons.logout, "Keluar", () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => LoginPage()),
-              );
-            }, color: Colors.red),
-          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -236,7 +263,7 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade400),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: Colors.black12,
                         blurRadius: 3,
@@ -273,8 +300,10 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                               )
                               .toList(),
                           onChanged: (value) {
-                            if (value != null)
+                            if (value != null) {
                               setState(() => selectedMonth = value);
+                              fetchPembayaran();
+                            }
                           },
                         ),
                       ),
@@ -299,8 +328,10 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                               )
                               .toList(),
                           onChanged: (value) {
-                            if (value != null)
+                            if (value != null) {
                               setState(() => selectedYear = value);
+                              fetchPembayaran();
+                            }
                           },
                         ),
                       ),
@@ -311,11 +342,14 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
             ),
             const SizedBox(height: 16),
             // Kartu Pembayaran
-            _buildPaymentCard(
-              '$selectedMonth $selectedYear',
-              items,
-              'Rp. 850.000',
-            ),
+            if (loading)
+              const Center(child: CircularProgressIndicator())
+            else
+              _buildPaymentCard(
+                '$selectedMonth $selectedYear',
+                items,
+                'Rp $totalBayar',
+              ),
             const SizedBox(height: 30),
             // Tata Cara Pembayaran
             Container(
@@ -383,83 +417,6 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
             label: 'Pembayaran',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
-        ],
-      ),
-    );
-  }
-
-  Widget _drawerItem(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    Color? color,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? const Color(0xFF465940)),
-      title: Text(title, style: TextStyle(color: color ?? Colors.black87)),
-      onTap: onTap,
-    );
-  }
-
-  Widget _buildPaymentCard(
-    String bulan,
-    List<_PaymentItem> items,
-    String total,
-  ) {
-    const greenColor = Color(0xFF465940);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: greenColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            bulan,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 8),
-          for (final item in items)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(item.nama, style: const TextStyle(color: Colors.white)),
-                  Text(
-                    item.nominal,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          const Divider(color: Colors.white54, thickness: 1, height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Total",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                total,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\UniversalLoginController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\PengumumanGuruController;
 use App\Http\Controllers\Api\PengumumanOrtuController;
+use App\Http\Controllers\Api\PembayaranController;
 use App\Http\Controllers\Api\AgendaGuruController;
 use App\Http\Controllers\Api\AgendaOrtuController;
 use App\Http\Controllers\Api\PerizinanOrtuController;
@@ -32,6 +33,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/ekstrakulikuler', [EkskulController::class, 'index']);
 
+// ROUTE PEMBAYARAN ORANG TUA
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/orangtua/pembayaran', [PembayaranController::class, 'pembayaranOrangtua']);
+});
+
 // ADMIN WEBSITE
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/profile', [AdminController::class, 'getProfile']);
@@ -41,6 +47,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/orangtua/list', [AdminController::class, 'getAllOrangTua']);
     Route::put('/admin/orangtua/update/{id}', [AdminController::class, 'updateOrangTua']);
     Route::delete('/admin/orangtua/delete/{id}', [AdminController::class, 'deleteOrangTua']);
+
+    // ADMIN - Pembayaran
+    Route::get('admin/pembayaran', [PembayaranController::class, 'index']);
+    Route::post('admin/pembayaran', [PembayaranController::class, 'store']);
+    Route::get('admin/pembayaran/{id}', [PembayaranController::class, 'show']);
+    Route::put('admin/pembayaran/{id}', [PembayaranController::class, 'update']);
+    Route::delete('admin/pembayaran/{id}', [PembayaranController::class, 'destroy']);
 });
 
 // ADMIN - Guru

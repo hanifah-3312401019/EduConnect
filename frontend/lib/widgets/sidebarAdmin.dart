@@ -21,8 +21,8 @@ class SidebarAdmin extends StatelessWidget {
           const Text(
             "Admin Menu",
             style: TextStyle(
-              color: Colors.white, 
-              fontSize: 20, 
+              color: Colors.white,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -38,14 +38,17 @@ class SidebarAdmin extends StatelessWidget {
                 menuItem(Icons.family_restroom, "Data Orang Tua"),
                 menuItem(Icons.class_, "Data Kelas"),
                 menuItem(Icons.calendar_view_week, "Jadwal Pelajaran"),
-                menuItem(Icons.calendar_view_week, "informasi Pembayaran"),
+                menuItem(Icons.payment, "Informasi Pembayaran"),
 
                 const Divider(color: Colors.white54, height: 30),
-                
+
                 // PERBAIKI - handle logout
                 ListTile(
                   leading: Icon(Icons.logout, color: Colors.redAccent),
-                  title: Text("Keluar", style: TextStyle(color: Colors.redAccent)),
+                  title: Text(
+                    "Keluar",
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
                   onTap: () {
                     // Handle logout logic di sini
                     Navigator.pushAndRemoveUntil(
@@ -54,10 +57,10 @@ class SidebarAdmin extends StatelessWidget {
                       (route) => false,
                     );
                   },
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -68,10 +71,7 @@ class SidebarAdmin extends StatelessWidget {
       leading: Icon(icon, color: color ?? Colors.white),
       title: Text(
         title,
-        style: TextStyle(
-          color: color ?? Colors.white,
-          fontSize: 15,
-        ),
+        style: TextStyle(color: color ?? Colors.white, fontSize: 15),
       ),
       onTap: () => onMenuSelected(title),
       hoverColor: Colors.white10, // biar ada efek hover

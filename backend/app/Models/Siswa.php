@@ -46,4 +46,9 @@ class Siswa extends Model
     {
         return $this->hasMany(Perizinan::class, 'Siswa_Id', 'Siswa_Id');
     }
+
+    public function pembayaran()
+{
+    return $this->hasMany(Pembayaran::class, 'Siswa_Id', 'Siswa_Id');
+}
 }
