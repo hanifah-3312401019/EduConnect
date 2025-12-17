@@ -54,15 +54,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('admin/pembayaran/{id}', [PembayaranController::class, 'show']);
     Route::put('admin/pembayaran/{id}', [PembayaranController::class, 'update']);
     Route::delete('admin/pembayaran/{id}', [PembayaranController::class, 'destroy']);
-});
 
-// ADMIN - Guru
-Route::post('/admin/guru/create', [AdminController::class, 'createGuru']);
-Route::get('/admin/guru/list', [AdminController::class, 'getAllGuru']);
-Route::get('/admin/guru/detail/{id}', [AdminController::class, 'getGuruDetail']);
-Route::put('/admin/guru/update/{id}', [AdminController::class, 'updateGuru']);
-Route::delete('/admin/guru/delete/{id}', [AdminController::class, 'deleteGuru']);
-Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
+    // ADMIN - Guru
+    Route::post('/admin/guru/create', [AdminController::class, 'createGuru']);
+    Route::get('/admin/guru/list', [AdminController::class, 'getAllGuru']);
+    Route::get('/admin/guru/detail/{id}', [AdminController::class, 'getGuruDetail']);
+    Route::put('/admin/guru/update/{id}', [AdminController::class, 'updateGuru']);
+    Route::delete('/admin/guru/delete/{id}', [AdminController::class, 'deleteGuru']);
+    
+    // Get kelas list untuk dropdown (dari tabel kelas teman Anda)
+    Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
+    
+    // Penugasan guru ke kelas (opsional, bisa digunakan untuk UI khusus)
+    Route::post('/admin/guru/assign-kelas', [AdminController::class, 'assignGuruToKelas']);
+    Route::post('/admin/guru/remove-kelas', [AdminController::class, 'removeGuruFromKelas']);
+});
 
 // ROUTE PENGUMUMAN GURU
 Route::middleware('auth:sanctum')->group(function () {

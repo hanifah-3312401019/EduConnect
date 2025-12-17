@@ -25,8 +25,35 @@ class Guru extends Authenticatable
 
     protected $hidden = ['Kata_Sandi'];
 
+    // Cari kelas di mana guru ini mengajar (baik sebagai utama atau pendamping)
     public function kelas()
     {
-        return $this->hasOne(Kelas::class, 'Guru_Id', 'Guru_Id');
+        return Kelas::where('Guru_Utama_Id', $this->Guru_Id)
+                   ->orWhere('Guru_Pendamping_Id', $this->Guru_Id)
+                   ->first();
+    }
+
+    // Helper untuk mengetahui peran dan kelas
+    public function getInfoKelas()
+    {
+        $kelas = $this->kelas();
+        
+        if (!$kelas) {
+            return [
+                'status' => 'Belum Bertugas',
+                'kelas_nama' => null,
+                'kelas_id' => null,
+                'peran' => null
+            ];
+        }
+        
+        $peran = $kelas->Guru_Utama_Id == $this->Guru_Id ? 'Guru Utama' : 'Guru Pendamping';
+        
+        return [
+            'status' => 'Aktif',
+            'kelas_nama' => $kelas->Nama_Kelas,
+            'kelas_id' => $kelas->Kelas_Id,
+            'peran' => $peran
+        ];
     }
 }

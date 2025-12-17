@@ -16,7 +16,7 @@ use App\Mail\GuruPasswordMail;
 
 class AdminController extends Controller
 {
-    // FUNGSI ORANG TUA
+    //  FUNGSI ORANG TUA
     public function createOrangTua(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -173,119 +173,142 @@ class AdminController extends Controller
         ]);
     }
 
-    // FUNGSI GURU 
+    //  DATA GURU 
     public function createGuru(Request $request)
     {
+        \Log::info('Create Guru Request: ', $request->all());
+        
         $validator = Validator::make($request->all(), [
             'NIK' => 'required|string|unique:gurus,NIK|max:20',
             'Nama' => 'required|string|max:255',
             'Email' => 'required|email|unique:gurus,Email',
-            'Kelas_Id' => 'nullable|exists:kelas,Kelas_Id'
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Validation failed: ', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'message' => $validator->errors()
             ], 422);
         }
 
-        // Generate password berdasarkan nama + angka
+        // Generate password otomatis
         $namaBersih = preg_replace('/[^a-zA-Z]/', '', $request->Nama);
         $namaSingkat = strtolower(substr($namaBersih, 0, 4));
         $angka = rand(1000, 9999);
         $plainPassword = $namaSingkat . $angka;
 
-        // Simpan ke DB (hash)
-        $guru = Guru::create([
-            'NIK' => $request->NIK,
-            'Nama' => $request->Nama,
-            'Email' => $request->Email,
-            'Kata_Sandi' => bcrypt($plainPassword),
-        ]);
+        \Log::info('Generated password for ' . $request->Nama . ': ' . $plainPassword);
 
-        // Update kelas jika ada Kelas_Id
-        if ($request->has('Kelas_Id') && $request->Kelas_Id) {
-            Kelas::where('Kelas_Id', $request->Kelas_Id)
-                 ->update(['Guru_Id' => $guru->Guru_Id]);
+        // Simpan guru ke database
+        try {
+            $guru = Guru::create([
+                'NIK' => $request->NIK,
+                'Nama' => $request->Nama,
+                'Email' => $request->Email,
+                'Kata_Sandi' => bcrypt($plainPassword),
+            ]);
+
+            \Log::info('Guru created successfully: ID ' . $guru->Guru_Id);
+        } catch (\Exception $e) {
+            \Log::error('Error saving guru: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data guru: ' . $e->getMessage()
+            ], 500);
         }
 
-        // Kirim password ke email
-        Mail::to($request->Email)
-            ->send(new GuruPasswordMail($request->Nama, $request->Email, $plainPassword));
+        try {
+            Mail::to($request->Email)
+                ->send(new GuruPasswordMail($request->Nama, $request->Email, $plainPassword));
+            \Log::info('Email sent to: ' . $request->Email);
+        } catch (\Exception $e) {
+            \Log::error('Error sending email: ' . $e->getMessage());
+        }
 
-        // Return ke frontend (admin)
         return response()->json([
             'success' => true,
-            'message' => 'Akun guru berhasil dibuat & password telah dikirim ke email',
+            'message' => 'Akun guru berhasil dibuat. Password telah dikirim ke email.',
             'data' => [
-                'guru' => $guru,
-                'password_generated' => $plainPassword
+                'Guru_Id' => $guru->Guru_Id,
+                'NIK' => $guru->NIK,
+                'Nama' => $guru->Nama,
+                'Email' => $guru->Email,
+                'created_at' => $guru->created_at
             ]
         ]);
     }
 
     public function getAllGuru()
     {
+        \Log::info('=== GET ALL GURU STARTED ===');
+        
         try {
-            // Ambil semua guru
+            $totalGuru = Guru::count();
+            \Log::info('Total guru in database: ' . $totalGuru);
+            
             $gurus = Guru::select('Guru_Id', 'NIK', 'Nama', 'Email', 'created_at', 'updated_at')
+                        ->orderBy('Nama', 'asc')
                         ->get();
-
-            // Ambil data kelas untuk mapping
-            $kelasData = Kelas::select('Kelas_Id', 'Nama_Kelas', 'Guru_Id')
-                            ->whereNotNull('Guru_Id')
-                            ->get()
-                            ->keyBy('Guru_Id');
-
-            // Format data
-            $data = $gurus->map(function($guru) use ($kelasData) {
-                $kelas = $kelasData->get($guru->Guru_Id);
-                
+            
+            \Log::info('Found ' . $gurus->count() . ' gurus');
+            
+            foreach ($gurus as $guru) {
+                \Log::info('Guru: ID=' . $guru->Guru_Id . ', Nama=' . $guru->Nama . ', NIK=' . $guru->NIK);
+            }
+            
+            $formattedGurus = $gurus->map(function($guru) {
                 return [
                     'Guru_Id' => $guru->Guru_Id,
                     'NIK' => $guru->NIK,
                     'Nama' => $guru->Nama,
                     'Email' => $guru->Email,
-                    'Kelas' => $kelas ? $kelas->Nama_Kelas : null,
-                    'Kelas_Id' => $kelas ? $kelas->Kelas_Id : null,
-                    'created_at' => $guru->created_at,
-                    'updated_at' => $guru->updated_at
+                    'kelas_nama' => null,
+                    'kelas_id' => null,
+                    'peran' => null,
+                    'status' => 'Data Guru',
+                    'created_at' => $guru->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $guru->updated_at->format('Y-m-d H:i:s')
                 ];
             });
 
+            \Log::info('=== GET ALL GURU COMPLETED ===');
+            
             return response()->json([
                 'success' => true,
-                'data' => $data
+                'message' => 'Data guru berhasil diambil',
+                'count' => $formattedGurus->count(),
+                'data' => $formattedGurus
             ]);
             
         } catch (\Exception $e) {
             \Log::error('Error in getAllGuru: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan pada server'
+                'message' => 'Terjadi kesalahan pada server: ' . $e->getMessage()
             ], 500);
         }
     }
 
     public function getGuruDetail($id)
     {
+        \Log::info('Get Guru Detail for ID: ' . $id);
+        
         try {
             $guru = Guru::select('Guru_Id', 'NIK', 'Nama', 'Email', 'created_at', 'updated_at')
                        ->find($id);
 
             if (!$guru) {
+                \Log::warning('Guru not found: ID ' . $id);
                 return response()->json([
                     'success' => false,
                     'message' => 'Guru tidak ditemukan'
                 ], 404);
             }
 
-            // Cek apakah guru punya kelas
-            $kelas = Kelas::select('Kelas_Id', 'Nama_Kelas')
-                         ->where('Guru_Id', $id)
-                         ->first();
-
+            \Log::info('Found guru: ' . $guru->Nama);
+            
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -293,14 +316,17 @@ class AdminController extends Controller
                     'NIK' => $guru->NIK,
                     'Nama' => $guru->Nama,
                     'Email' => $guru->Email,
-                    'Kelas' => $kelas ? $kelas->Nama_Kelas : null,
-                    'Kelas_Id' => $kelas ? $kelas->Kelas_Id : null,
-                    'created_at' => $guru->created_at,
-                    'updated_at' => $guru->updated_at
+                    'kelas_nama' => null,
+                    'kelas_id' => null,
+                    'peran' => null,
+                    'status' => 'Data Guru',
+                    'created_at' => $guru->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $guru->updated_at->format('Y-m-d H:i:s')
                 ]
             ]);
             
         } catch (\Exception $e) {
+            \Log::error('Error in getGuruDetail: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
@@ -310,9 +336,12 @@ class AdminController extends Controller
 
     public function updateGuru(Request $request, $id)
     {
+        \Log::info('Update Guru Request for ID ' . $id . ': ', $request->all());
+        
         $guru = Guru::find($id);
 
         if (!$guru) {
+            \Log::warning('Guru not found for update: ID ' . $id);
             return response()->json([
                 'success' => false,
                 'message' => 'Guru tidak ditemukan'
@@ -322,77 +351,98 @@ class AdminController extends Controller
         $validator = Validator::make($request->all(), [
             'Nama' => 'required|string|max:255',
             'Email' => 'required|email|unique:gurus,Email,' . $id . ',Guru_Id',
-            'Kelas_Id' => 'nullable|exists:kelas,Kelas_Id'
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Validation failed: ', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'message' => $validator->errors()
             ], 422);
         }
 
-        // Update data guru
-        $guru->update([
-            'Nama' => $request->Nama,
-            'Email' => $request->Email,
-        ]);
-
-        // Update kelas jika ada Kelas_Id
-        if ($request->has('Kelas_Id')) {
-            // Hapus relasi kelas lama
-            Kelas::where('Guru_Id', $id)->update(['Guru_Id' => null]);
+        try {
+            $guru->update([
+                'Nama' => $request->Nama,
+                'Email' => $request->Email,
+            ]);
             
-            // Update kelas baru (jika bukan kosong)
-            if ($request->Kelas_Id) {
-                Kelas::where('Kelas_Id', $request->Kelas_Id)->update(['Guru_Id' => $id]);
-            }
-        }
+            \Log::info('Guru updated successfully: ID ' . $id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data guru berhasil diperbarui',
-            'data' => $guru
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Data guru berhasil diperbarui',
+                'data' => $guru
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating guru: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
+    //  DELETE
     public function deleteGuru($id)
     {
+        \Log::info('Delete Guru Request for ID: ' . $id);
+        
         $guru = Guru::find($id);
 
         if (!$guru) {
+            \Log::warning('Guru not found for delete: ID ' . $id);
             return response()->json([
                 'success' => false,
                 'message' => 'Guru tidak ditemukan'
             ], 404);
         }
 
-        // Cek apakah guru memiliki kelas
-        $kelas = Kelas::where('Guru_Id', $id)->first();
-        if ($kelas) {
+        try {
+            $guruData = [
+                'id' => $guru->Guru_Id,
+                'nama' => $guru->Nama,
+                'email' => $guru->Email
+            ];
+            
+            $guru->delete();
+            
+            \Log::info('Guru deleted: ', $guruData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data guru berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error deleting guru: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Guru masih memiliki kelas. Harap ubah wali kelas terlebih dahulu.'
-            ], 400);
+                'message' => 'Gagal menghapus data: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Hapus guru
-        $guru->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data guru berhasil dihapus'
-        ]);
     }
 
     public function getKelasListForGuru()
     {
         try {
-            $kelas = Kelas::select('Kelas_Id', 'Nama_Kelas', 'Guru_Id')
-                        ->with(['guru' => function($query) {
-                            $query->select('Guru_Id', 'Nama');
-                        }])
-                        ->get();
+            if (!\Schema::hasTable('kelas')) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tabel kelas tidak tersedia',
+                    'data' => []
+                ]);
+            }
+            
+            $kelas = Kelas::select('Kelas_Id', 'Nama_Kelas')
+                        ->orderBy('Nama_Kelas', 'asc')
+                        ->get()
+                        ->map(function($kelas) {
+                            return [
+                                'Kelas_Id' => $kelas->Kelas_Id,
+                                'Nama_Kelas' => $kelas->Nama_Kelas,
+                                'note' => 'Penugasan guru diatur di halaman Data Kelas'
+                            ];
+                        });
 
             return response()->json([
                 'success' => true,
@@ -400,16 +450,26 @@ class AdminController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ], 500);
+                'success' => true,
+                'message' => 'Info kelas tidak tersedia',
+                'data' => []
+            ]);
         }
     }
 
-    // FUNGSI PROFIL & STATISTIK
+    // FUNGSI PROFIL & STATISTIK 
+    
     public function getProfile(Request $request)
     {
         $admin = $request->user();
+        
+        if (!$admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin tidak ditemukan'
+            ], 404);
+        }
+        
         return response()->json([
             'success' => true,
             'data' => [
@@ -424,19 +484,26 @@ class AdminController extends Controller
 
     public function getStatistics(Request $request)
     {
-        $totalSiswa = Siswa::count();
-        $totalGuru = Guru::count();
-        $totalOrangTua = OrangTua::count();
-        $totalKelas = Kelas::count();
+        try {
+            $totalSiswa = Siswa::count();
+            $totalGuru = Guru::count();
+            $totalOrangTua = OrangTua::count();
+            $totalKelas = Kelas::count();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'total_siswa' => $totalSiswa,
-                'total_guru' => $totalGuru,
-                'total_orang_tua' => $totalOrangTua,
-                'total_kelas' => $totalKelas,
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_siswa' => $totalSiswa,
+                    'total_guru' => $totalGuru,
+                    'total_orang_tua' => $totalOrangTua,
+                    'total_kelas' => $totalKelas,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting statistics: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
