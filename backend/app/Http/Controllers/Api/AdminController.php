@@ -458,7 +458,6 @@ class AdminController extends Controller
     }
 
     // FUNGSI PROFIL & STATISTIK 
-    
     public function getProfile(Request $request)
     {
         $admin = $request->user();
@@ -505,5 +504,91 @@ class AdminController extends Controller
                 'message' => 'Error getting statistics: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    //  FUNGSI DATA KELAS
+    public function getAllKelas()
+    {
+        $kelas = Kelas::with(['guruUtama', 'guruPendamping', 'siswa'])
+        ->orderBy('Nama_Kelas', 'asc')
+        ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $kelas->map(function ($k) {
+                return [
+                    'Kelas_Id' => $k->Kelas_Id,
+                    'Nama_Kelas' => $k->Nama_Kelas,
+                    'Tahun_Ajar' => $k->Tahun_Ajar,
+                    'Jumlah' => $k->Jumlah,
+                    'Guru_Utama' => $k->guruUtama->Nama ?? '-',
+                    'Guru_Pendamping' => $k->guruPendamping->Nama ?? '-',
+                    'Siswa' => $k->siswa->pluck('Nama'),
+                    'Jumlah_Siswa' => $k->siswa->count(),
+                ];
+           })
+       ]);
+    }
+
+    // FUNGSI TAMBAH KELAS
+    public function createKelas(Request $request)
+    {
+        $request->validate([
+            'Nama_Kelas' => 'required',
+            'Tahun_Ajar' => 'required',
+            'Guru_Utama_Id' => 'nullable|exists:gurus,Guru_Id',
+            'Guru_Pendamping_Id' => 'nullable|exists:gurus,Guru_Id',
+        ]);
+        $kelas = Kelas::create([
+            'Nama_Kelas' => $request->Nama_Kelas,
+            'Tahun_Ajar' => $request->Tahun_Ajar,
+            'Guru_Utama_Id' => $request->Guru_Utama_Id,
+            'Guru_Pendamping_Id' => $request->Guru_Pendamping_Id,
+            'Jumlah' => 0,
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Kelas berhasil ditambahkan',
+            'data' => $kelas
+        ]);
+    }
+
+    // FUNGSI UPDATE KELAS
+    public function updateKelas(Request $request, $id)
+    {
+        $kelas = Kelas::findOrFail($id);
+
+        $kelas->update($request->only([
+            'Nama_Kelas',
+            'Tahun_Ajar',
+            'Guru_Utama_Id',
+            'Guru_Pendamping_Id'
+        ]));
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Data kelas berhasil diperbarui'
+        ]);
+    }
+
+    // FUNGSI HAPUS KELAS
+    public function deleteKelas($id)
+    {
+        $kelas = Kelas::findOrFail($id);
+        
+        if ($kelas->siswa()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kelas masih memiliki siswa'
+            ], 400);
+        }
+        
+        $kelas->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Kelas berhasil dihapus'
+        ]);
     }
 }

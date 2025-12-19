@@ -14,14 +14,20 @@ class Kelas extends Model
 
     protected $fillable = [
         'Nama_Kelas',
-        'Guru_Id',
+        'Guru_Utama_Id',
+        'Guru_Pendamping_Id',
         'Jumlah',
         'Tahun_Ajar'
     ];
 
-    public function guru()
+    public function guruUtama()
     {
-        return $this->belongsTo(Guru::class, 'Guru_Id');
+        return $this->belongsTo(Guru::class, 'Guru_Utama_Id');
+    }
+
+    public function guruPendamping()
+    {
+        return $this->belongsTo(Guru::class, 'Guru_Pendamping_Id');
     }
 
     public function siswa()

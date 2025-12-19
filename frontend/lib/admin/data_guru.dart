@@ -684,6 +684,7 @@ class _DataGuruPageState extends State<DataGuruPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -720,7 +721,8 @@ class _DataGuruPageState extends State<DataGuruPage> {
           detailLine("Email", data["email"]),
           
           const SizedBox(height: 8),
-          Container(
+          Flexible(
+          child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.blue.shade50,
@@ -742,8 +744,9 @@ class _DataGuruPageState extends State<DataGuruPage> {
               ],
             ),
           ),
+        ),
           
-          const Spacer(),
+          const SizedBox(height: 12),
           
           Row(
             mainAxisAlignment: MainAxisAlignment.end,

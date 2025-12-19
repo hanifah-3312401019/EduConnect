@@ -61,8 +61,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/guru/detail/{id}', [AdminController::class, 'getGuruDetail']);
     Route::put('/admin/guru/update/{id}', [AdminController::class, 'updateGuru']);
     Route::delete('/admin/guru/delete/{id}', [AdminController::class, 'deleteGuru']);
+
+    // ADMIN - Kelas
+    Route::get('/admin/kelas/list', [AdminController::class, 'getAllKelas']);
+    Route::post('/admin/kelas/create', [AdminController::class, 'createKelas']);
+    Route::put('/admin/kelas/update/{id}', [AdminController::class, 'updateKelas']);
+    Route::delete('/admin/kelas/delete/{id}', [AdminController::class, 'deleteKelas']);
     
-    // Get kelas list untuk dropdown (dari tabel kelas teman Anda)
+    // Get kelas list untuk dropdown
     Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
     
     // Penugasan guru ke kelas (opsional, bisa digunakan untuk UI khusus)
