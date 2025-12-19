@@ -76,6 +76,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/guru/remove-kelas', [AdminController::class, 'removeGuruFromKelas']);
 });
 
+// ADMIN DASHBOARD STATS
+Route::middleware('auth:sanctum')->get('/admin/dashboard/stats', [AdminController::class, 'dashboardStats']);
+
 // ROUTE PENGUMUMAN GURU
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/guru/pengumuman', [PengumumanGuruController::class, 'index']);

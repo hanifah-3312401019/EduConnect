@@ -591,4 +591,18 @@ class AdminController extends Controller
             'message' => 'Kelas berhasil dihapus'
         ]);
     }
+
+    // FUNGSI DASHBOARD STATS
+    public function dashboardStats()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_siswa' => \App\Models\Siswa::count(),
+                'total_guru' => \App\Models\Guru::count(),
+                'total_orangtua' => \App\Models\OrangTua::count(),
+                'total_kelas' => \App\Models\Kelas::count(),
+                ]
+            ]);
+        }
 }
