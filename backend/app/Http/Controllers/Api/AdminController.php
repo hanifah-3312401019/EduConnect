@@ -247,26 +247,27 @@ class AdminController extends Controller
             $totalGuru = Guru::count();
             \Log::info('Total guru in database: ' . $totalGuru);
             
+            // Ambil semua guru dengan informasi kelas
             $gurus = Guru::select('Guru_Id', 'NIK', 'Nama', 'Email', 'created_at', 'updated_at')
                         ->orderBy('Nama', 'asc')
                         ->get();
             
             \Log::info('Found ' . $gurus->count() . ' gurus');
             
-            foreach ($gurus as $guru) {
-                \Log::info('Guru: ID=' . $guru->Guru_Id . ', Nama=' . $guru->Nama . ', NIK=' . $guru->NIK);
-            }
-            
+            // Format data guru dengan informasi kelas
             $formattedGurus = $gurus->map(function($guru) {
+                // Dapatkan informasi kelas dari model Guru
+                $infoKelas = $guru->getInfoKelas();
+                
                 return [
                     'Guru_Id' => $guru->Guru_Id,
                     'NIK' => $guru->NIK,
                     'Nama' => $guru->Nama,
                     'Email' => $guru->Email,
-                    'kelas_nama' => null,
-                    'kelas_id' => null,
-                    'peran' => null,
-                    'status' => 'Data Guru',
+                    'kelas_nama' => $infoKelas['kelas_nama'],
+                    'kelas_id' => $infoKelas['kelas_id'],
+                    'peran' => $infoKelas['peran'],
+                    'status' => $infoKelas['status'],
                     'created_at' => $guru->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $guru->updated_at->format('Y-m-d H:i:s')
                 ];
@@ -309,6 +310,9 @@ class AdminController extends Controller
 
             \Log::info('Found guru: ' . $guru->Nama);
             
+            // Dapatkan informasi kelas dari model Guru
+            $infoKelas = $guru->getInfoKelas();
+            
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -316,10 +320,10 @@ class AdminController extends Controller
                     'NIK' => $guru->NIK,
                     'Nama' => $guru->Nama,
                     'Email' => $guru->Email,
-                    'kelas_nama' => null,
-                    'kelas_id' => null,
-                    'peran' => null,
-                    'status' => 'Data Guru',
+                    'kelas_nama' => $infoKelas['kelas_nama'],
+                    'kelas_id' => $infoKelas['kelas_id'],
+                    'peran' => $infoKelas['peran'],
+                    'status' => $infoKelas['status'],
                     'created_at' => $guru->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $guru->updated_at->format('Y-m-d H:i:s')
                 ]
@@ -383,7 +387,7 @@ class AdminController extends Controller
         }
     }
 
-    //  DELETE
+    //  DELETE GURU
     public function deleteGuru($id)
     {
         \Log::info('Delete Guru Request for ID: ' . $id);
@@ -396,6 +400,19 @@ class AdminController extends Controller
                 'success' => false,
                 'message' => 'Guru tidak ditemukan'
             ], 404);
+        }
+
+        // Cek apakah guru sedang ditugaskan di kelas (sebagai guru utama atau pendamping)
+        $isAssigned = Kelas::where('Guru_Utama_Id', $id)
+                          ->orWhere('Guru_Pendamping_Id', $id)
+                          ->exists();
+        
+        if ($isAssigned) {
+            \Log::warning('Cannot delete guru: Guru is assigned to a class');
+            return response()->json([
+                'success' => false,
+                'message' => 'Guru tidak dapat dihapus karena sedang ditugaskan di kelas. Hapus/ubah penugasan kelas terlebih dahulu.'
+            ], 400);
         }
 
         try {
@@ -454,6 +471,220 @@ class AdminController extends Controller
                 'message' => 'Info kelas tidak tersedia',
                 'data' => []
             ]);
+        }
+    }
+
+    // FUNGSI UNTUK MENDAPATKAN KELAS BERDASARKAN GURU
+    public function getGuruKelas($guruId)
+    {
+        \Log::info('Get Kelas for Guru ID: ' . $guruId);
+        
+        try {
+            $guru = Guru::find($guruId);
+            
+            if (!$guru) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Guru tidak ditemukan'
+                ], 404);
+            }
+            
+            // Cari kelas di mana guru mengajar (baik sebagai utama atau pendamping)
+            $kelas = Kelas::where('Guru_Utama_Id', $guruId)
+                        ->orWhere('Guru_Pendamping_Id', $guruId)
+                        ->get();
+            
+            $formattedKelas = $kelas->map(function($k) use ($guruId) {
+                return [
+                    'Kelas_Id' => $k->Kelas_Id,
+                    'Nama_Kelas' => $k->Nama_Kelas,
+                    'Tahun_Ajar' => $k->Tahun_Ajar,
+                    'Peran' => $k->Guru_Utama_Id == $guruId ? 'Guru Utama' : 'Guru Pendamping',
+                    'Jumlah_Siswa' => $k->siswa->count() ?? 0
+                ];
+            });
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Data kelas guru berhasil diambil',
+                'count' => $formattedKelas->count(),
+                'data' => $formattedKelas
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in getGuruKelas: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // FUNGSI UNTUK MENUGASKAN GURU KE KELAS
+    public function assignGuruToKelas(Request $request)
+    {
+        \Log::info('Assign Guru to Kelas Request: ', $request->all());
+        
+        $validator = Validator::make($request->all(), [
+            'guru_id' => 'required|exists:gurus,Guru_Id',
+            'kelas_id' => 'required|exists:kelas,Kelas_Id',
+            'peran' => 'required|in:utama,pendamping'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $kelas = Kelas::find($request->kelas_id);
+            
+            // Cek apakah guru sudah ditugaskan di kelas lain
+            $alreadyAssigned = Kelas::where('Guru_Utama_Id', $request->guru_id)
+                                  ->orWhere('Guru_Pendamping_Id', $request->guru_id)
+                                  ->exists();
+            
+            if ($alreadyAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Guru sudah ditugaskan di kelas lain'
+                ], 400);
+            }
+            
+            // Update kelas berdasarkan peran
+            if ($request->peran == 'utama') {
+                $kelas->Guru_Utama_Id = $request->guru_id;
+            } else {
+                $kelas->Guru_Pendamping_Id = $request->guru_id;
+            }
+            
+            $kelas->save();
+            
+            \Log::info('Guru assigned to kelas successfully');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Guru berhasil ditugaskan ke kelas',
+                'data' => $kelas
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error assigning guru to kelas: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menugaskan guru: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    //  FUNGSI MENGHAPUS GURU DARI KELAS
+    public function removeGuruFromKelas(Request $request)
+    {
+        \Log::info('Remove Guru from Kelas Request: ', $request->all());
+        
+        $validator = Validator::make($request->all(), [
+            'guru_id' => 'required|exists:gurus,Guru_Id',
+            'kelas_id' => 'required|exists:kelas,Kelas_Id',
+            'peran' => 'required|in:utama,pendamping'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $kelas = Kelas::find($request->kelas_id);
+            
+            if (!$kelas) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kelas tidak ditemukan'
+                ], 404);
+            }
+            
+            // Cek apakah guru benar-benar ditugaskan di kelas tersebut dengan peran yang sesuai
+            if ($request->peran == 'utama') {
+                if ($kelas->Guru_Utama_Id != $request->guru_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Guru tidak ditugaskan sebagai guru utama di kelas ini'
+                    ], 400);
+                }
+                $kelas->Guru_Utama_Id = null;
+            } else {
+                if ($kelas->Guru_Pendamping_Id != $request->guru_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Guru tidak ditugaskan sebagai guru pendamping di kelas ini'
+                    ], 400);
+                }
+                $kelas->Guru_Pendamping_Id = null;
+            }
+            
+            $kelas->save();
+            
+            \Log::info('Guru removed from kelas successfully');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Guru berhasil dihapus dari penugasan kelas',
+                'data' => [
+                    'kelas_id' => $kelas->Kelas_Id,
+                    'nama_kelas' => $kelas->Nama_Kelas,
+                    'guru_id' => $request->guru_id,
+                    'peran' => $request->peran
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error removing guru from kelas: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus guru dari kelas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function getGuruKelasOverview()
+    {
+        try {
+            // Ambil semua guru yang sudah ditugaskan
+            $gurusWithKelas = Guru::whereHas('kelasUtama')
+                            ->orWhereHas('kelasPendamping')
+                            ->with(['kelasUtama', 'kelasPendamping'])
+                            ->get()
+                            ->map(function($guru) {
+                                $infoKelas = $guru->getInfoKelas();
+                                
+                                return [
+                                    'guru_id' => $guru->Guru_Id,
+                                    'nama' => $guru->Nama,
+                                    'peran' => $infoKelas['peran'] ?? null,
+                                    'kelas_nama' => $infoKelas['kelas_nama'] ?? null,
+                                    'status' => $infoKelas['status'] ?? 'Belum Bertugas'
+                                ];
+                            })
+                            ->where('kelas_nama', '!=', null)
+                            ->values();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data guru yang mengajar berhasil diambil',
+                'count' => $gurusWithKelas->count(),
+                'data' => $gurusWithKelas
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in getGuruKelasOverview: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 

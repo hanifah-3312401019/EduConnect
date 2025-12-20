@@ -86,14 +86,28 @@ class _DataGuruPageState extends State<DataGuruPage> {
           
           setState(() {
             guruList = list.map<Map<String, dynamic>>((d) {
+              // Tentukan status dan kelas
+              String status = d["status"]?.toString() ?? "Belum Bertugas";
+              String kelasNama = d["kelas_nama"]?.toString() ?? "-";
+              String peran = d["peran"]?.toString() ?? "-";
+              String kelasInfo;
+              
+              if (kelasNama != "-" && peran != "-") {
+                kelasInfo = "$peran - $kelasNama";
+              } else {
+                kelasInfo = "Belum ditugaskan";
+              }
+              
               return {
                 "id": d["Guru_Id"]?.toString() ?? "",
                 "nama": d["Nama"]?.toString() ?? "-",
                 "nik": d["NIK"]?.toString() ?? "-",
                 "email": d["Email"]?.toString() ?? "-",
-                "status": "Data Guru",
-                "kelas_nama": "Penugasan diatur di Data Kelas",
-                "peran": "Guru",
+                "status": status,
+                "kelas_nama": kelasNama,
+                "peran": peran,
+                "kelas_id": d["kelas_id"]?.toString() ?? "",
+                "kelas_info": kelasInfo,
                 "created_at": d["created_at"]?.toString() ?? "-",
               };
             }).toList();
@@ -447,6 +461,7 @@ class _DataGuruPageState extends State<DataGuruPage> {
                   
                   const SizedBox(height: 10),
                   
+                  // Informasi NIK (tidak bisa diubah)
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
@@ -483,25 +498,73 @@ class _DataGuruPageState extends State<DataGuruPage> {
                   
                   const SizedBox(height: 10),
                   
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.orange.shade200),
+                  // Informasi Kelas (jika sudah ditugaskan)
+                  if (guru["kelas_nama"] != "-" && guru["peran"] != "-")
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.school, size: 16, color: Colors.green.shade700),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Ditugaskan sebagai ${guru["peran"]}",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.green.shade800,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  "Kelas: ${guru["kelas_nama"]}",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green.shade600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Penugasan dapat diubah di halaman Data Kelas",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green.shade600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.school, size: 16, color: Colors.orange),
+                          SizedBox(height: 5),
+                          Text(
+                            "Guru belum ditugaskan ke kelas. Penugasan kelas diatur di halaman Data Kelas",
+                            style: TextStyle(fontSize: 12, color: Colors.orange),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
-                    child: const Column(
-                      children: [
-                        Icon(Icons.school, size: 16, color: Colors.orange),
-                        SizedBox(height: 5),
-                        Text(
-                          "Penugasan kelas diatur di halaman Data Kelas",
-                          style: TextStyle(fontSize: 12, color: Colors.orange),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -589,6 +652,48 @@ class _DataGuruPageState extends State<DataGuruPage> {
               ),
               const SizedBox(height: 10),
               
+              // Informasi tambahan
+              if (guru["kelas_nama"] != "-")
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, size: 18, color: Colors.orange.shade700),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "INFORMASI",
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Guru ini sedang ditugaskan sebagai ${guru["peran"]} di ${guru["kelas_nama"]}. Penghapusan akan membatalkan penugasan ini.",
+                              style: TextStyle(
+                                color: Colors.orange.shade800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              
+              const SizedBox(height: 10),
+              
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -614,7 +719,9 @@ class _DataGuruPageState extends State<DataGuruPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "Data guru akan dihapus permanen. Pastikan guru ini tidak sedang ditugaskan di kelas mana pun.",
+                            guru["kelas_nama"] != "-" 
+                              ? "Data guru dan penugasan kelas akan dihapus permanen."
+                              : "Data guru akan dihapus permanen.",
                             style: TextStyle(
                               color: Colors.red.shade800,
                               fontSize: 13,
@@ -668,6 +775,8 @@ class _DataGuruPageState extends State<DataGuruPage> {
   }
 
   Widget guruCard(Map<String, dynamic> data, int index) {
+    bool hasKelas = data["kelas_nama"] != "-" && data["peran"] != "-";
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -686,24 +795,46 @@ class _DataGuruPageState extends State<DataGuruPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF465940).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              "ID: ${data["id"]}",
-              style: TextStyle(
-                fontSize: 11,
-                color: const Color(0xFF465940),
-                fontWeight: FontWeight.bold,
+          // Header dengan ID dan Status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF465940).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  "ID: ${data["id"]}",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: const Color(0xFF465940),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: hasKelas ? Colors.green.shade100 : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  data["status"],
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: hasKelas ? Colors.green.shade800 : Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
           
           const SizedBox(height: 12),
           
+          // Nama Guru
           Text(
             data["nama"],
             style: const TextStyle(
@@ -717,40 +848,83 @@ class _DataGuruPageState extends State<DataGuruPage> {
           
           const SizedBox(height: 8),
           
+          // Detail NIK dan Email
           detailLine("NIK", data["nik"]),
           detailLine("Email", data["email"]),
           
           const SizedBox(height: 8),
-          Flexible(
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Penugasan kelas diatur di halaman Data Kelas",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
+          
+          // Informasi Kelas
+          if (hasKelas)
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.school, size: 16, color: Colors.green.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "${data["peran"]} - ${data["kelas_nama"]}",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.green.shade800,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "Ditugaskan sebagai ${data["peran"].toString().toLowerCase()}",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.green.shade600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Penugasan kelas diatur di halaman Data Kelas",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
           
           const SizedBox(height: 12),
           
+          // Action Buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              // Tombol Edit
               InkWell(
                 onTap: () => showEditGuruDialog(index),
                 child: Container(
@@ -763,6 +937,8 @@ class _DataGuruPageState extends State<DataGuruPage> {
                 ),
               ),
               const SizedBox(width: 12),
+              
+              // Tombol Hapus
               InkWell(
                 onTap: () => showDeleteGuruDialog(index),
                 child: Container(
@@ -872,6 +1048,8 @@ class _DataGuruPageState extends State<DataGuruPage> {
           GestureDetector(
             onTap: () async {
               await logout();
+              if (!mounted) return;
+              Navigator.pushReplacementNamed(context, '/login');
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -929,15 +1107,29 @@ class _DataGuruPageState extends State<DataGuruPage> {
                         ),
                         const SizedBox(height: 25),
 
+                        // Statistik dan Tombol Tambah
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              "Total: ${guruList.length} guru",
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 14,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Total: ${guruList.length} guru",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Ditugaskan: ${guruList.where((g) => g["kelas_nama"] != "-").length} guru",
+                                  style: TextStyle(
+                                    color: Colors.green.shade700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
@@ -960,6 +1152,7 @@ class _DataGuruPageState extends State<DataGuruPage> {
 
                         const SizedBox(height: 25),
 
+                        // Daftar Guru
                         Expanded(
                           child: isLoading
                               ? const Center(
@@ -1005,7 +1198,7 @@ class _DataGuruPageState extends State<DataGuruPage> {
                                       gridDelegate:
                                           const SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: 2,
-                                        childAspectRatio: 2.25,
+                                        childAspectRatio: 1.95,
                                         crossAxisSpacing: 22,
                                         mainAxisSpacing: 22,
                                       ),

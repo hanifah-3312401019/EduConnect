@@ -67,6 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/kelas/create', [AdminController::class, 'createKelas']);
     Route::put('/admin/kelas/update/{id}', [AdminController::class, 'updateKelas']);
     Route::delete('/admin/kelas/delete/{id}', [AdminController::class, 'deleteKelas']);
+    Route::get('/admin/guru/{id}/kelas', [AdminController::class, 'getGuruKelas']);
     
     // Get kelas list untuk dropdown
     Route::get('/admin/guru/kelas-list', [AdminController::class, 'getKelasListForGuru']);
