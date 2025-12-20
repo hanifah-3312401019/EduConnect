@@ -169,7 +169,10 @@ class PengumumanGuruController extends Controller
             return $guruId;
         }
 
-        $kelas = Kelas::where('Guru_Id', $guruId)->get();
+        // Cari semua kelas di mana guru mengajar (baik sebagai utama atau pendamping)
+        $kelas = Kelas::where('Guru_Utama_Id', $guruId)
+                      ->orWhere('Guru_Pendamping_Id', $guruId)
+                      ->get();
 
         if ($kelas->isEmpty()) {
             return response()->json([
@@ -192,7 +195,10 @@ class PengumumanGuruController extends Controller
             return $guruId;
         }
 
-        $kelas = Kelas::where('Guru_Id', $guruId)->get();
+        // Cari semua kelas di mana guru mengajar
+        $kelas = Kelas::where('Guru_Utama_Id', $guruId)
+                      ->orWhere('Guru_Pendamping_Id', $guruId)
+                      ->get();
 
         if ($kelas->isEmpty()) {
             return response()->json([
@@ -221,8 +227,26 @@ class PengumumanGuruController extends Controller
             return $guruId;
         }
 
-        $pengumuman = Pengumuman::where('Guru_Id', $guruId)
-            ->with(['guru', 'kelas', 'siswa'])
+        $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
+                        ->orWhere('Guru_Pendamping_Id', $guruId)
+                        ->first();
+
+        if (!$kelasGuru) {
+            $query = Pengumuman::where('Guru_Id', $guruId);
+        } else {
+            $kelasId = $kelasGuru->Kelas_Id;
+            
+            $query = Pengumuman::where(function($q) use ($guruId, $kelasId) {
+                $q->where('Guru_Id', $guruId)
+                ->orWhere(function($q2) use ($kelasId) {
+                    $q2->where('Tipe', 'perkelas')
+                        ->where('Kelas_Id', $kelasId);
+                })
+                ->orWhere('Tipe', 'umum');
+            });
+        }
+
+        $pengumuman = $query->with(['guru', 'kelas', 'siswa'])
             ->orderBy('Tanggal', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -241,7 +265,10 @@ class PengumumanGuruController extends Controller
             return $guruId;
         }
 
-        $kelasGuruList = Kelas::where('Guru_Id', $guruId)->get();
+        // Cari semua kelas di mana guru mengajar
+        $kelasGuruList = Kelas::where('Guru_Utama_Id', $guruId)
+                             ->orWhere('Guru_Pendamping_Id', $guruId)
+                             ->get();
         
         $validator = Validator::make($request->all(), [
             'Judul' => 'required|string|max:255',
@@ -294,9 +321,10 @@ class PengumumanGuruController extends Controller
                             return;
                         }
                         
-                        $kelasMilikGuru = $kelasGuruList->contains('Kelas_Id', $siswa->Kelas_Id);
+                        // Cek apakah siswa berada di salah satu kelas yang diajar guru
+                        $siswaDiKelasGuru = $kelasGuruList->contains('Kelas_Id', $siswa->Kelas_Id);
                         
-                        if (!$kelasMilikGuru) {
+                        if (!$siswaDiKelasGuru) {
                             $fail('Siswa tersebut tidak berada di kelas Anda.');
                         }
                     }
@@ -383,7 +411,10 @@ class PengumumanGuruController extends Controller
             ], 404);
         }
 
-        $kelasGuruList = Kelas::where('Guru_Id', $guruId)->get();
+        // Cari semua kelas di mana guru mengajar
+        $kelasGuruList = Kelas::where('Guru_Utama_Id', $guruId)
+                             ->orWhere('Guru_Pendamping_Id', $guruId)
+                             ->get();
 
         $validator = Validator::make($request->all(), [
             'Judul' => 'required|string|max:255',
@@ -434,9 +465,10 @@ class PengumumanGuruController extends Controller
                             return;
                         }
                         
-                        $kelasMilikGuru = $kelasGuruList->contains('Kelas_Id', $siswa->Kelas_Id);
+                        // Cek apakah siswa berada di salah satu kelas yang diajar guru
+                        $siswaDiKelasGuru = $kelasGuruList->contains('Kelas_Id', $siswa->Kelas_Id);
                         
-                        if (!$kelasMilikGuru) {
+                        if (!$siswaDiKelasGuru) {
                             $fail('Siswa tersebut tidak berada di kelas Anda.');
                         }
                     }
@@ -551,19 +583,42 @@ class PengumumanGuruController extends Controller
             return $guruId;
         }
 
-        $kelasGuru = Kelas::where('Guru_Id', $guruId)->get();
+        Log::info('Getting dropdown data for guru_id: ' . $guruId);
+        
+        // Cari semua kelas di mana guru mengajar
+        $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
+                         ->orWhere('Guru_Pendamping_Id', $guruId)
+                         ->get();
+        
+        Log::info('Found ' . $kelasGuru->count() . ' classes for this guru');
         
         $kelasData = [];
         $siswaData = [];
         
         if ($kelasGuru->isNotEmpty()) {
-            $kelasData = $kelasGuru;
+            $kelasData = $kelasGuru->map(function($kelas) use ($guruId) {
+                return [
+                    'Kelas_Id' => $kelas->Kelas_Id,
+                    'Nama_Kelas' => $kelas->Nama_Kelas,
+                    'peran' => $kelas->Guru_Utama_Id == $guruId ? 'Guru Utama' : 'Guru Pendamping'
+                ];
+            });
             
             $kelasIds = $kelasGuru->pluck('Kelas_Id')->toArray();
             
             $siswaData = Siswa::whereIn('Kelas_Id', $kelasIds)
+                ->with('kelas')
                 ->orderBy('Nama')
-                ->get();
+                ->get()
+                ->map(function($siswa) {
+                    return [
+                        'Siswa_Id' => $siswa->Siswa_Id,
+                        'Nama' => $siswa->Nama,
+                        'Kelas_Nama' => $siswa->kelas ? $siswa->kelas->Nama_Kelas : '-'
+                    ];
+                });
+                
+            Log::info('Found ' . $siswaData->count() . ' students in these classes');
         }
 
         return response()->json([

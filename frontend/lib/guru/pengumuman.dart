@@ -3,6 +3,7 @@ import '../widgets/sidebar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/env/api_base_url.dart';
 
 class PengumumanModel {
   final int pengumumanId;
@@ -55,7 +56,7 @@ class PengumumanModel {
 }
 
 class PengumumanApiService {
-  static const String baseUrl = 'http://localhost:8000/api';
+  static String get baseUrl => '${ApiConfig.baseUrl}/api';
   
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
@@ -289,32 +290,33 @@ abstract class BasePengumumanContentState<T extends BasePengumumanContent> exten
   }
 
   void _loadDropdownDataFromApi() async {
-    final response = await PengumumanApiService.getDropdownData();
-    if (response['success'] == true) {
-      setState(() {
-        final kelasList = response['data']['kelas'] as List;
-        if (kelasList.isNotEmpty) {
-          _kelasOptions = [{
-            'Kelas_Id': kelasList[0]['Kelas_Id'],
-            'Nama_Kelas': kelasList[0]['Nama_Kelas']
-          }];
-          
-          if (_selectedTipe == "Perkelas" && _selectedKelas == null) {
-            _selectedKelas = _kelasOptions[0];
-          }
-        } else {
-          _kelasOptions = [];
-        }
+  final response = await PengumumanApiService.getDropdownData();
+  if (response['success'] == true) {
+    setState(() {
+      final kelasList = response['data']['kelas'] as List;
+      if (kelasList.isNotEmpty) {
+        _kelasOptions = kelasList.map((kelas) => {
+          'Kelas_Id': kelas['Kelas_Id'],
+          'Nama_Kelas': kelas['Nama_Kelas'],
+          'peran': kelas['peran'] ?? 'Guru'
+        }).toList();
         
-        _siswaOptions = (response['data']['siswa'] as List)
-            .map((siswa) => {
-                  'Siswa_Id': siswa['Siswa_Id'],
-                  'Nama': siswa['Nama']
-                })
-            .toList();
-      });
-    }
+        if (_selectedTipe == "Perkelas" && _selectedKelas == null) {
+          _selectedKelas = _kelasOptions[0];
+        }
+      } else {
+        _kelasOptions = [];
+      }
+      
+      final siswaList = response['data']['siswa'] as List;
+      _siswaOptions = siswaList.map((siswa) => {
+        'Siswa_Id': siswa['Siswa_Id'],
+        'Nama': siswa['Nama'],
+        'Kelas_Nama': siswa['Kelas_Nama'] ?? ''
+      }).toList();
+    });
   }
+}
 
   void _toggleForm() {
     setState(() {

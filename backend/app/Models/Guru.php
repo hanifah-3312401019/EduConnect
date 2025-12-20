@@ -33,6 +33,14 @@ class Guru extends Authenticatable
                    ->first();
     }
 
+    // Helper untuk mendapatkan semua kelas di mana guru mengajar
+    public function semuaKelas()
+    {
+        return Kelas::where('Guru_Utama_Id', $this->Guru_Id)
+                ->orWhere('Guru_Pendamping_Id', $this->Guru_Id)
+                ->get();
+    }
+
     // Helper untuk mengetahui peran dan kelas
     public function getInfoKelas()
     {

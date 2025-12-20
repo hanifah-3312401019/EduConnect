@@ -41,138 +41,156 @@ class AgendaGuruController extends Controller
         return $guruId;
     }
 
-private function sendAgendaNotification($agenda, $tipe)
-{
-    Log::info('Mengirim notifikasi agenda', [
-        'agenda_id' => $agenda->Agenda_Id,
-        'tipe' => $tipe,
-        'judul' => $agenda->Judul
-    ]);
-    
-    try {
-        $guruNama = $agenda->guru ? $agenda->guru->Nama : 'Guru';
-        $judulAgenda = $agenda->Judul;
-        $tanggalAgenda = $agenda->Tanggal;
-        $waktuMulai = $agenda->Waktu_Mulai;
+    private function sendAgendaNotification($agenda, $tipe)
+    {
+        Log::info('Mengirim notifikasi agenda', [
+            'agenda_id' => $agenda->Agenda_Id,
+            'tipe' => $tipe,
+            'judul' => $agenda->Judul
+        ]);
         
-        $orangtuaIds = [];
-        
-        if ($tipe === 'sekolah') {
-            $orangtuaIds = OrangTua::pluck('OrangTua_Id')->toArray();
-            Log::info('Agenda sekolah - kirim ke semua orangtua: ' . count($orangtuaIds));
+        try {
+            $guruNama = $agenda->guru ? $agenda->guru->Nama : 'Guru';
+            $judulAgenda = $agenda->Judul;
+            $tanggalAgenda = $agenda->Tanggal;
+            $waktuMulai = $agenda->Waktu_Mulai;
             
-        } elseif ($tipe === 'perkelas') {
-            if (!$agenda->kelas) {
-                Log::warning('Kelas tidak ditemukan di agenda');
-                return 0;
+            $orangtuaIds = [];
+            
+            if ($tipe === 'sekolah') {
+                $orangtuaIds = OrangTua::pluck('OrangTua_Id')->toArray();
+                Log::info('Agenda sekolah - kirim ke semua orangtua: ' . count($orangtuaIds));
+                
+            } elseif ($tipe === 'perkelas') {
+                if (!$agenda->kelas) {
+                    Log::warning('Kelas tidak ditemukan di agenda');
+                    return 0;
+                }
+                
+                $kelasId = $agenda->kelas->Kelas_Id;
+                $siswaIds = Siswa::where('Kelas_Id', $kelasId)
+                    ->pluck('Siswa_Id')
+                    ->toArray();
+                    
+                $orangtuaIds = OrangTua::whereIn('Siswa_Id', $siswaIds)
+                    ->pluck('OrangTua_Id')
+                    ->toArray();
+                    
+                Log::info("Agenda perkelas ID {$kelasId} - kirim ke " . count($orangtuaIds) . " orangtua");
+                
+            } elseif ($tipe === 'ekskul') {
+                if (!$agenda->ekstrakulikuler) {
+                    Log::warning('Ekstrakulikuler tidak ditemukan di agenda');
+                    return 0;
+                }
+                
+                $ekskulId = $agenda->ekstrakulikuler->Ekstrakulikuler_Id;
+                
+                $siswaIds = Siswa::where('Ekstrakulikuler_Id', $ekskulId)
+                    ->pluck('Siswa_Id')
+                    ->toArray();
+                    
+                if (empty($siswaIds) && Schema::hasTable('ekskul_siswa')) {
+                    try {
+                        $siswaIds = DB::table('ekskul_siswa')
+                            ->where('Ekstrakulikuler_Id', $ekskulId)
+                            ->pluck('Siswa_Id')
+                            ->toArray();
+                    } catch (\Exception $e) {
+                        Log::warning('Error akses pivot: ' . $e->getMessage());
+                    }
+                }
+                
+                if (empty($siswaIds)) {
+                    Log::warning('Tidak ada siswa untuk ekskul ini!');
+                    return 0;
+                }
+                
+                $orangtuaIds = OrangTua::whereIn('Siswa_Id', $siswaIds)
+                    ->pluck('OrangTua_Id')
+                    ->toArray();
+                    
+                Log::info("Agenda ekskul ID {$ekskulId} - kirim ke " . count($orangtuaIds) . " orangtua");
             }
+
+            $createdCount = 0;
             
-            $kelasId = $agenda->kelas->Kelas_Id;
-            $siswaIds = Siswa::where('Kelas_Id', $kelasId)
-                ->pluck('Siswa_Id')
-                ->toArray();
-                
-            $orangtuaIds = OrangTua::whereIn('Siswa_Id', $siswaIds)
-                ->pluck('OrangTua_Id')
-                ->toArray();
-                
-            Log::info("Agenda perkelas ID {$kelasId} - kirim ke " . count($orangtuaIds) . " orangtua");
-            
-        } elseif ($tipe === 'ekskul') {
-            if (!$agenda->ekstrakulikuler) {
-                Log::warning('Ekstrakulikuler tidak ditemukan di agenda');
-                return 0;
-            }
-            
-            $ekskulId = $agenda->ekstrakulikuler->Ekstrakulikuler_Id;
-            
-            $siswaIds = Siswa::where('Ekstrakulikuler_Id', $ekskulId)
-                ->pluck('Siswa_Id')
-                ->toArray();
-                
-            if (empty($siswaIds) && Schema::hasTable('ekskul_siswa')) {
+            foreach ($orangtuaIds as $orangtuaId) {
                 try {
-                    $siswaIds = DB::table('ekskul_siswa')
-                        ->where('Ekstrakulikuler_Id', $ekskulId)
-                        ->pluck('Siswa_Id')
-                        ->toArray();
+                    $notifikasi = Notifikasi::create([
+                        'OrangTua_Id' => $orangtuaId,
+                        'Judul' => 'Agenda Baru: ' . $judulAgenda,
+                        'Pesan' => 'Guru ' . $guruNama . ' membuat agenda baru: ' . $judulAgenda . 
+                                  ' pada ' . $tanggalAgenda . ' pukul ' . $waktuMulai,
+                        'Jenis' => 'agenda',
+                        'Agenda_Id' => $agenda->Agenda_Id,
+                        'dibaca' => false,
+                    ]);
+                    
+                    $createdCount++;
+                    
                 } catch (\Exception $e) {
-                    Log::warning('Error akses pivot: ' . $e->getMessage());
+                    Log::error('Gagal buat notifikasi agenda untuk orangtua ' . $orangtuaId . ': ' . $e->getMessage());
                 }
             }
-            
-            if (empty($siswaIds)) {
-                Log::warning('Tidak ada siswa untuk ekskul ini!');
-                return 0;
-            }
-            
-            $orangtuaIds = OrangTua::whereIn('Siswa_Id', $siswaIds)
-                ->pluck('OrangTua_Id')
-                ->toArray();
-                
-            Log::info("Agenda ekskul ID {$ekskulId} - kirim ke " . count($orangtuaIds) . " orangtua");
+
+            Log::info('Notifikasi agenda selesai', [
+                'agenda_id' => $agenda->Agenda_Id,
+                'total_penerima' => count($orangtuaIds),
+                'berhasil_dibuat' => $createdCount
+            ]);
+
+            return $createdCount;
+
+        } catch (\Exception $e) {
+            Log::error('Error sendAgendaNotification: ' . $e->getMessage());
+            return 0;
         }
-
-        $createdCount = 0;
-        
-        foreach ($orangtuaIds as $orangtuaId) {
-            try {
-                $notifikasi = Notifikasi::create([
-                    'OrangTua_Id' => $orangtuaId,
-                    'Judul' => 'Agenda Baru: ' . $judulAgenda,
-                    'Pesan' => 'Guru ' . $guruNama . ' membuat agenda baru: ' . $judulAgenda . 
-                              ' pada ' . $tanggalAgenda . ' pukul ' . $waktuMulai,
-                    'Jenis' => 'agenda',
-                    'Agenda_Id' => $agenda->Agenda_Id,
-                    'dibaca' => false,
-                ]);
-                
-                $createdCount++;
-                
-            } catch (\Exception $e) {
-                Log::error('Gagal buat notifikasi agenda untuk orangtua ' . $orangtuaId . ': ' . $e->getMessage());
-            }
-        }
-
-        Log::info('Notifikasi agenda selesai', [
-            'agenda_id' => $agenda->Agenda_Id,
-            'total_penerima' => count($orangtuaIds),
-            'berhasil_dibuat' => $createdCount
-        ]);
-
-        return $createdCount;
-
-    } catch (\Exception $e) {
-        Log::error('Error sendAgendaNotification: ' . $e->getMessage());
-        return 0;
     }
-}
 
     public function index(Request $request)
-    {
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
-        }
-
-        $query = Agenda::where('Guru_Id', $guruId)
-            ->with(['guru', 'kelas', 'ekstrakulikuler'])
-            ->orderBy('Tanggal', 'desc')
-            ->orderBy('Waktu_Mulai', 'desc');
-
-        // Filter by tipe jika ada
-        if ($request->has('tipe') && $request->tipe) {
-            $query->where('Tipe', $request->tipe);
-        }
-
-        $agenda = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $agenda
-        ]);
+{
+    $guruId = $this->getGuruId();
+    
+    if ($guruId instanceof \Illuminate\Http\JsonResponse) {
+        return $guruId;
     }
+    
+    $kelasGuruList = Kelas::where('Guru_Utama_Id', $guruId)
+                         ->orWhere('Guru_Pendamping_Id', $guruId)
+                         ->get();
+
+    if ($kelasGuruList->isEmpty()) {
+        $query = Agenda::where('Guru_Id', $guruId); 
+    } else {
+        $kelasIds = $kelasGuruList->pluck('Kelas_Id')->toArray();
+    
+        $query = Agenda::where(function($q) use ($guruId, $kelasIds) {
+            $q->where('Guru_Id', $guruId) 
+              ->orWhere(function($q2) use ($kelasIds) {
+                  $q2->where('Tipe', 'perkelas')
+                     ->whereIn('Kelas_Id', $kelasIds); 
+              })
+              ->orWhere('Tipe', 'ekskul')
+              ->orWhere('Tipe', 'sekolah'); 
+        });
+    }
+
+    $query = $query->with(['guru', 'kelas', 'ekstrakulikuler'])
+        ->orderBy('Tanggal', 'desc')
+        ->orderBy('Waktu_Mulai', 'desc');
+
+    if ($request->has('tipe') && $request->tipe) {
+        $query->where('Tipe', $request->tipe);
+    }
+
+    $agenda = $query->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $agenda
+    ]);
+}
 
     public function store(Request $request)
     {
@@ -236,7 +254,11 @@ private function sendAgendaNotification($agenda, $tipe)
                 break;
                 
             case 'perkelas':
-                $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
+                // Cari kelas di mana guru mengajar (ambil kelas pertama)
+                $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
+                                 ->orWhere('Guru_Pendamping_Id', $guruId)
+                                 ->first();
+                
                 if (!$kelasGuru) {
                     return response()->json([
                         'success' => false,
@@ -248,7 +270,11 @@ private function sendAgendaNotification($agenda, $tipe)
                 break;
                 
             case 'ekskul':
-                $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
+                // Cari kelas di mana guru mengajar (ambil kelas pertama)
+                $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
+                                 ->orWhere('Guru_Pendamping_Id', $guruId)
+                                 ->first();
+                
                 if (!$kelasGuru) {
                     return response()->json([
                         'success' => false,
@@ -357,7 +383,11 @@ private function sendAgendaNotification($agenda, $tipe)
                 break;
                 
             case 'perkelas':
-                $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
+                // Cari kelas di mana guru mengajar (ambil kelas pertama)
+                $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
+                                 ->orWhere('Guru_Pendamping_Id', $guruId)
+                                 ->first();
+                
                 if (!$kelasGuru) {
                     return response()->json([
                         'success' => false,
@@ -369,7 +399,11 @@ private function sendAgendaNotification($agenda, $tipe)
                 break;
                 
             case 'ekskul':
-                $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
+                // Cari kelas di mana guru mengajar (ambil kelas pertama)
+                $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
+                                 ->orWhere('Guru_Pendamping_Id', $guruId)
+                                 ->first();
+                
                 if (!$kelasGuru) {
                     return response()->json([
                         'success' => false,
@@ -461,16 +495,26 @@ private function sendAgendaNotification($agenda, $tipe)
             return $guruId;
         }
 
-        $kelasGuru = Kelas::where('Guru_Id', $guruId)->first();
+        Log::info('Getting dropdown data for agenda - guru_id: ' . $guruId);
         
+        // Cari kelas di mana guru mengajar (ambil kelas pertama)
+        $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
+                         ->orWhere('Guru_Pendamping_Id', $guruId)
+                         ->first();
+        
+        Log::info('Kelas found for guru: ' . ($kelasGuru ? $kelasGuru->Nama_Kelas : 'NO CLASS'));
+        
+        // Ambil semua ekskul dari database
         $semuaEkskul = Ekstrakulikuler::orderBy('nama')->get();
+        Log::info('Total ekskul found: ' . $semuaEkskul->count());
 
         return response()->json([
             'success' => true,
             'data' => [
                 'kelas_guru' => $kelasGuru ? [
                     'Kelas_Id' => $kelasGuru->Kelas_Id,
-                    'nama_kelas' => $kelasGuru->Nama_Kelas
+                    'nama_kelas' => $kelasGuru->Nama_Kelas,
+                    'peran' => $kelasGuru->Guru_Utama_Id == $guruId ? 'Guru Utama' : 'Guru Pendamping'
                 ] : null,
 
                 'ekstrakulikuler' => $semuaEkskul->map(function($ekskul) {

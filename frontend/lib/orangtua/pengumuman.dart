@@ -11,7 +11,6 @@ import 'dart:convert';
 import 'package:frontend/widgets/notifikasi_widgets.dart';
 
 // MODEL PENGUMUMAN
-
 class PengumumanOrtu {
   final int pengumumanId;
   final String judul;
