@@ -9,8 +9,8 @@ import 'package:frontend/auth/login.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/widgets/notifikasi_widgets.dart';
+import 'package:frontend/env/api_base_url.dart';
 
-// MODEL PENGUMUMAN
 class PengumumanOrtu {
   final int pengumumanId;
   final String judul;
@@ -53,14 +53,11 @@ class PengumumanOrtu {
   }
 }
 
-// API SERVICE
 class PengumumanOrtuApiService {
-  static const String baseUrl = 'http://localhost:8000/api';
+  static String get baseUrl => '${ApiConfig.baseUrl}/api';
 
   static Future<Map<String, String>> _getHeaders() async {
     final token = globalAuthToken;
-
-    print('🔎 TOKEN TERAMBIL DARI GLOBAL: $token');
 
     return {
       'Accept': 'application/json',
@@ -80,9 +77,6 @@ class PengumumanOrtuApiService {
 
       final response = await http.get(uri, headers: headers);
 
-      print("📥 STATUS: ${response.statusCode}");
-      print("📥 BODY: ${response.body}");
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
@@ -93,13 +87,11 @@ class PengumumanOrtuApiService {
       }
       return [];
     } catch (e) {
-      print('❌ Error API: $e');
       return [];
     }
   }
 }
 
-// PAGE
 class PengumumanPage extends StatefulWidget {
   const PengumumanPage({super.key});
 
@@ -113,7 +105,6 @@ class _PengumumanPageState extends State<PengumumanPage> {
 
   final List<String> _kategoriList = ['Semua', 'Umum', 'Kelas', 'Personal'];
 
-  // ⭐ FIX MAPPING KATEGORI API (SATU-SATUNYA YANG DIUBAH)
   final Map<String, String> kategoriApiMap = {
     'Semua': 'semua',
     'Umum': 'umum',
@@ -199,23 +190,22 @@ class _PengumumanPageState extends State<PengumumanPage> {
           ],
         ),
         actions: [
-        NotifikasiBadge(
-          iconColor: greenColor,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotifikasiPage()),
-            );
-          },
-        ),
-      ],
+          NotifikasiBadge(
+            iconColor: greenColor,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+              );
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black12, height: 1.0),
         ),
       ),
 
-      // Drawer
       drawer: Drawer(
         backgroundColor: backgroundColor,
         child: ListView(
@@ -283,7 +273,6 @@ class _PengumumanPageState extends State<PengumumanPage> {
         ),
       ),
 
-      // BODY
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -304,7 +293,6 @@ class _PengumumanPageState extends State<PengumumanPage> {
                   ),
                   const Spacer(),
 
-                  // DROPDOWN (FIX API)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -479,7 +467,6 @@ class _PengumumanPageState extends State<PengumumanPage> {
         ),
       ),
 
-      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

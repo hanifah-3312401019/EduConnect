@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:frontend/widgets/sidebarOrangtua.dart';
 import '../orangtua/agenda.dart';
 import '../orangtua/pengumuman.dart';
+import 'package:frontend/env/api_base_url.dart';
 
 class NotifikasiModel {
   final int notifikasiId;
@@ -77,7 +77,7 @@ class NotifikasiModel {
 }
 
 class NotifikasiService {
-  static const String baseUrl = 'http://localhost:8000/api';
+  static String get baseUrl => '${ApiConfig.baseUrl}/api';
 
   static Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -391,27 +391,27 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
   }
 
   void _navigateBasedOnNotification(NotifikasiModel notif) {
-  if (!notif.hasNavigation) return;
-  
-  switch (notif.targetPage) {
-    case 'agenda':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => AgendaPage()), // ✅ Navigasi biasa
-      ).then((_) { 
-        if (mounted) _loadNotifikasi(); 
-      });
-      break;
-    case 'pengumuman':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PengumumanPage()), // ✅ Navigasi biasa
-      ).then((_) { 
-        if (mounted) _loadNotifikasi(); 
-      });
-      break;
+    if (!notif.hasNavigation) return;
+    
+    switch (notif.targetPage) {
+      case 'agenda':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AgendaPage()),
+        ).then((_) { 
+          if (mounted) _loadNotifikasi(); 
+        });
+        break;
+      case 'pengumuman':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PengumumanPage()),
+        ).then((_) { 
+          if (mounted) _loadNotifikasi(); 
+        });
+        break;
+    }
   }
-}
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
@@ -431,11 +431,13 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      drawer: const sidebarOrangtua(),
       appBar: AppBar(
         backgroundColor: backgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: greenColor),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: greenColor),
+          onPressed: () => Navigator.pop(context),
+        ),
         centerTitle: true,
         title: Row(
           mainAxisSize: MainAxisSize.min,

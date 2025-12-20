@@ -8,9 +8,8 @@ import 'package:frontend/auth/login.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/widgets/notifikasi_widgets.dart';
-
-// import sidebar reusable
 import 'package:frontend/widgets/sidebarOrangtua.dart';
+import 'package:frontend/env/api_base_url.dart';
 
 class AgendaOrtuModel {
   final int agendaId;
@@ -70,14 +69,11 @@ class AgendaOrtuModel {
   }
 }
 
-// API SERVICE AGENDA ORANGTUA
 class AgendaOrtuApiService {
-  static const String baseUrl = 'http://localhost:8000/api';
+  static String get baseUrl => '${ApiConfig.baseUrl}/api';
 
   static Future<Map<String, String>> _getHeaders() async {
     final token = globalAuthToken;
-
-    print('🔎 TOKEN TERAMBIL DARI GLOBAL: $token');
 
     return {
       'Accept': 'application/json',
@@ -97,9 +93,6 @@ class AgendaOrtuApiService {
 
       final response = await http.get(uri, headers: headers);
 
-      print("📥 AGENDA STATUS: ${response.statusCode}");
-      print("📥 AGENDA BODY: ${response.body}");
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
@@ -110,13 +103,11 @@ class AgendaOrtuApiService {
       }
       return [];
     } catch (e) {
-      print('❌ Error API Agenda: $e');
       return [];
     }
   }
 }
 
-// PAGE AGENDA ORANGTUA
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
 
@@ -130,7 +121,6 @@ class _AgendaPageState extends State<AgendaPage> {
 
   final List<String> _kategoriList = ['Semua', 'Sekolah', 'Kelas', 'Ekstrakurikuler'];
 
-  // ⭐ FIX MAPPING KATEGORI API
   final Map<String, String> kategoriApiMap = {
     'Semua': 'semua',
     'Sekolah': 'sekolah',
@@ -200,7 +190,6 @@ class _AgendaPageState extends State<AgendaPage> {
     return Scaffold(
       backgroundColor: backgroundColor,
 
-      // 🔥 sidebar pakai file reusable
       drawer: const sidebarOrangtua(),
 
       appBar: AppBar(
@@ -222,17 +211,17 @@ class _AgendaPageState extends State<AgendaPage> {
             ),
           ],
         ),
-       actions: [
-        NotifikasiBadge(
-          iconColor: greenColor,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotifikasiPage()),
-            );
-          },
-        ),
-      ],
+        actions: [
+          NotifikasiBadge(
+            iconColor: greenColor,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+              );
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: Colors.black12, height: 1.0),
@@ -258,7 +247,6 @@ class _AgendaPageState extends State<AgendaPage> {
                     ),
                   ),
                   const Spacer(),
-                  // DROPDOWN (FIX API)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -410,8 +398,6 @@ class _AgendaPageState extends State<AgendaPage> {
                               ),
                             ],
                           ),
-                          // Tampilkan info tambahan berdasarkan tipe
-                          // DIHAPUS: Bagian yang menampilkan ikon kelas dan ekstrakulikuler
                         ],
                       ),
                     );
@@ -449,7 +435,6 @@ class _AgendaPageState extends State<AgendaPage> {
         ),
       ),
 
-      // Bottom Navigation
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
