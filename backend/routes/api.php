@@ -91,6 +91,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/mata-pelajaran/list', [JadwalPelajaranController::class, 'getMataPelajaranList']);
 });
 
+// ORANG TUA - Jadwal Pelajaran
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/orangtua/jadwal-pelajaran', [JadwalPelajaranController::class, 'getJadwalForOrangTua']);
+});
+
 // ADMIN DASHBOARD STATS
 Route::middleware('auth:sanctum')->get('/admin/dashboard/stats', [AdminController::class, 'dashboardStats']);
 

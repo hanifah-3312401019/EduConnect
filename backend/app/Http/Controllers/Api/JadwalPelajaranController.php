@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\JadwalPelajaran;
 use App\Models\Kelas;
 use App\Models\OrangTua;
+use App\Models\Siswa;
 use Illuminate\Support\Facades\Validator;
 
 class JadwalPelajaranController extends Controller
@@ -218,61 +219,95 @@ class JadwalPelajaranController extends Controller
         ]);
     }
 
-    // ===================== JADWAL UNTUK ORANGTUA =====================
+    // ===================== JADWAL UNTUK ORANG TUA =====================
     public function getJadwalForOrangTua(Request $request)
     {
-        $user = $request->user();
-        
-        if ($user->getRoleAttribute() !== 'orang_tua') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akses ditolak'
-            ], 403);
-        }
+        try {
+            $user = $request->user();
+            
+            // Validasi user adalah orang tua
+            if (!$user || $user->getRoleAttribute() !== 'orang_tua') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak. Hanya untuk orang tua.'
+                ], 403);
+            }
 
-        // Dapatkan siswa/anak yang dimiliki orangtua
-        $siswa = $user->siswa()->first();
-        
-        if (!$siswa) {
+            // Dapatkan siswa/anak yang dimiliki orang tua
+            $siswa = Siswa::where('OrangTua_Id', $user->OrangTua_Id)->first();
+            
+            if (!$siswa) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Belum ada data siswa/anak',
+                    'data' => [
+                        'siswa' => null,
+                        'jadwal' => []
+                    ]
+                ]);
+            }
+
+            // Dapatkan kelas_id dari siswa
+            $kelas_id = $siswa->Kelas_Id;
+            
+            // Ambil jadwal berdasarkan kelas
+            $jadwal = JadwalPelajaran::where('Kelas_Id', $kelas_id)
+                ->with('kelas')
+                ->urutHari()
+                ->get();
+
+            // Format data untuk response
+            $jadwalFormatted = $jadwal->map(function ($j) {
+                return [
+                    'hari' => $j->Hari,
+                    'jam_mulai' => $j->Jam_Mulai,
+                    'jam_selesai' => $j->Jam_Selesai,
+                    'jam_format' => date('H.i', strtotime($j->Jam_Mulai)) . ' - ' . date('H.i', strtotime($j->Jam_Selesai)),
+                    'mata_pelajaran' => $j->Mata_Pelajaran,
+                ];
+            });
+
+            // Group by hari
+            $jadwalGrouped = [];
+            foreach ($jadwalFormatted as $j) {
+                $hari = $j['hari'];
+                if (!isset($jadwalGrouped[$hari])) {
+                    $jadwalGrouped[$hari] = [];
+                }
+                $jadwalGrouped[$hari][] = [
+                    'jam' => $j['jam_format'],
+                    'mata_pelajaran' => $j['mata_pelajaran'],
+                ];
+            }
+
+            // Urutkan hari sesuai urutan
+            $orderedDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+            $orderedJadwal = [];
+            foreach ($orderedDays as $hari) {
+                if (isset($jadwalGrouped[$hari])) {
+                    $orderedJadwal[$hari] = $jadwalGrouped[$hari];
+                } else {
+                    $orderedJadwal[$hari] = [];
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Belum ada data siswa',
-                'data' => []
+                'data' => [
+                    'siswa' => [
+                        'nama' => $siswa->Nama,
+                        'kelas' => $siswa->kelas ? $siswa->kelas->Nama_Kelas : '-',
+                        'tahun_ajar' => $siswa->kelas ? $siswa->kelas->Tahun_Ajar : '-',
+                    ],
+                    'jadwal' => $orderedJadwal
+                ]
             ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Dapatkan kelas_id dari siswa
-        $kelas_id = $siswa->Kelas_Id;
-        
-        // Ambil jadwal berdasarkan kelas
-        $jadwal = JadwalPelajaran::where('Kelas_Id', $kelas_id)
-            ->with('kelas')
-            ->urutHari()
-            ->get();
-
-        // Group by hari
-        $jadwalGrouped = [];
-        foreach ($jadwal as $j) {
-            $hari = $j->Hari;
-            if (!isset($jadwalGrouped[$hari])) {
-                $jadwalGrouped[$hari] = [];
-            }
-            $jadwalGrouped[$hari][] = [
-                'Jam_Format' => date('H.i', strtotime($j->Jam_Mulai)) . ' - ' . date('H.i', strtotime($j->Jam_Selesai)),
-                'Mata_Pelajaran' => $j->Mata_Pelajaran,
-            ];
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'siswa' => [
-                    'Nama' => $siswa->Nama,
-                    'Kelas' => $siswa->kelas->Nama_Kelas ?? '-',
-                    'Tahun_Ajar' => $siswa->kelas->Tahun_Ajar ?? '-',
-                ],
-                'jadwal' => $jadwalGrouped
-            ]
-        ]);
     }
 }
