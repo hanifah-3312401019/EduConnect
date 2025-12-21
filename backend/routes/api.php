@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\AgendaOrtuController;
 use App\Http\Controllers\Api\PerizinanOrtuController;
 use App\Http\Controllers\Api\PerizinanGuruController;
 use App\Http\Controllers\Api\NotifikasiController;
+use App\Http\Controllers\Api\JadwalPelajaranController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -75,6 +76,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // Penugasan guru ke kelas (opsional, bisa digunakan untuk UI khusus)
     Route::post('/admin/guru/assign-kelas', [AdminController::class, 'assignGuruToKelas']);
     Route::post('/admin/guru/remove-kelas', [AdminController::class, 'removeGuruFromKelas']);
+});
+
+// ADMIN - Jadwal Pelajaran
+Route::middleware('auth:sanctum')->group(function () {
+    // CRUD Jadwal Pelajaran
+    Route::get('/admin/jadwal/list', [JadwalPelajaranController::class, 'getAllJadwal']);
+    Route::get('/admin/jadwal/kelas/{kelas_id}', [JadwalPelajaranController::class, 'getJadwalByKelas']);
+    Route::post('/admin/jadwal/create', [JadwalPelajaranController::class, 'createJadwal']);
+    Route::put('/admin/jadwal/update/{id}', [JadwalPelajaranController::class, 'updateJadwal']);
+    Route::delete('/admin/jadwal/delete/{id}', [JadwalPelajaranController::class, 'deleteJadwal']);
+    
+    // Daftar mata pelajaran dropdown
+    Route::get('/admin/mata-pelajaran/list', [JadwalPelajaranController::class, 'getMataPelajaranList']);
 });
 
 // ADMIN DASHBOARD STATS

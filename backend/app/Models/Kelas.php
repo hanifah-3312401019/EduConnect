@@ -39,4 +39,9 @@ class Kelas extends Model
     {
         return $this->hasMany(Pengumuman::class, 'Kelas_Id');
     }
+
+    public function jadwalPelajaran()
+    {
+        return $this->hasMany(JadwalPelajaran::class, 'Kelas_Id', 'Kelas_Id');
+    }
 }
