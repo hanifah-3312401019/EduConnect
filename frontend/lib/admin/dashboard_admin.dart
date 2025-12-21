@@ -20,11 +20,11 @@ class DashboardAdminPage extends StatefulWidget {
 
 class _DashboardAdminPageState extends State<DashboardAdminPage> {
   // ===================== STATE VARIABLES =====================
-  Map<String, dynamic>? stats;
+  Map<String, dynamic> stats = {};
   bool isLoading = true;
   bool hasError = false;
-  List<Map<String, dynamic>> recentActivities = [];
   List<Map<String, dynamic>> chartData = [];
+  List<Map<String, dynamic>> recentActivities = [];
   String errorMessage = '';
   String? authToken;
 
@@ -87,9 +87,23 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
       if (statsRes.statusCode == 200) {
         final json = jsonDecode(statsRes.body);
 
+        print('API RESPONSE: $json'); // ← Debug log
+
         if (json['success'] == true) {
           setState(() {
-            stats = json['data'];
+            // ============ PASTIKAN DATA TIDAK NULL ============
+            stats =
+                json['data'] ??
+                {
+                  'total_siswa': 0,
+                  'total_guru': 0,
+                  'total_orangtua': 0,
+                  'total_kelas': 0,
+                };
+            chartData = List<Map<String, dynamic>>.from(json['chart'] ?? []);
+            recentActivities = List<Map<String, dynamic>>.from(
+              json['recent_activities'] ?? [],
+            );
             isLoading = false;
           });
         } else {
@@ -144,10 +158,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
     }
 
     if (page != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => page!),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => page!));
     }
   }
 
@@ -262,10 +273,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                     ? errorMessage
                     : 'Gagal memuat data dashboard',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
             ),
             const SizedBox(height: 20),
@@ -342,7 +350,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -370,12 +378,9 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
               isLoading
                   ? "Memuat data sistem..."
                   : hasError
-                      ? "Terjadi kesalahan"
-                      : "Statistik & Ringkasan Sistem Sekolah",
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.black54,
-              ),
+                  ? "Terjadi kesalahan"
+                  : "Statistik & Ringkasan Sistem Sekolah",
+              style: const TextStyle(fontSize: 15, color: Colors.black54),
             ),
           ],
         ),
@@ -411,13 +416,22 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
 
   // ===================== STATS GRID =====================
   Widget _buildStatsGrid() {
+    if (stats == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: CircularProgressIndicator(color: Color(0xFF465940)),
+        ),
+      );
+    }
+
     final crossAxisCount = MediaQuery.of(context).size.width > 1200
         ? 4
         : MediaQuery.of(context).size.width > 800
-            ? 3
-            : MediaQuery.of(context).size.width > 500
-                ? 2
-                : 1;
+        ? 3
+        : MediaQuery.of(context).size.width > 500
+        ? 2
+        : 1;
 
     return GridView.count(
       shrinkWrap: true,
@@ -430,7 +444,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
         _buildModernCard(
           icon: Icons.people_alt_rounded,
           title: "Total Siswa",
-          value: stats?['total_siswa']?.toString() ?? '0',
+          value: (stats['total_siswa'] ?? 0).toString(),
           unit: "siswa",
         ),
         _buildModernCard(
@@ -505,8 +519,9 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // ============== PERBAIKAN DI SINI ==============
                     Text(
-                      value,
+                      value, // ← value sudah dipastikan tidak null dari pemanggil
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -637,10 +652,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                   const SizedBox(height: 4),
                   Text(
                     '$value',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.black54,
-                    ),
+                    style: const TextStyle(fontSize: 11, color: Colors.black54),
                   ),
                 ],
               );
@@ -648,10 +660,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
           ),
         ),
         const SizedBox(height: 20),
-        Container(
-          height: 1,
-          color: Colors.grey.shade200,
-        ),
+        Container(height: 1, color: Colors.grey.shade200),
         const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -665,10 +674,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
-              "Jumlah Siswa",
-              style: TextStyle(fontSize: 12),
-            ),
+            const Text("Jumlah Siswa", style: TextStyle(fontSize: 12)),
           ],
         ),
       ],
@@ -704,9 +710,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                 children: [
                   Text(
                     "Lihat Semua",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   SizedBox(width: 4),
                   Icon(Icons.arrow_forward_ios, size: 12),
@@ -770,10 +774,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                 const SizedBox(height: 4),
                 Text(
                   activity['description']?.toString() ?? '',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -782,10 +783,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
           ),
           Text(
             activity['time']?.toString() ?? '',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -857,11 +855,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                   color: const Color(0xFF465940).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF465940),
-                  size: 22,
-                ),
+                child: Icon(icon, color: const Color(0xFF465940), size: 22),
               ),
               const SizedBox(height: 10),
               Text(

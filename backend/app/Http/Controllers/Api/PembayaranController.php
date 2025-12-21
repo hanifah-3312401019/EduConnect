@@ -17,9 +17,11 @@ class PembayaranController extends Controller
     // =========================
     public function index()
     {
-        return Pembayaran::with(['siswa', 'ekstrakulikuler'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+         return Pembayaran::with(['siswa' => function($query) {
+        $query->select('Siswa_Id', 'Nama');
+    }, 'ekstrakulikuler'])
+    ->orderBy('created_at', 'desc')
+    ->get();
     }
 
     // =========================
