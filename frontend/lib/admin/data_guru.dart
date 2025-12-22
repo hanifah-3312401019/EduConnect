@@ -1198,7 +1198,7 @@ class _DataGuruPageState extends State<DataGuruPage> {
                                       gridDelegate:
                                           const SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: 2,
-                                        childAspectRatio: 1.95,
+                                        childAspectRatio: 1.70,
                                         crossAxisSpacing: 22,
                                         mainAxisSpacing: 22,
                                       ),
