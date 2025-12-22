@@ -27,11 +27,13 @@ class _JadwalPelajaranPageState extends State<JadwalPelajaranPage> {
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
+  String adminName = "";
+  String adminEmail = "";
   String _formatJam(String? jam) {
   if (jam == null || jam.isEmpty) return '';
   return jam.substring(0, 5); // ambil HH:MM
 }
-  
+
   // Data dari API
   List<Map<String, dynamic>> kelasList = [];
   List<Map<String, dynamic>> jadwalList = [];
@@ -61,6 +63,7 @@ class _JadwalPelajaranPageState extends State<JadwalPelajaranPage> {
     await _loadToken();
     await _loadKelasList();
     await _loadMataPelajaranList();
+    await _loadAdminData();
   }
 
   // ===================== LOAD TOKEN =====================
@@ -74,6 +77,15 @@ class _JadwalPelajaranPageState extends State<JadwalPelajaranPage> {
     } catch (e) {
       print('Error loading token: $e');
     }
+  }
+
+  // ===================== LOAD ADMIN DATA =====================
+  Future<void> _loadAdminData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      adminName = prefs.getString('nama') ?? "Admin";
+      adminEmail = prefs.getString('email') ?? "admin@sekolah.com";
+    });
   }
 
   // ===================== LOAD KELAS LIST =====================
@@ -760,46 +772,32 @@ void _showJadwalDialog({Map<String, dynamic>? jadwalData}) {
       color: greenMain,
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             backgroundColor: Colors.white,
             radius: 24,
-            child: Icon(Icons.person, color: Color(0xFF465940), size: 32),
+            child: Icon(Icons.person, color: greenMain, size: 32),
           ),
           const SizedBox(width: 14),
-          const Column(
+          Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Halo, Ini Admin",
-                style: TextStyle(
+                "Halo, $adminName!",
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                "Admin@gmail.com",
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                adminEmail,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ],
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Text(
-              "Keluar",
-              style: TextStyle(
-                color: Color(0xFF465940),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          )
+    
         ],
       ),
     );

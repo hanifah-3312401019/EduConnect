@@ -4,6 +4,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/widgets/sidebarAdmin.dart';
 import 'package:frontend/env/api_base_url.dart';
+import 'dashboard_admin.dart';
+import 'data_siswa.dart';
+import 'data_guru.dart';
+import 'data_orangTua.dart';
+import 'data_kelas.dart';
+import 'jadwal_pelajaran.dart';
 
 class DataPembayaranPage extends StatefulWidget {
   const DataPembayaranPage({super.key});
@@ -68,6 +74,42 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
       });
     } catch (e) {
       debugPrint('Error loading token: $e');
+    }
+  }
+
+  // ===================== NAVIGASI =====================
+  void handleMenu(String menu) {
+    Widget? page;
+
+    switch (menu) {
+      case "Dashboard":
+        page = const DashboardAdminPage();
+        break;
+      case "Data Guru":
+        page = const DataGuruPage();
+        break;
+      case "Data Siswa":
+        page = const DataSiswaPage();
+        break;
+      case "Data Orang Tua":
+        page = const DataOrangTuaPage();
+        break;
+      case "Data Kelas":
+        page = const DataKelasPage();
+        break;
+      case "Jadwal Pelajaran":
+        page = const JadwalPelajaranPage();
+        break;
+      case "Informasi Pembayaran":
+        page = const DataPembayaranPage();
+        break;
+    }
+
+    if (page != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => page!),
+      );
     }
   }
 
@@ -1365,7 +1407,7 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
       backgroundColor: creamBg,
       body: Row(
         children: [
-          SidebarAdmin(onMenuSelected: (_) {}),
+          SidebarAdmin(onMenuSelected: handleMenu),
           Expanded(
             child: Column(
               children: [
@@ -1423,7 +1465,7 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
             ],
           ),
           const Spacer(),
-          // TOMBOL KELUAR DIHAPUS DI SINI
+    
         ],
       ),
     );

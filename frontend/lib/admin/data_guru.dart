@@ -9,6 +9,7 @@ import 'data_siswa.dart';
 import 'data_orangTua.dart';
 import 'data_kelas.dart';
 import 'jadwal_pelajaran.dart';
+import 'informasi_pembayaran.dart';
 
 class DataGuruPage extends StatefulWidget {
   const DataGuruPage({super.key});
@@ -22,6 +23,30 @@ class _DataGuruPageState extends State<DataGuruPage> {
   bool isLoading = true;
   String? authToken;
   String? userRole;
+  String adminName = "Admin";
+  String adminEmail = "admin@sekolah.com";
+  bool _formAlreadyShown = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    
+    if (args != null && args['showAddForm'] == true && !_formAlreadyShown) {
+      _formAlreadyShown = true;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              showAddGuruDialog();
+            }
+          });
+        }
+      });
+    }
+  }
 
   Future<void> loadAuthData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -32,6 +57,7 @@ class _DataGuruPageState extends State<DataGuruPage> {
   }
 
   Future<void> loadDataGuru() async {
+    await _loadAdminData();
     setState(() => isLoading = true);
     
     if (authToken == null) {
@@ -154,6 +180,24 @@ class _DataGuruPageState extends State<DataGuruPage> {
     }
   }
 
+  Future<void> _loadAdminData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('nama') ?? "Admin";
+      final email = prefs.getString('email') ?? "admin@sekolah.com";
+      
+      if (!mounted) return;
+      
+      setState(() {
+        adminName = name;
+        adminEmail = email;
+        });
+        
+        } catch (e) {
+          print('Error loading admin data: $e');
+          }
+      }
+
   Future<bool> tambahGuru(Map<String, dynamic> data) async {
     try {
       if (authToken == null) await loadAuthData();
@@ -186,6 +230,11 @@ class _DataGuruPageState extends State<DataGuruPage> {
     } catch (e) {
       return false;
     }
+  }
+
+  @override
+  void dispose() {
+    _formAlreadyShown = false;
   }
 
   Future<bool> updateGuru(String id, Map<String, dynamic> data) async {
@@ -285,33 +334,42 @@ class _DataGuruPageState extends State<DataGuruPage> {
   }
 
   void handleMenu(String menu) {
-    Widget? page;
+  Widget? page;
 
-    switch (menu) {
-      case "Dashboard":
-        page = const DashboardAdminPage();
-        break;
-      case "Data Guru":
-        page = const DataGuruPage();
-        break;
-      case "Data Siswa":
-        page = const DataSiswaPage();
-        break;
-      case "Data Orang Tua":
-        page = const DataOrangTuaPage();
-        break;
-      case "Data Kelas":
-        page = const DataKelasPage();
-        break;
-      case "Jadwal Pelajaran":
-        page = const JadwalPelajaranPage();
-        break;
-    }
-
-    if (page != null && page.runtimeType != DataGuruPage) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => page!));
-    }
+  switch (menu) {
+    case "Dashboard":
+      page = const DashboardAdminPage();
+      break;
+    case "Data Guru":
+      page = const DataGuruPage();
+      break;
+    case "Data Siswa":
+      page = const DataSiswaPage();
+      break;
+    case "Data Orang Tua":
+      page = const DataOrangTuaPage();
+      break;
+    case "Data Kelas":
+      page = const DataKelasPage();
+      break;
+    case "Jadwal Pelajaran":
+      page = const JadwalPelajaranPage();
+      break;
+    case "Informasi Pembayaran":
+      page = const DataPembayaranPage();
+      break;
   }
+
+  if (page != null && page.runtimeType != DataGuruPage) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => page!,
+        settings: const RouteSettings(arguments: {'showAddForm': false}),
+      ),
+    );
+  }
+}
 
   void showAddGuruDialog() {
     final nama = TextEditingController();
@@ -1020,52 +1078,29 @@ class _DataGuruPageState extends State<DataGuruPage> {
         children: [
           const CircleAvatar(
             backgroundColor: Colors.white,
-            radius: 25,
+            radius: 24,
             child: Icon(Icons.person, color: Color(0xFF465940), size: 32),
           ),
           const SizedBox(width: 14),
-
-          const Column(
+          Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Halo, Admin",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold),
+                "Halo, $adminName!",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Text(
-                "Administrator",
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                adminEmail,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ],
           ),
-
           const Spacer(),
-
-          GestureDetector(
-            onTap: () async {
-              await logout();
-              if (!mounted) return;
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: const Text(
-                "Keluar",
-                style: TextStyle(
-                    color: Color(0xFF465940),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
         ],
       ),
     );

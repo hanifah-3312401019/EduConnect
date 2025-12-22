@@ -630,20 +630,7 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
             ],
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Text(
-              "Keluar",
-              style: TextStyle(
-                  color: Color(0xFF465940),
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold),
-            ),
-          )
+          
         ],
       ),
     );
