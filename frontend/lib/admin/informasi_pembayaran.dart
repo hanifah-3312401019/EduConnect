@@ -4,12 +4,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/widgets/sidebarAdmin.dart';
 import 'package:frontend/env/api_base_url.dart';
-import 'dashboard_admin.dart';
-import 'data_siswa.dart';
 import 'data_guru.dart';
+import 'data_siswa.dart';
 import 'data_orangTua.dart';
 import 'data_kelas.dart';
 import 'jadwal_pelajaran.dart';
+import 'dashboard_admin.dart';
 
 class DataPembayaranPage extends StatefulWidget {
   const DataPembayaranPage({super.key});
@@ -39,19 +39,10 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
   }
 
   Future<void> _initializePage() async {
-    debugPrint("🎯 ===== MULAI INISIALISASI HALAMAN =====");
     await _loadAdminData();
-    debugPrint("✅ Admin data loaded");
-
     await _loadToken();
-    debugPrint("✅ Token loaded: ${authToken != null ? 'Ada' : 'Kosong'}");
-
-    await _fetchEkstrakulikuler(); // Ambil data ekstrakurikuler DULU
-    debugPrint("✅ Ekstrakulikuler loaded: ${ekstrakulikulerList.length} item");
-
-    await fetchPembayaran(); // Baru ambil data pembayaran
-    debugPrint("✅ Pembayaran loaded: ${pembayaran.length} item");
-    debugPrint("===== INISIALISASI SELESAI =====\n");
+    await _fetchEkstrakulikuler();
+    await fetchPembayaran();
   }
 
   Future<void> _loadAdminData() async {
@@ -72,12 +63,9 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
       setState(() {
         authToken = token;
       });
-    } catch (e) {
-      debugPrint('Error loading token: $e');
-    }
+    } catch (e) {}
   }
 
-  // ===================== NAVIGASI =====================
   void handleMenu(String menu) {
     Widget? page;
 
@@ -103,22 +91,30 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
       case "Informasi Pembayaran":
         page = const DataPembayaranPage();
         break;
+      case "Logout":
+        _logout();
+        return;
     }
 
     if (page != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => page!),
-      );
+      if (page.runtimeType == DataPembayaranPage) {
+        return;
+      }
+      Navigator.push(context, MaterialPageRoute(builder: (_) => page!));
     }
   }
 
-  // ================================
-  // AMBIL DATA EKSTRAKURIKULER - DIPERBAIKI
-  // ================================
-  Future<void> _fetchEkstrakulikuler() async {
-    debugPrint("🚀 ===== MULAI FETCH EKSTRAKULIKULER =====");
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('token');
+    await prefs.remove('nama');
+    await prefs.remove('email');
 
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
+  Future<void> _fetchEkstrakulikuler() async {
     if (!mounted) return;
 
     setState(() {
@@ -127,15 +123,12 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
 
     try {
       if (authToken == null || authToken!.isEmpty) {
-        debugPrint("❌ Token kosong, skip fetch ekskul");
         if (!mounted) return;
         setState(() {
           loadingEkskul = false;
         });
         return;
       }
-
-      debugPrint("🔗 Mengakses: ${ApiConfig.baseUrl}/api/ekstrakulikuler");
 
       final res = await http.get(
         Uri.parse("${ApiConfig.baseUrl}/api/ekstrakulikuler"),
@@ -146,63 +139,41 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
         },
       );
 
-      debugPrint("📡 Status Code: ${res.statusCode}");
-      debugPrint("📦 Response Body: ${res.body}");
-
       if (!mounted) return;
 
       if (res.statusCode == 200) {
         try {
           final decoded = jsonDecode(res.body);
-          debugPrint("✅ Decode JSON berhasil");
-          debugPrint("📊 Tipe data: ${decoded.runtimeType}");
-
-          // RESET DATA SEBELUMNYA
           final Map<int, int> newBiayaMap = {};
           final List<Map<String, dynamic>> newEkskulList = [];
 
           if (decoded is List) {
-            debugPrint("📋 Jumlah data ekskul: ${decoded.length}");
-
             for (int i = 0; i < decoded.length; i++) {
               final item = decoded[i];
-              debugPrint("\n--- Item Ekskul #$i ---");
-              debugPrint("Item: $item");
 
               if (item is Map<String, dynamic>) {
-                // AMBIL DATA DENGAN CARA YANG AMAN
                 int id = 0;
                 String nama = '';
                 int biaya = 0;
 
-                // 1. Cari ID
                 if (item.containsKey('Ekstrakulikuler_Id')) {
                   id = _safeInt(item['Ekstrakulikuler_Id']);
-                  debugPrint("ID dari 'Ekstrakulikuler_Id': $id");
                 } else if (item.containsKey('id')) {
                   id = _safeInt(item['id']);
-                  debugPrint("ID dari 'id': $id");
                 }
 
-                // 2. Cari Nama
                 if (item.containsKey('nama')) {
                   nama = item['nama'].toString();
-                  debugPrint("Nama dari 'nama': $nama");
                 } else if (item.containsKey('name')) {
                   nama = item['name'].toString();
-                  debugPrint("Nama dari 'name': $nama");
                 }
 
-                // 3. Cari Biaya
                 if (item.containsKey('biaya')) {
                   biaya = _safeInt(item['biaya']);
-                  debugPrint("Biaya dari 'biaya': $biaya");
                 } else if (item.containsKey('Biaya')) {
                   biaya = _safeInt(item['Biaya']);
-                  debugPrint("Biaya dari 'Biaya': $biaya");
                 }
 
-                // VALIDASI DATA
                 if (id > 0) {
                   newBiayaMap[id] = biaya;
                   newEkskulList.add({
@@ -210,34 +181,9 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                     'nama': nama.isEmpty ? 'Ekskul $id' : nama,
                     'biaya': biaya,
                   });
-
-                  debugPrint(
-                    "✅ DITAMBAHKAN: ID=$id, Nama='$nama', Biaya=Rp $biaya",
-                  );
-                } else {
-                  debugPrint("⚠️ DIABAIKAN: ID tidak valid ($id)");
                 }
-              } else {
-                debugPrint("❌ Item bukan Map, tipe: ${item.runtimeType}");
               }
             }
-          } else {
-            debugPrint("❌ Response bukan List, tipe: ${decoded.runtimeType}");
-            debugPrint("Response value: $decoded");
-          }
-
-          // TAMPILKAN HASIL AKHIR
-          debugPrint("\n===== HASIL AKHIR =====");
-          debugPrint("Total ekskul ditemukan: ${newEkskulList.length}");
-          debugPrint("biayaEkskulMap size: ${newBiayaMap.length}");
-
-          if (newBiayaMap.isNotEmpty) {
-            debugPrint("Isi biayaEkskulMap:");
-            newBiayaMap.forEach((key, value) {
-              debugPrint("  ID $key: Rp $value");
-            });
-          } else {
-            debugPrint("⚠️ biayaEkskulMap KOSONG!");
           }
 
           if (!mounted) return;
@@ -247,40 +193,27 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
             biayaEkskulMap = newBiayaMap;
             loadingEkskul = false;
           });
-
-          debugPrint("✅ Data ekskul berhasil di-load ke state");
         } catch (e) {
-          debugPrint("❌ ERROR decode JSON: $e");
           if (!mounted) return;
           setState(() {
             loadingEkskul = false;
           });
         }
       } else {
-        debugPrint("❌ HTTP Error: ${res.statusCode}");
-        debugPrint("Response error: ${res.body}");
         if (!mounted) return;
         setState(() {
           loadingEkskul = false;
         });
       }
     } catch (e) {
-      debugPrint("❌ ERROR jaringan: $e");
       if (!mounted) return;
       setState(() {
         loadingEkskul = false;
       });
     }
-
-    debugPrint("===== SELESAI FETCH EKSTRAKULIKULER =====\n");
   }
 
-  // ================================
-  // AMBIL DATA PEMBAYARAN - DIPERBAIKI
-  // ================================
   Future<void> fetchPembayaran() async {
-    debugPrint("🚀 ===== MULAI FETCH PEMBAYARAN =====");
-
     if (!mounted) return;
 
     setState(() {
@@ -307,25 +240,15 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
         },
       );
 
-      debugPrint("📡 Status: ${res.statusCode}");
-
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         final List<Map<String, dynamic>> dataList = [];
-
-        debugPrint(
-          "📊 Data pembayaran diterima, jumlah: ${decoded is List ? decoded.length : 'N/A'}",
-        );
-
-        // DEBUG: Tampilkan map ekskul yang sudah di-load
-        debugPrint("📋 biayaEkskulMap saat ini: $biayaEkskulMap");
 
         if (decoded is List) {
           for (var item in decoded) {
             if (item is Map<String, dynamic>) {
               final safeItem = Map<String, dynamic>.from(item);
 
-              // Ambil data dasar
               final siswaId = _safeInt(safeItem['Siswa_Id']);
               final pembayaranId = _safeInt(safeItem['Pembayaran_Id']);
               final biayaSpp = _safeInt(safeItem['Biaya_SPP']);
@@ -333,23 +256,13 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
               final ekskulId = _safeInt(safeItem['Ekstrakulikuler_Id']);
               final totalBackend = _safeInt(safeItem['Total_Bayar']);
 
-              debugPrint("\n--- Proses Pembayaran ID: $pembayaranId ---");
-              debugPrint("Ekskul ID dari data: $ekskulId");
-
-              // CARI BIAYA EKSTRAKULIKULER - DENGAN CARA YANG AMAN
               int biayaEkskul = 0;
               String namaEkskul = '';
 
-              // Cara 1: Cari di map yang sudah di-load
               if (ekskulId > 0) {
-                // Gunakan akses langsung ke map, bukan fungsi _getBiayaEkskul
                 if (biayaEkskulMap.containsKey(ekskulId)) {
                   biayaEkskul = biayaEkskulMap[ekskulId]!;
-                  debugPrint(
-                    "✅ Biaya ekskul ditemukan di map: Rp $biayaEkskul",
-                  );
 
-                  // Cari nama ekskul dari list
                   for (var ekskul in ekstrakulikulerList) {
                     if (_safeInt(ekskul['Ekstrakulikuler_Id']) == ekskulId) {
                       namaEkskul =
@@ -357,56 +270,32 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                       break;
                     }
                   }
-                } else {
-                  debugPrint(
-                    "⚠️ Ekskul ID $ekskulId tidak ditemukan di biayaEkskulMap",
-                  );
-                  debugPrint("Keys yang ada: ${biayaEkskulMap.keys.toList()}");
                 }
-              } else {
-                debugPrint("ℹ️ Tidak ada ekskul (ID: 0)");
               }
 
-              // HITUNG TOTAL YANG SEHARUSNYA
               final totalSeharusnya = biayaSpp + biayaCatering + biayaEkskul;
 
-              debugPrint("🧮 PERHITUNGAN:");
-              debugPrint("  SPP: Rp $biayaSpp");
-              debugPrint("  Catering: Rp $biayaCatering");
-              debugPrint("  Ekskul: Rp $biayaEkskul");
-              debugPrint("  Total seharusnya: Rp $totalSeharusnya");
-              debugPrint("  Total dari backend: Rp $totalBackend");
-
-              // SIMPAN DATA
               safeItem['nama_siswa'] = _getNamaSiswa(safeItem);
               safeItem['ekskul_nama'] = namaEkskul;
               safeItem['ekskul_biaya'] = biayaEkskul;
 
-              // JIKA BACKEND SALAH, PERBAIKI
               if (totalBackend != totalSeharusnya) {
-                debugPrint(
-                  "⚠️ PERBAIKI: Backend salah! ${totalBackend} ≠ ${totalSeharusnya}",
-                );
                 safeItem['Total_Bayar'] = totalSeharusnya;
               } else {
                 safeItem['Total_Bayar'] = totalBackend;
               }
-
-              debugPrint("✅ Total akhir: Rp ${safeItem['Total_Bayar']}");
 
               dataList.add(safeItem);
             }
           }
         }
 
-        // Sort
         dataList.sort((a, b) {
-          final dateA = _parseDateTime(a['created_at']);
-          final dateB = _parseDateTime(b['created_at']);
-          if (dateA == null && dateB == null) return 0;
-          if (dateA == null) return 1;
-          if (dateB == null) return -1;
-          return dateB.compareTo(dateA);
+          final idA = _safeInt(a['Pembayaran_Id']);
+          final idB = _safeInt(b['Pembayaran_Id']);
+          return idA.compareTo(
+            idB,
+          ); // ← ID kecil (lama) di atas, ID besar (baru) di bawah
         });
 
         if (!mounted) return;
@@ -415,8 +304,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
           pembayaran = dataList;
           loading = false;
         });
-
-        debugPrint("✅ Total data pembayaran: ${pembayaran.length}");
       } else if (res.statusCode == 401) {
         setState(() {
           loading = false;
@@ -429,8 +316,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
         });
       }
     } catch (e) {
-      debugPrint("❌ ERROR FETCH PEMBAYARAN: $e");
-
       if (!mounted) return;
 
       setState(() {
@@ -438,13 +323,8 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
         errorMessage = 'Koneksi error: ${e.toString()}';
       });
     }
-
-    debugPrint("===== SELESAI FETCH PEMBAYARAN =====\n");
   }
 
-  // ================================
-  // HELPER FUNCTIONS - DIPERBAIKI
-  // ================================
   int _safeInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
@@ -467,12 +347,10 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
     }
   }
 
-  // FUNGSI INI DISEDERHANAKAN UNTUK MENGHINDARI ERROR
   String _getNamaEkskul(int ekskulId) {
     try {
       if (ekskulId <= 0) return '';
 
-      // Akses langsung ke list, jangan gunakan tipe checking yang kompleks
       for (var ekskul in ekstrakulikulerList) {
         if (_safeInt(ekskul['Ekstrakulikuler_Id']) == ekskulId) {
           return ekskul['nama']?.toString() ?? 'Ekskul $ekskulId';
@@ -480,46 +358,27 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
       }
       return 'Ekskul $ekskulId';
     } catch (e) {
-      debugPrint('Error _getNamaEkskul: $e');
       return 'Ekskul $ekskulId';
     }
   }
 
-  // FUNGSI INI DIPERBAIKI DENGAN NULL SAFETY EKSTRA
   int _getBiayaEkskul(int ekskulId) {
     try {
-      // Debug untuk melacak masalah
-      debugPrint("Mencari biaya ekskul ID: $ekskulId");
-      debugPrint("biayaEkskulMap is null: ${biayaEkskulMap == null}");
-      debugPrint("biayaEkskulMap length: ${biayaEkskulMap.length}");
-
       if (ekskulId <= 0) {
-        debugPrint("Ekskul ID tidak valid: $ekskulId");
         return 0;
       }
 
-      // Pastikan map tidak null sebelum mengakses
       if (biayaEkskulMap.isEmpty) {
-        debugPrint("⚠️ biayaEkskulMap KOSONG!");
-        debugPrint("Available keys: ${biayaEkskulMap.keys.toList()}");
         return 0;
       }
 
-      // Gunakan null-aware operator
       final biaya = biayaEkskulMap[ekskulId];
-      debugPrint("Biaya ditemukan untuk ID $ekskulId: $biaya");
-
       return biaya ?? 0;
     } catch (e) {
-      debugPrint("❌ ERROR _getBiayaEkskul: $e");
-      debugPrint("Ekskul ID: $ekskulId");
-      return 0; // Return 0 sebagai fallback
+      return 0;
     }
   }
 
-  // ================================
-  // FUNGSI EDIT DATA - DIPERBAIKI
-  // ================================
   Future<void> _editData(Map<String, dynamic> data) async {
     final siswaController = TextEditingController(
       text: data['Siswa_Id']?.toString() ?? '',
@@ -539,7 +398,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
 
     final ekskulId = _safeInt(data['Ekstrakulikuler_Id']);
     int? selectedEkskulId = ekskulId > 0 ? ekskulId : null;
-    // GUNAKAN AKSES LANGSUNG KE MAP, BUKAN FUNGSI _getBiayaEkskul
     int selectedEkskulBiaya = selectedEkskulId != null
         ? (biayaEkskulMap[selectedEkskulId] ?? 0)
         : 0;
@@ -578,7 +436,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Form fields
                     _buildFormField(
                       controller: siswaController,
                       label: "ID Siswa",
@@ -632,7 +489,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Dropdown ekstrakurikuler
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -690,7 +546,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                               onChanged: (value) {
                                 setState(() {
                                   selectedEkskulId = value;
-                                  // GUNAKAN AKSES LANGSUNG KE MAP
                                   selectedEkskulBiaya = value != null
                                       ? (biayaEkskulMap[value] ?? 0)
                                       : 0;
@@ -702,7 +557,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                       ],
                     ),
 
-                    // Preview total
                     const SizedBox(height: 15),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -805,7 +659,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                               return;
                             }
 
-                            // Validasi
                             if (siswaController.text.isEmpty ||
                                 bulanController.text.isEmpty ||
                                 tahunController.text.isEmpty ||
@@ -836,10 +689,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                                     selectedEkskulId;
                               }
 
-                              debugPrint(
-                                "Edit Request Body: ${jsonEncode(requestBody)}",
-                              );
-
                               final response = await http.put(
                                 Uri.parse(
                                   "${ApiConfig.baseUrl}/api/admin/pembayaran/$pembayaranId",
@@ -850,13 +699,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                                   "Authorization": "Bearer $authToken",
                                 },
                                 body: jsonEncode(requestBody),
-                              );
-
-                              debugPrint(
-                                "Edit Response Status: ${response.statusCode}",
-                              );
-                              debugPrint(
-                                "Edit Response Body: ${response.body}",
                               );
 
                               if (response.statusCode == 200) {
@@ -905,16 +747,12 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
     );
   }
 
-  // ================================
-  // FUNGSI KONFIRMASI HAPUS - DIPERBAIKI
-  // ================================
   void _showDeleteConfirmation(Map<String, dynamic> item) {
     final id = _safeInt(item['Pembayaran_Id']);
     final namaSiswa = _getNamaSiswa(item);
     final total = rupiah(_safeInt(item['Total_Bayar']));
     final bulanTahun = _formatBulanTahun(item['Bulan'], item['Tahun_Ajaran']);
     final ekskulId = _safeInt(item['Ekstrakulikuler_Id']);
-    // GUNAKAN DATA LANGSUNG DARI ITEM, JANGAN PANGGIL _getNamaEkskul LAGI
     final namaEkskul = ekskulId > 0 ? item['ekskul_nama']?.toString() : null;
 
     if (id == 0) return;
@@ -990,13 +828,8 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
     );
   }
 
-  // ================================
-  // FUNGSI HAPUS DATA
-  // ================================
   Future<void> hapus(int id) async {
     try {
-      debugPrint("Menghapus pembayaran ID: $id");
-
       final response = await http.delete(
         Uri.parse("${ApiConfig.baseUrl}/api/admin/pembayaran/$id"),
         headers: {
@@ -1004,9 +837,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
           "Authorization": "Bearer $authToken",
         },
       );
-
-      debugPrint("Delete Response Status: ${response.statusCode}");
-      debugPrint("Delete Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         if (!mounted) return;
@@ -1029,7 +859,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
         );
       }
     } catch (e) {
-      debugPrint("Delete Error: $e");
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1041,7 +870,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
     }
   }
 
-  // FORM TAMBAH DATA - DIPERBAIKI
   Future<void> _tambahData() async {
     final siswaController = TextEditingController();
     final bulanController = TextEditingController();
@@ -1135,7 +963,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Dropdown ekstrakurikuler
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1193,7 +1020,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                               onChanged: (value) {
                                 setState(() {
                                   selectedEkskulId = value;
-                                  // GUNAKAN AKSES LANGSUNG KE MAP
                                   selectedEkskulBiaya = value != null
                                       ? (biayaEkskulMap[value] ?? 0)
                                       : 0;
@@ -1205,7 +1031,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                       ],
                     ),
 
-                    // Preview total
                     const SizedBox(height: 15),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -1297,7 +1122,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                         const SizedBox(width: 10),
                         ElevatedButton(
                           onPressed: () async {
-                            // Validasi
                             if (siswaController.text.isEmpty ||
                                 bulanController.text.isEmpty ||
                                 tahunController.text.isEmpty ||
@@ -1328,10 +1152,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                                     selectedEkskulId;
                               }
 
-                              debugPrint(
-                                "Request Body: ${jsonEncode(requestBody)}",
-                              );
-
                               final response = await http.post(
                                 Uri.parse(
                                   "${ApiConfig.baseUrl}/api/admin/pembayaran",
@@ -1343,11 +1163,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
                                 },
                                 body: jsonEncode(requestBody),
                               );
-
-                              debugPrint(
-                                "Response Status: ${response.statusCode}",
-                              );
-                              debugPrint("Response Body: ${response.body}");
 
                               if (response.statusCode == 200 ||
                                   response.statusCode == 201) {
@@ -1398,9 +1213,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
     );
   }
 
-  // ================================
-  // WIDGET BUILDERS - DIPERBAIKI
-  // ================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1411,7 +1223,7 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
           Expanded(
             child: Column(
               children: [
-                _buildAdminHeader(), // Header tanpa tombol keluar
+                _buildAdminHeader(),
                 _buildSubHeader(),
                 if (loadingEkskul) ...[
                   const LinearProgressIndicator(),
@@ -1465,7 +1277,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
             ],
           ),
           const Spacer(),
-    
         ],
       ),
     );
@@ -1591,17 +1402,9 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
       );
     }
 
-    // GRAND TOTAL CARD DIHAPUS DI SINI
-    // Langsung tampilkan tabel tanpa summary card
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(30),
-      child: Column(
-        children: [
-          // Langsung tampilkan tabel tanpa grand total card
-          _buildDataTable(),
-        ],
-      ),
+      child: Column(children: [_buildDataTable()]),
     );
   }
 
@@ -1620,7 +1423,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
       ),
       child: Column(
         children: [
-          // Header
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -1694,11 +1496,9 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
             ),
           ),
 
-          // Rows - DIPERBAIKI UNTUK MENGHINDARI PEMANGGILAN _getBiayaEkskul
           ...pembayaran.map((item) {
             final siswaId = _safeInt(item['Siswa_Id']);
             final ekskulId = _safeInt(item['Ekstrakulikuler_Id']);
-            // GUNAKAN DATA LANGSUNG DARI ITEM, JANGAN PANGGIL _getBiayaEkskul
             final biayaEkskul = _safeInt(item['ekskul_biaya'] ?? 0);
             final total = _safeInt(item['Total_Bayar']);
             final biayaSpp = _safeInt(item['Biaya_SPP']);
@@ -1850,7 +1650,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
         ],
       );
     } catch (e) {
-      debugPrint('Error _buildDeskripsi: $e');
       return const Text('Deskripsi tidak tersedia');
     }
   }
@@ -1860,7 +1659,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
     final biayaSpp = _safeInt(data['Biaya_SPP']);
     final biayaCatering = _safeInt(data['Biaya_Catering']);
     final ekskulId = _safeInt(data['Ekstrakulikuler_Id']);
-    // GUNAKAN DATA LANGSUNG DARI ITEM, JANGAN PANGGIL _getBiayaEkskul
     final biayaEkskul = _safeInt(data['ekskul_biaya'] ?? 0);
     final namaEkskul = data['ekskul_nama']?.toString() ?? '';
 
@@ -1964,9 +1762,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
     );
   }
 
-  // ================================
-  // HELPER WIDGETS & FUNCTIONS
-  // ================================
   Widget _buildFormField({
     required TextEditingController controller,
     required String label,
@@ -2012,12 +1807,10 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
 
   String _getNamaSiswa(Map<String, dynamic> item) {
     try {
-      // Prioritas: nama_siswa yang sudah di-extract di fetchPembayaran
       if (item.containsKey('nama_siswa') && item['nama_siswa'] != null) {
         return item['nama_siswa'].toString();
       }
 
-      // Fallback ke siswa relasi
       if (item.containsKey('siswa') && item['siswa'] is Map<String, dynamic>) {
         final siswa = item['siswa'] as Map<String, dynamic>;
         return siswa['Nama']?.toString() ??
@@ -2026,7 +1819,6 @@ class _DataPembayaranPageState extends State<DataPembayaranPage> {
 
       return 'Siswa ${_safeInt(item['Siswa_Id'])}';
     } catch (e) {
-      debugPrint('Error _getNamaSiswa: $e');
       final siswaId = _safeInt(item['Siswa_Id']);
       return 'Siswa $siswaId';
     }
