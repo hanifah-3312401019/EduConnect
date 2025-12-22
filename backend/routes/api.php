@@ -157,9 +157,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Guru
-    Route::prefix('guru')->group(function () {
-        Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
-    });
+    Route::middleware('auth:sanctum')->prefix('guru')->group(function () {
+    Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
+});
 });
 
 // Handle OPTIONS request untuk CORS
