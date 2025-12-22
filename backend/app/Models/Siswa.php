@@ -23,8 +23,8 @@ class Siswa extends Model
         'Kelas_Id',
     ];
 
-    protected $casts = [
-        'Tanggal_Lahir' => 'date',
+     protected $casts = [
+        'Tanggal_Lahir' => 'date:Y-m-d',
     ];
 
     public function orangTua()

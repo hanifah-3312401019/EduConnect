@@ -11,6 +11,7 @@ use App\Models\Guru;
 use App\Models\Kelas;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use App\Mail\OrangTuaPasswordMail;
 use App\Mail\GuruPasswordMail;
 
@@ -822,6 +823,305 @@ class AdminController extends Controller
             'message' => 'Kelas berhasil dihapus'
         ]);
     }
+
+    // ==================== FUNGSI DATA SISWA ====================
+public function getAllSiswa()
+{
+    try {
+        // Ambil semua siswa dengan relasi
+        $siswa = Siswa::with(['orangTua', 'kelas', 'ekstrakulikuler'])
+            ->orderBy('Nama', 'asc')
+            ->get();
+
+        $formattedSiswa = $siswa->map(function ($s) {
+            return [
+                'Siswa_Id' => $s->Siswa_Id,
+                'Nama' => $s->Nama,
+                'Jenis_Kelamin' => $s->Jenis_Kelamin,
+                'Tanggal_Lahir' => $s->Tanggal_Lahir,
+                'Alamat' => $s->Alamat,
+                'Agama' => $s->Agama,
+                'Ekstrakulikuler_Id' => $s->Ekstrakulikuler_Id,
+                'OrangTua_Id' => $s->OrangTua_Id,
+                'Kelas_Id' => $s->Kelas_Id,
+                'nama_ortu' => $s->orangTua->Nama ?? 'Orang Tua',
+                'nama_kelas' => $s->kelas->Nama_Kelas ?? 'Kelas',
+                'nama_ekskul' => $s->ekstrakulikuler->nama ?? '',
+                'created_at' => $s->created_at,
+                'updated_at' => $s->updated_at,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $formattedSiswa
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function getSiswaDetail($id)
+{
+    try {
+        $siswa = Siswa::with(['orangTua', 'kelas', 'ekstrakulikuler'])->find($id);
+
+        if (!$siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Siswa tidak ditemukan'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'Siswa_Id' => $siswa->Siswa_Id,
+                'Nama' => $siswa->Nama,
+                'Jenis_Kelamin' => $siswa->Jenis_Kelamin,
+                'Tanggal_Lahir' => $siswa->Tanggal_Lahir,
+                'Alamat' => $siswa->Alamat,
+                'Agama' => $siswa->Agama,
+                'Ekstrakulikuler_Id' => $siswa->Ekstrakulikuler_Id,
+                'OrangTua_Id' => $siswa->OrangTua_Id,
+                'Kelas_Id' => $siswa->Kelas_Id,
+                'nama_ortu' => $siswa->orangTua->Nama ?? 'Orang Tua',
+                'nama_kelas' => $siswa->kelas->Nama_Kelas ?? 'Kelas',
+                'nama_ekskul' => $siswa->ekstrakulikuler->nama ?? '',
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function createSiswa(Request $request)
+{
+    \Log::info('Create Siswa Request: ', $request->all());
+
+    $validator = Validator::make($request->all(), [
+        'Nama' => 'required|string|max:255',
+        'Jenis_Kelamin' => 'required|in:L,P',
+        'Tanggal_Lahir' => 'required|date_format:Y-m-d',
+        'Alamat' => 'required|string',
+        'Agama' => 'required|string',
+        'OrangTua_Id' => 'required|exists:orang_tuas,OrangTua_Id',
+        'Kelas_Id' => 'required|exists:kelas,Kelas_Id',
+        'Ekstrakulikuler_Id' => 'nullable|exists:ekstrakulikuler,Ekstrakulikuler_Id',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        $siswa = Siswa::create([
+            'Nama' => $request->Nama,
+            'Jenis_Kelamin' => $request->Jenis_Kelamin,
+            'Tanggal_Lahir' => $request->Tanggal_Lahir,
+            'Alamat' => $request->Alamat,
+            'Agama' => $request->Agama,
+            'OrangTua_Id' => $request->OrangTua_Id,
+            'Kelas_Id' => $request->Kelas_Id,
+            'Ekstrakulikuler_Id' => $request->Ekstrakulikuler_Id,
+        ]);
+
+        \Log::info('Siswa created: ID ' . $siswa->Siswa_Id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data siswa berhasil ditambahkan',
+            'data' => $siswa
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error create siswa: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menambahkan data siswa: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function updateSiswa(Request $request, $id)
+{
+    \Log::info('Update Siswa Request ID ' . $id . ': ', $request->all());
+
+    $siswa = Siswa::find($id);
+
+    if (!$siswa) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Siswa tidak ditemukan'
+        ], 404);
+    }
+
+    $validator = Validator::make($request->all(), [
+        'Nama' => 'required|string|max:255',
+        'Jenis_Kelamin' => 'required|in:L,P',
+        'Tanggal_Lahir' => 'required|date_format:Y-m-d',
+        'Alamat' => 'required|string',
+        'Agama' => 'required|string',
+        'OrangTua_Id' => 'required|exists:orang_tuas,OrangTua_Id',
+        'Kelas_Id' => 'required|exists:kelas,Kelas_Id',
+        'Ekstrakulikuler_Id' => 'nullable|exists:ekstrakulikuler,Ekstrakulikuler_Id',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        $siswa->update([
+            'Nama' => $request->Nama,
+            'Jenis_Kelamin' => $request->Jenis_Kelamin,
+            'Tanggal_Lahir' => $request->Tanggal_Lahir,
+            'Alamat' => $request->Alamat,
+            'Agama' => $request->Agama,
+            'OrangTua_Id' => $request->OrangTua_Id,
+            'Kelas_Id' => $request->Kelas_Id,
+            'Ekstrakulikuler_Id' => $request->Ekstrakulikuler_Id,
+        ]);
+
+        \Log::info('Siswa updated: ID ' . $id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data siswa berhasil diperbarui',
+            'data' => $siswa
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error update siswa: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui data siswa: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function deleteSiswa($id)
+{
+    \Log::info('=== DELETE SISWA REQUEST START ===');
+    \Log::info('Siswa ID: ' . $id);
+
+    try {
+        DB::beginTransaction();
+        $siswa = Siswa::find($id);
+
+        if (!$siswa) {
+            \Log::warning('Siswa not found: ID ' . $id);
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Siswa tidak ditemukan'
+            ], 404);
+        }
+
+        \Log::info('Siswa found: ' . $siswa->Nama);
+        
+        // Hapus pembayaran jika tabelnya ada
+        if (\Schema::hasTable('pembayaran')) {
+            $pembayaranCount = $siswa->pembayaran()->count();
+            \Log::info('Pembayaran count: ' . $pembayaranCount);
+            
+            if ($pembayaranCount > 0) {
+                $siswa->pembayaran()->delete();
+                \Log::info('Deleted pembayaran records');
+            }
+        }
+        
+        $siswaData = [
+            'id' => $siswa->Siswa_Id,
+            'nama' => $siswa->Nama,
+        ];
+        
+        // Hapus siswa
+        $siswa->delete();
+        
+        DB::commit();
+        
+        \Log::info('=== DELETE SUCCESS ===');
+        \Log::info('Siswa berhasil dihapus');
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Data siswa berhasil dihapus',
+            'deleted_data' => $siswaData
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('=== DELETE ERROR ===');
+        \Log::error('Error message: ' . $e->getMessage());
+        \Log::error('Stack trace: ' . $e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus data siswa: ' . $e->getMessage(),
+        ], 500);
+    }
+}
+
+public function forceDeleteSiswa($id)
+{
+    \Log::info('=== FORCE DELETE SISWA REQUEST ===');
+    \Log::info('Siswa ID: ' . $id);
+
+    try {
+        DB::beginTransaction();
+        
+        $siswa = Siswa::find($id);
+
+        if (!$siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Siswa tidak ditemukan'
+            ], 404);
+        }
+
+        // Hanya hapus pembayaran jika tabel ada
+        if (\Schema::hasTable('pembayaran')) {
+            $siswa->pembayaran()->delete();
+        }
+        
+        // TIDAK ADA PERIZINAN
+        
+        $siswaData = [
+            'id' => $siswa->Siswa_Id,
+            'nama' => $siswa->Nama,
+        ];
+        
+        $siswa->delete();
+        
+        DB::commit();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Data siswa berhasil dihapus',
+            'deleted_data' => $siswaData
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 
     // FUNGSI DASHBOARD STATS
     public function dashboardStats()
