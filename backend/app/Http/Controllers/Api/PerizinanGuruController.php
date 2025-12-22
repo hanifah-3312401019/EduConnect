@@ -1,79 +1,115 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Perizinan;
 use App\Models\Guru;
+use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PerizinanGuruController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Ambil Guru_Id dari TOKEN (BUKAN HEADER)
+     */
+    private function getGuruId()
     {
         $user = Auth::user();
-        
-        if ($user->role !== 'guru') {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated'
+            ], 401);
         }
 
-        $guru = Guru::with('kelas')->find($user->id_guru);
-        
-        if (!$guru || !$guru->kelas) {
-            return response()->json(['success' => false, 'message' => 'Belum ada kelas.'], 404);
+        // asumsi akun guru login punya kolom Guru_Id
+        $guruId = $user->Guru_Id ?? null;
+
+        if (!$guruId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun ini bukan akun guru'
+            ], 403);
         }
 
-        $kelasIds = $guru->kelas->pluck('Kelas_Id');
+        $guru = Guru::find($guruId);
+        if (!$guru) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data guru tidak ditemukan'
+            ], 404);
+        }
 
-        $perizinan = Perizinan::with(['siswa' => function($query) use ($kelasIds) {
-                $query->whereIn('Kelas_Id', $kelasIds)->with(['kelas', 'orangTua']);
-            }])
-            ->whereHas('siswa', function($query) use ($kelasIds) {
-                $query->whereIn('Kelas_Id', $kelasIds);
+        return $guruId;
+    }
+
+    /**
+     * GET /api/guru/perizinan
+     */
+    public function index()
+    {
+        $guruId = $this->getGuruId();
+        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
+            return $guruId;
+        }
+
+        // ambil kelas yang diampu guru
+        $kelasIds = Kelas::where('Guru_Id', $guruId)
+            ->pluck('Kelas_Id')
+            ->toArray();
+
+        if (empty($kelasIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Guru belum ditugaskan ke kelas'
+            ], 400);
+        }
+
+        // ambil perizinan siswa di kelas guru
+        $perizinan = Perizinan::with([
+                'siswa',
+                'siswa.kelas',
+                'siswa.orangTua'
+            ])
+            ->whereHas('siswa', function ($q) use ($kelasIds) {
+                $q->whereIn('Kelas_Id', $kelasIds);
             })
-            ->orderBy('Tanggal_Pengajuan', 'DESC')
-            ->get();
+            ->orderBy('Tanggal_Pengajuan', 'desc')
+            ->get()
+            ->map(function ($izin) {
+                return [
+                    'Id_Perizinan'        => $izin->Id_Perizinan,
+                    'Jenis'               => $izin->Jenis,
+                    'Keterangan'          => $izin->Keterangan,
+                    'Tanggal_Izin'        => optional($izin->Tanggal_Izin)->format('Y-m-d'),
+                    'Tanggal_Pengajuan'   => optional($izin->Tanggal_Pengajuan)->format('Y-m-d H:i'),
+                    'Status_Pembacaan'    => $izin->Status_Pembacaan,
+                    'Bukti'               => $izin->Bukti,
 
-        // Update status pembacaan
-        $perizinan->where('Status_Pembacaan', 'Belum Dibaca')->each(function ($item) {
-            $item->update(['Status_Pembacaan' => 'Sudah Dibaca']);
-        });
+                    // Siswa
+                    'Nama_Siswa'          => $izin->siswa->Nama ?? '-',
+                    'Jenis_Kelamin_Siswa' => $izin->siswa->Jenis_Kelamin ?? '-',
+                    'Tanggal_Lahir_Siswa' => optional($izin->siswa->Tanggal_Lahir)->format('Y-m-d'),
+                    'Alamat_Siswa'        => $izin->siswa->Alamat ?? '-',
+                    'Agama_Siswa'         => $izin->siswa->Agama ?? '-',
+
+                    // Kelas
+                    'Kelas'               => $izin->siswa->kelas->Nama_Kelas ?? '-',
+
+                    // Orang Tua
+                    'Nama_OrangTua'       => $izin->siswa->orangTua->Nama ?? '-',
+                    'Email_OrangTua'      => $izin->siswa->orangTua->Email ?? '-',
+                    'No_Telepon_OrangTua' => $izin->siswa->orangTua->No_Telepon ?? '-',
+                    'Alamat_OrangTua'     => $izin->siswa->orangTua->Alamat ?? '-',
+                ];
+            });
 
         return response()->json([
             'success' => true,
-            'data' => $perizinan->map(function ($item) {
-                $siswa = $item->siswa;
-                $orangTua = $siswa ? $siswa->orangTua : null;
-                
-                return [
-                    'Id_Perizinan' => $item->Id_Perizinan,
-                    'Jenis' => $item->Jenis,
-                    'Keterangan' => $item->Keterangan,
-                    'Bukti' => $item->Bukti ? asset('storage/' . $item->Bukti) : null,
-                    'Nama_Berkas' => $item->Nama_Berkas,
-                    'Tanggal_Pengajuan' => $item->Tanggal_Pengajuan->format('d/m/Y H:i'),
-                    'Tanggal_Izin' => $item->Tanggal_Izin->format('d/m/Y'),
-                    'Status_Pembacaan' => $item->Status_Pembacaan,
-                    'Siswa_Id' => $item->Siswa_Id,
-                    
-                    // Data Siswa sesuai atribut yang Anda berikan
-                    'Nama_Siswa' => $siswa ? $siswa->Nama : '-',
-                    'Jenis_Kelamin_Siswa' => $siswa ? $siswa->Jenis_Kelamin : '-',
-                    'Tanggal_Lahir_Siswa' => $siswa && $siswa->Tanggal_Lahir ? $siswa->Tanggal_Lahir->format('d/m/Y') : '-',
-                    'Alamat_Siswa' => $siswa ? $siswa->Alamat : '-',
-                    'Agama_Siswa' => $siswa ? $siswa->Agama : '-',
-                    'Ekstrakurikuler_Siswa' => $siswa && $siswa->ekstrakulikuler ? $siswa->ekstrakulikuler->Nama : '-',
-                    
-                    // Data Kelas
-                    'Kelas' => $siswa && $siswa->kelas ? $siswa->kelas->Nama_Kelas : '-',
-                    
-                    // Data Orang Tua
-                    'Nama_OrangTua' => $orangTua ? $orangTua->Nama : '-',
-                    'Email_OrangTua' => $orangTua ? $orangTua->Email : '-',
-                    'No_Telepon_OrangTua' => $orangTua ? $orangTua->No_Telepon : '-',
-                    'Alamat_OrangTua' => $orangTua ? $orangTua->Alamat : '-'
-                ];
-            })
+            'data' => $perizinan
         ]);
     }
 }

@@ -68,9 +68,11 @@ class EduConnectApp extends StatelessWidget {
         ),
       ),
 
+      // 🟢 SET INITIAL ROUTE UNTUK WEB
+      initialRoute: '/',
+
       // 🟢 Halaman pertama dengan SplashScreen & authentication check
       home: const SplashScreen(),
-
 
       // 🧭 Daftar semua rute aplikasi
       routes: {
@@ -90,7 +92,7 @@ class EduConnectApp extends StatelessWidget {
         '/agenda': (context) => const AgendaPage(),
         '/orangtua/perizinan': (context) => const PerizinanPage(),
 
-      //--- ADMIN ---
+        //--- ADMIN ---
         '/admin/dashboard': (context) => DashboardAdminPage(),
         '/admin/data_siswa': (context) => DataSiswaPage(),
         '/admin/data_orangtua': (context) => DataOrangTuaPage(),
@@ -98,7 +100,6 @@ class EduConnectApp extends StatelessWidget {
         '/admin/data_guru': (context) => DataGuruPage(),
         '/admin/jadwal_pelajaran': (context) => JadwalPelajaranPage(),
         '/admin/informasi_pembayaran': (context) => DataPembayaranPage(),
-        
       },
     );
   }

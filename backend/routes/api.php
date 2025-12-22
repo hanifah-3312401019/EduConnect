@@ -49,6 +49,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/admin/orangtua/update/{id}', [AdminController::class, 'updateOrangTua']);
     Route::delete('/admin/orangtua/delete/{id}', [AdminController::class, 'deleteOrangTua']);
 
+    // Admin - Siswa
+    Route::get('/admin/siswa', [AdminController::class, 'getAllSiswa']);
+    Route::get('/admin/siswa/{id}', [AdminController::class, 'getSiswaDetail']);
+    Route::post('/admin/siswa', [AdminController::class, 'createSiswa']);
+    Route::put('/admin/siswa/{id}', [AdminController::class, 'updateSiswa']);
+    Route::delete('/admin/siswa/{id}', [AdminController::class, 'deleteSiswa']); 
+    Route::delete('/admin/siswa/{id}/force', [AdminController::class, 'forceDeleteSiswa']); // Force delete
+
     // ADMIN - Pembayaran
     Route::get('admin/pembayaran', [PembayaranController::class, 'index']);
     Route::post('admin/pembayaran', [PembayaranController::class, 'store']);
@@ -149,9 +157,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Guru
-    Route::prefix('guru')->group(function () {
-        Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
-    });
+    Route::middleware('auth:sanctum')->prefix('guru')->group(function () {
+    Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
+});
 });
 
 // Handle OPTIONS request untuk CORS
