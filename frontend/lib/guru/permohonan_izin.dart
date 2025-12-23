@@ -157,6 +157,463 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
     return prefs.getString('token') ?? '';
   }
 
+  // ===================== DIALOG TAMBAH IZIN MANUAL =====================
+  void _showTambahIzinDialog() {
+    final formKey = GlobalKey<FormState>();
+    final namaController = TextEditingController();
+    final keteranganController = TextEditingController();
+    String selectedJenis = 'Sakit';
+    DateTime selectedDate = DateTime.now();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF465940).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.add_circle, color: Color(0xFF465940), size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Tambah Izin Manual',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF465940),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Info Box
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Isi form berikut untuk menambahkan izin siswa secara manual',
+                            style: TextStyle(fontSize: 12, color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Nama Siswa
+                  const Text(
+                    'Nama Siswa',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF465940),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: namaController,
+                    decoration: InputDecoration(
+                      hintText: 'Masukkan nama lengkap siswa',
+                      prefixIcon: const Icon(Icons.person, color: Color(0xFF465940)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF465940), width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nama siswa harus diisi';
+                      }
+                      if (value.length < 3) {
+                        return 'Nama minimal 3 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Jenis Izin
+                  const Text(
+                    'Jenis Izin',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF465940),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: selectedJenis,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.category, color: Color(0xFF465940)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF465940), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'Sakit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.medical_services, size: 18, color: Colors.red[400]),
+                            const SizedBox(width: 8),
+                            const Text('Sakit'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Acara Keluarga',
+                        child: Row(
+                          children: [
+                            Icon(Icons.celebration, size: 18, color: Colors.orange[400]),
+                            const SizedBox(width: 8),
+                            const Text('Acara Keluarga'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Lainnya',
+                        child: Row(
+                          children: [
+                            Icon(Icons.more_horiz, size: 18, color: Colors.blue[400]),
+                            const SizedBox(width: 8),
+                            const Text('Lainnya'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedJenis = value!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Tanggal Izin
+                  const Text(
+                    'Tanggal Izin',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF465940),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: isSubmitting ? null : () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: Color(0xFF465940),
+                                onPrimary: Colors.white,
+                                surface: Colors.white,
+                                onSurface: Colors.black,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setDialogState(() {
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey[50],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today, color: Color(0xFF465940)),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Keterangan
+                  const Text(
+                    'Keterangan',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF465940),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: keteranganController,
+                    decoration: InputDecoration(
+                      hintText: 'Jelaskan alasan izin...',
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.only(bottom: 60),
+                        child: Icon(Icons.notes, color: Color(0xFF465940)),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF465940), width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 4,
+                    maxLength: 500,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Keterangan harus diisi';
+                      }
+                      if (value.length < 10) {
+                        return 'Keterangan minimal 10 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: isSubmitting ? null : () => Navigator.pop(context),
+              icon: const Icon(Icons.close),
+              label: const Text('Batal'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[600],
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      if (formKey.currentState!.validate()) {
+                        setDialogState(() {
+                          isSubmitting = true;
+                        });
+
+                        try {
+                          await _submitIzinManual(
+                            namaController.text.trim(),
+                            selectedJenis,
+                            selectedDate,
+                            keteranganController.text.trim(),
+                          );
+                          
+                          if (mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, color: Colors.white),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'Izin ${namaController.text} berhasil ditambahkan',
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF465940),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                            _loadPerizinan();
+                          }
+                        } catch (e) {
+                          setDialogState(() {
+                            isSubmitting = false;
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: Colors.white),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text('Gagal menambahkan izin: $e'),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    },
+              icon: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.save),
+              label: Text(isSubmitting ? 'Menyimpan...' : 'Simpan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF465940),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Submit izin manual ke backend
+  Future<void> _submitIzinManual(
+    String nama,
+    String jenis,
+    DateTime tanggal,
+    String keterangan,
+  ) async {
+    final token = await _getToken();
+    
+    final formattedDate = '${tanggal.year}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}';
+    
+    print('📤 Submitting Manual Izin:');
+    print('   Nama: $nama');
+    print('   Jenis: $jenis');
+    print('   Tanggal: $formattedDate');
+    print('   Keterangan: $keterangan');
+    
+    final response = await http.post(
+      Uri.parse('$_baseUrl/guru/perizinan/manual'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'nama_siswa': nama,
+        'jenis': jenis,
+        'tanggal_izin': formattedDate,
+        'keterangan': keterangan,
+      }),
+    ).timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        throw Exception('Request timeout - Server tidak merespon');
+      },
+    );
+
+    print('📊 Submit Response Status: ${response.statusCode}');
+    print('📄 Submit Response Body: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+      if (data['success'] != true) {
+        throw Exception(data['message'] ?? 'Gagal menambahkan izin');
+      }
+    } else {
+      final data = json.decode(response.body);
+      throw Exception(data['message'] ?? 'Gagal menambahkan izin (${response.statusCode})');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const greenColor = Color(0xFF465940);
@@ -279,6 +736,20 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
       ),
       drawer: const Sidebar(),
       body: _buildBody(),
+      // Floating Action Button untuk tambah izin manual
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showTambahIzinDialog,
+        backgroundColor: greenColor,
+        icon: const Icon(Icons.add, size: 24),
+        label: const Text(
+          'Tambah Izin',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        elevation: 4,
+      ),
     );
   }
 
@@ -927,4 +1398,4 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
       ),
     );
   }
-} 
+}
