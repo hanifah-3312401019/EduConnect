@@ -159,6 +159,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Guru
     Route::middleware('auth:sanctum')->prefix('guru')->group(function () {
     Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
+    Route::post('/perizinan/manual', [PerizinanGuruController::class, 'storeManual']);
 });
 });
 
