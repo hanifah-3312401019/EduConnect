@@ -39,6 +39,15 @@ class _ProfilPageState extends State<ProfilPage> {
     fetchProfil();
   }
 
+  String formatTanggal(String isoDate) {
+    try {
+      DateTime date = DateTime.parse(isoDate);
+      return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+    } catch (e) {
+      return isoDate;
+    }
+  }
+
   Future<void> fetchProfil() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -139,16 +148,16 @@ class _ProfilPageState extends State<ProfilPage> {
           ],
         ),
         actions: [
-        NotifikasiBadge(
-          iconColor: greenColor,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotifikasiPage()),
-            );
-          },
-        ),
-      ],
+          NotifikasiBadge(
+            iconColor: greenColor,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotifikasiPage()),
+              );
+            },
+          ),
+        ],
 
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
@@ -253,8 +262,9 @@ class _ProfilPageState extends State<ProfilPage> {
                               "Nama": profil!["nama_anak"]?.toString() ?? "-",
                               "Ekstrakulikuler":
                                   profil!["ekskul_nama"]?.toString() ?? "-",
-                              "Tanggal Lahir":
-                                  profil!["tgl_lahir"]?.toString() ?? "-",
+                              "Tanggal Lahir": formatTanggal(
+                                profil!["tgl_lahir"]?.toString() ?? "",
+                              ),
                               "Jenis Kelamin": profil!["jenis_kelamin"] == 'L'
                                   ? 'Laki-laki'
                                   : profil!["jenis_kelamin"] == 'P'

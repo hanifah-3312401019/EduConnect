@@ -26,6 +26,36 @@ class _DataKelasPageState extends State<DataKelasPage> {
   List<dynamic> dataGuru = [];
   bool isLoading = true;
   String? authToken;
+  String adminName = "";
+  String adminEmail = "";
+  bool _formAlreadyShown = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    
+    if (args != null && args['showAddForm'] == true && !_formAlreadyShown) {
+      _formAlreadyShown = true;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _showTambahKelas();
+            }
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _formAlreadyShown = false;
+    super.dispose();
+  }
 
   final Set<int> _hovering = {};
 
@@ -39,6 +69,16 @@ class _DataKelasPageState extends State<DataKelasPage> {
     await _getAuthToken();
     await fetchKelas();
     await fetchGuru();
+    await _loadAdminData();
+  }
+
+  // ===================== LOAD ADMIN DATA =====================
+  Future<void> _loadAdminData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      adminName = prefs.getString('nama') ?? "Admin";
+      adminEmail = prefs.getString('email') ?? "admin@sekolah.com";
+    });
   }
 
   Future<void> _getAuthToken() async {
@@ -830,12 +870,12 @@ class _DataKelasPageState extends State<DataKelasPage> {
             ),
           ),
           const SizedBox(width: 14),
-          const Column(
+          Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Halo, Ini Admin",
+                "Halo, $adminName!",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 17,
@@ -843,30 +883,12 @@ class _DataKelasPageState extends State<DataKelasPage> {
                 ),
               ),
               Text(
-                "Admin@gmail.com",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
+                adminEmail,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
-              ),
             ],
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Text(
-              "Keluar",
-              style: TextStyle(
-                color: Color(0xFF465940),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          )
         ],
       ),
     );

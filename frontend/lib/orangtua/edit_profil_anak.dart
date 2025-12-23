@@ -41,28 +41,47 @@ class _EditAnakPageState extends State<EditAnakPage> {
 
     print(widget.data);
 
+    // 1. Format tanggal dulu
+    String? rawDate = widget.data?['tgl_lahir']?.toString();
+    String formattedDate = '';
+
+    if (rawDate != null && rawDate.isNotEmpty) {
+      if (rawDate.contains('T')) {
+        try {
+          DateTime date = DateTime.parse(rawDate);
+          formattedDate =
+              "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+        } catch (e) {
+          formattedDate = rawDate;
+        }
+      } else {
+        formattedDate = rawDate; // jika sudah format benar
+      }
+    }
+
+    // 2. Inisialisasi SEMUA controller SEKALI SAJA
     namaController = TextEditingController(
       text: widget.data?['nama_anak'] ?? '',
     );
-    idEkskul = widget.data?['ekskul_id']; // ambil ID dari backend
+    idEkskul = widget.data?['ekskul_id'];
     ekskulController = TextEditingController(
       text: widget.data?['ekskul_nama']?.toString() ?? '',
     );
     tglController = TextEditingController(
-      text: widget.data?['tgl_lahir'] ?? '',
-    );
+      text: formattedDate,
+    ); // ← PAKAI formattedDate
     alamatController = TextEditingController(
       text: widget.data?['alamat_anak'] ?? '',
     );
 
-    // FIX: Handle jenis kelamin mapping
+    // 3. Handle jenis kelamin
     String? jkFromData = widget.data?['jenis_kelamin']?.toString();
     if (jkFromData == 'L') {
       jenisKelamin = 'Laki-laki';
     } else if (jkFromData == 'P') {
       jenisKelamin = 'Perempuan';
     } else {
-      jenisKelamin = 'Laki-laki'; // default
+      jenisKelamin = 'Laki-laki';
     }
 
     agama = widget.data?['agama']?.toString() ?? 'Islam';

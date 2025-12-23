@@ -27,6 +27,8 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   List<Map<String, dynamic>> recentActivities = [];
   String errorMessage = '';
   String? authToken;
+  String adminName = "Admin";
+  String adminEmail = "admin@sekolah.com";
 
   // ===================== INIT & DISPOSE =====================
   @override
@@ -39,6 +41,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   Future<void> _initializeDashboard() async {
     await _loadToken();
     await _loadDashboard();
+    await _loadAdminData();
   }
 
   Future<void> _loadToken() async {
@@ -55,6 +58,23 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
       print('TOKEN LOADED: $token');
     } catch (e) {
       print('Error loading token: $e');
+    }
+  }
+
+  Future<void> _loadAdminData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('nama') ?? "Admin";
+      final email = prefs.getString('email') ?? "admin@sekolah.com";
+      
+      if (!mounted) return;
+      
+      setState(() {
+        adminName = name;
+        adminEmail = email;
+      });
+    } catch (e) {
+      print('Error loading admin data: $e');
     }
   }
 
@@ -87,19 +107,16 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
       if (statsRes.statusCode == 200) {
         final json = jsonDecode(statsRes.body);
 
-        print('API RESPONSE: $json'); // ← Debug log
+        print('API RESPONSE: $json');
 
         if (json['success'] == true) {
           setState(() {
-            // ============ PASTIKAN DATA TIDAK NULL ============
-            stats =
-                json['data'] ??
-                {
-                  'total_siswa': 0,
-                  'total_guru': 0,
-                  'total_orangtua': 0,
-                  'total_kelas': 0,
-                };
+            stats = json['data'] ?? {
+              'total_siswa': 0,
+              'total_guru': 0,
+              'total_orangtua': 0,
+              'total_kelas': 0,
+            };
             chartData = List<Map<String, dynamic>>.from(json['chart'] ?? []);
             recentActivities = List<Map<String, dynamic>>.from(
               json['recent_activities'] ?? [],
@@ -127,6 +144,32 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
         errorMessage = 'Koneksi bermasalah: $e';
       });
     }
+  }
+
+  // ===================== QUICK ADD FORM NAVIGATION =====================
+  void _showQuickAddForm(String type) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) {
+          switch (type) {
+            case "siswa":
+              return const DataSiswaPage();
+            case "guru":
+              return const DataGuruPage();
+            case "kelas":
+              return const DataKelasPage();
+            case "orangtua":
+              return const DataOrangTuaPage();
+            case "jadwal":
+              return const JadwalPelajaranPage();
+            default:
+              return const DashboardAdminPage();
+          }
+        },
+        settings: const RouteSettings(arguments: {'showAddForm': true}),
+      ),
+    );
   }
 
   // ===================== NAVIGASI =====================
@@ -158,7 +201,13 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
     }
 
     if (page != null) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => page!));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => page!,
+          settings: const RouteSettings(arguments: {'showAddForm': false}),
+        ),
+      );
     }
   }
 
@@ -257,12 +306,12 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
               color: Colors.red.shade400,
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'Terjadi Kesalahan',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.red.shade700,
+                color: Colors.red,
               ),
             ),
             const SizedBox(height: 10),
@@ -317,40 +366,25 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
             child: Icon(Icons.person, color: Color(0xFF465940), size: 32),
           ),
           const SizedBox(width: 14),
-          const Column(
+          Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Halo, Ini Admin",
-                style: TextStyle(
+                "Halo, $adminName!",
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                "Admin@gmail.com",
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                adminEmail,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ],
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Text(
-              "Keluar",
-              style: TextStyle(
-                color: Color(0xFF465940),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -378,8 +412,8 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
               isLoading
                   ? "Memuat data sistem..."
                   : hasError
-                  ? "Terjadi kesalahan"
-                  : "Statistik & Ringkasan Sistem Sekolah",
+                      ? "Terjadi kesalahan"
+                      : "Statistik & Ringkasan Sistem Sekolah",
               style: const TextStyle(fontSize: 15, color: Colors.black54),
             ),
           ],
@@ -403,11 +437,6 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
               tooltip: "Refresh Data",
             ),
             const SizedBox(width: 10),
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: const Color(0xFF465940),
-              child: const Icon(Icons.person, color: Colors.white, size: 26),
-            ),
           ],
         ),
       ],
@@ -416,22 +445,13 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
 
   // ===================== STATS GRID =====================
   Widget _buildStatsGrid() {
-    if (stats == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: CircularProgressIndicator(color: Color(0xFF465940)),
-        ),
-      );
-    }
-
     final crossAxisCount = MediaQuery.of(context).size.width > 1200
         ? 4
         : MediaQuery.of(context).size.width > 800
-        ? 3
-        : MediaQuery.of(context).size.width > 500
-        ? 2
-        : 1;
+            ? 3
+            : MediaQuery.of(context).size.width > 500
+                ? 2
+                : 1;
 
     return GridView.count(
       shrinkWrap: true,
@@ -450,19 +470,19 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
         _buildModernCard(
           icon: Icons.person_pin_rounded,
           title: "Total Guru",
-          value: stats?['total_guru']?.toString() ?? '0',
+          value: (stats['total_guru'] ?? 0).toString(),
           unit: "guru",
         ),
         _buildModernCard(
           icon: Icons.family_restroom_rounded,
           title: "Total Orang Tua",
-          value: stats?['total_orangtua']?.toString() ?? '0',
+          value: (stats['total_orangtua'] ?? 0).toString(),
           unit: "orang",
         ),
         _buildModernCard(
           icon: Icons.meeting_room_rounded,
           title: "Total Kelas",
-          value: stats?['total_kelas']?.toString() ?? '0',
+          value: (stats['total_kelas'] ?? 0).toString(),
           unit: "kelas",
         ),
       ],
@@ -519,9 +539,8 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // ============== PERBAIKAN DI SINI ==============
                     Text(
-                      value, // ← value sudah dipastikan tidak null dari pemanggil
+                      value,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -790,38 +809,46 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
     );
   }
 
-  // ===================== QUICK ACTIONS =====================
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Aksi Cepat",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF465940),
+// ===================== QUICK ACTIONS =====================
+Widget _buildQuickActions() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        "Aksi Cepat",
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF465940),
+        ),
+      ),
+      const SizedBox(height: 15),
+      
+      // TIGA TOMBOL DALAM SATU BARIS
+      Row(
+        children: [
+          _quickActionButton(
+            icon: Icons.school_rounded,
+            label: "Tambah Guru",
+            onTap: () => _showQuickAddForm("guru"),
           ),
-        ),
-        const SizedBox(height: 15),
-        Row(
-          children: [
-            _quickActionButton(
-              icon: Icons.person_add_alt_1_rounded,
-              label: "Tambah Siswa",
-              onTap: () => handleMenu("Data Siswa"),
-            ),
-            const SizedBox(width: 15),
-            _quickActionButton(
-              icon: Icons.school_rounded,
-              label: "Tambah Guru",
-              onTap: () => handleMenu("Data Guru"),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+          const SizedBox(width: 15),
+          _quickActionButton(
+            icon: Icons.meeting_room_rounded,
+            label: "Tambah Kelas",
+            onTap: () => _showQuickAddForm("kelas"),
+          ),
+          const SizedBox(width: 15),
+          _quickActionButton(
+            icon: Icons.family_restroom_rounded,
+            label: "Tambah Orang Tua",
+            onTap: () => _showQuickAddForm("orangtua"),
+          ),
+        ],
+      ),
+    ],
+  );
+}
 
   // ===================== QUICK ACTION BUTTON =====================
   Widget _quickActionButton({

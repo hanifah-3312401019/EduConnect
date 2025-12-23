@@ -42,14 +42,64 @@ class DataOrangTuaPage extends StatefulWidget {
 
 class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   String selectedFilter = "Semua";
+  String adminName = "";
+  String adminEmail = "";
   int? _sortColumnIndex;
   bool _sortAscending = true;
+  bool _formAlreadyShown = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    
+    if (args != null && args['showAddForm'] == true && !_formAlreadyShown) {
+      _formAlreadyShown = true;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _tambahData();
+            }
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _formAlreadyShown = false;
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePage();
+  }
+
+  Future<void> _initializePage() async {
+    await _loadAdminData();
+    await loadDataOrangTua();
+  }
 
   // =========================================================
   // FUNGSI UNTUK MENGAMBIL TOKEN
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
+  }
+  
+
+  Future<void> _loadAdminData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      adminName = prefs.getString('nama') ?? "Admin";
+      adminEmail = prefs.getString('email') ?? "admin@sekolah.com";
+    });
   }
 
   // =========================================================
@@ -195,12 +245,6 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
     print("ERROR FETCH DATA ORANG TUA: $e");
   }
 }
-
-  @override
-  void initState() {
-    super.initState();
-    loadDataOrangTua();
-  }
 
   // =========================================================
   // FILTER TABLE
@@ -519,7 +563,7 @@ class _DataOrangTuaPageState extends State<DataOrangTuaPage> {
   }
 
   // =========================================================
-  // TABEL MODERN DENGAN STYLING
+  // TABEL MODERN
 Widget _buildModernTable() {
   return Card(
     elevation: 4,
@@ -802,7 +846,7 @@ Widget _buildModernTable() {
   }
 
   // =========================================================
-  // HEADER STATISTIK MODERN
+  // HEADER STATISTIK
   Widget _buildStatsHeader() {
     return Card(
       elevation: 2,
@@ -1014,40 +1058,25 @@ Widget _buildModernTable() {
             child: Icon(Icons.person, color: Color(0xFF465940), size: 32),
           ),
           const SizedBox(width: 14),
-          const Column(
+          Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Halo, Ini Admin",
-                style: TextStyle(
+                "Halo, $adminName!",
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                "Admin@gmail.com",
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                adminEmail,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ],
           ),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Text(
-              "Keluar",
-              style: TextStyle(
-                color: Color(0xFF465940),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
         ],
       ),
     );
