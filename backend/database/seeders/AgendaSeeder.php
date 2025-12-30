@@ -73,50 +73,7 @@ class AgendaSeeder extends Seeder
                 'Tipe' => 'sekolah',
             ]);
 
-            // ================================
-            //  2. AGENDA PERKELAS - FIXED (FINAL)
-            // ================================
-
-            $this->command->info('Membuat agenda perkelas...');
-            
-            foreach ($kelasList as $kelas) {
-
-            // Tentukan guru pengampu kelas
-            $guruId = $kelas->Guru_Utama_Id ?: $kelas->Guru_Pendamping_Id;
-
-            if (!$guruId) {
-                $this->command->warn(
-                    "Kelas {$kelas->Nama_Kelas} tidak memiliki guru. Agenda dilewati."
-                );
-                continue;
-            }
-
-        Agenda::create([
-            'Guru_Id' => $guruId,            
-            'Kelas_Id' => $kelas->Kelas_Id,
-            'Ekstrakulikuler_Id' => null,
-            'Judul' => 'Rapat Wali Murid Kelas ' . $kelas->Nama_Kelas,
-            'Deskripsi' => 'Pertemuan rutin wali murid dengan wali kelas ' . $kelas->Nama_Kelas,
-            'Tanggal' => Carbon::now()->addDays(14)->format('Y-m-d'),
-            'Waktu_Mulai' => '08:00',
-            'Waktu_Selesai' => '10:00',
-            'Tipe' => 'perkelas',
-        ]);
-
-        Agenda::create([
-            'Guru_Id' => $guruId,            
-            'Kelas_Id' => $kelas->Kelas_Id,
-            'Ekstrakulikuler_Id' => null,
-            'Judul' => 'Ujian Tengah Semester Kelas ' . $kelas->Nama_Kelas,
-            'Deskripsi' => 'Ujian tengah semester untuk kelas ' . $kelas->Nama_Kelas,
-            'Tanggal' => '2025-03-10',
-            'Waktu_Mulai' => '07:30',
-            'Waktu_Selesai' => '12:30',
-            'Tipe' => 'perkelas',
-        ]);
-    }
-
-
+    
             // ================================
             // 3. AGENDA EKSTRAKULIKULER - FIXED
             // ================================
