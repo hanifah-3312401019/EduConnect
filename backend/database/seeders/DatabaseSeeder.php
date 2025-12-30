@@ -18,9 +18,9 @@ class DatabaseSeeder extends Seeder
             OrangTuaSeeder::class,
             KelasSeeder::class,
             EkstrakulikulerSeeder::class,
+            AgendaSeeder::class,
             SiswaSeeder::class,
             PengumumanSeeder::class,
-            AgendaSeeder::class,
         ]);
 
     }

@@ -30,7 +30,7 @@ class KelasSeeder extends Seeder
             [
                 'Kelas_Id' => 2,
                 'Nama_Kelas' => 'Kelas 2A',
-                'Guru_Utama_Id' => null,
+                'Guru_Utama_Id' => $guruUtama->Guru_Id,
                 'Guru_Pendamping_Id' => null,
                 'Jumlah' => 28,
                 'Tahun_Ajar' => '2024/2025'

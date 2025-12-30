@@ -81,15 +81,15 @@ class AgendaSeeder extends Seeder
             
             foreach ($kelasList as $kelas) {
 
-        // Tentukan guru pengampu kelas
-        $guruId = $kelas->Guru_Utama_Id ?? $kelas->Guru_Pendamping_Id;
+            // Tentukan guru pengampu kelas
+            $guruId = $kelas->Guru_Utama_Id ?: $kelas->Guru_Pendamping_Id;
 
-        if (!$guruId) {
-            $this->command->info(
-                "Kelas {$kelas->Nama_Kelas} tidak memiliki guru. Agenda dilewati."
-            );
-            continue;
-        }
+            if (!$guruId) {
+                $this->command->warn(
+                    "Kelas {$kelas->Nama_Kelas} tidak memiliki guru. Agenda dilewati."
+                );
+                continue;
+            }
 
         Agenda::create([
             'Guru_Id' => $guruId,            
