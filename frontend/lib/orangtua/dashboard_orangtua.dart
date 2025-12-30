@@ -11,6 +11,7 @@ import 'package:frontend/env/api_base_url.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/auth/login.dart';
+import 'package:frontend/widgets/pdf_viewer_page.dart';
 
 class DashboardPengumuman {
   final String judul;
@@ -237,18 +238,19 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  Future<void> _downloadKalenderAkademik() async {
-    final pdfUrl = 'https://drive.google.com/file/d/1nEQ5SJredk9Y04cazgPj-hhOIVXM0rA7/view?usp=sharing';
-    
-    if (await canLaunchUrl(Uri.parse(pdfUrl))) {
-      await launchUrl(
-        Uri.parse(pdfUrl),
-        mode: LaunchMode.externalApplication,
-      );
-    } else {
+    Future<void> _downloadKalenderAkademik() async {
+    final uri = Uri.parse(
+      'https://drive.google.com/uc?export=download&id=1nEQ5SJredk9Y04cazgPj-hhOIVXM0rA7',
+    );
+
+    if (!await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    )) {
       _showDownloadDialog();
     }
   }
+
 
   void _showDownloadDialog() {
     showDialog(
@@ -284,7 +286,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             SizedBox(height: 15),
             Text(
-              'https://drive.google.com/file/d/1nEQ5SJredk9Y04cazgPj-hhOIVXM0rA7/view?usp=sharing',
+              'https://drive.google.com/uc?export=download&id=1nEQ5SJredk9Y04cazgPj-hhOIVXM0rA7',
               style: TextStyle(fontSize: 12, color: Colors.blue),
             ),
           ],

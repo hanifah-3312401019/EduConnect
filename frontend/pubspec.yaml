@@ -41,7 +41,7 @@ dependencies:
   image_picker: ^1.0.4
   image_picker_for_web: ^2.1.13  # Untuk web support
   provider: ^6.1.5+1
-  advance_pdf_viewer: ^2.0.0
+  pdfx: ^2.6.0
   url_launcher: ^6.2.2
 
 dev_dependencies:
