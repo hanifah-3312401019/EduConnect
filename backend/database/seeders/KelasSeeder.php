@@ -10,25 +10,28 @@ class KelasSeeder extends Seeder
 {
     public function run(): void
     {
-        $guru = Guru::first();
+        $guruUtama = Guru::first();
+        $guruPendamping = Guru::skip(1)->first();
 
-        if (!$guru) {
-            $this->command->error('Guru tidak ditemukan! Pastikan GuruSeeder sudah dijalankan.');
+        if (!$guruUtama) {
+            $this->command->error('Data guru tidak ditemukan. Pastikan GuruSeeder sudah dijalankan.');
             return;
         }
 
         $kelasData = [
             [
-                'Kelas_Id' => 1, // Explicitly set ID
+                'Kelas_Id' => 1,
                 'Nama_Kelas' => 'Kelas 1A',
-                'Guru_Id' => $guru->Guru_Id,
+                'Guru_Utama_Id' => $guruUtama->Guru_Id,
+                'Guru_Pendamping_Id' => $guruPendamping?->Guru_Id,
                 'Jumlah' => 25,
                 'Tahun_Ajar' => '2024/2025'
             ],
             [
-                'Kelas_Id' => 2, // Explicitly set ID
+                'Kelas_Id' => 2,
                 'Nama_Kelas' => 'Kelas 2A',
-                'Guru_Id' => null,
+                'Guru_Utama_Id' => null,
+                'Guru_Pendamping_Id' => null,
                 'Jumlah' => 28,
                 'Tahun_Ajar' => '2024/2025'
             ]
@@ -38,6 +41,6 @@ class KelasSeeder extends Seeder
             Kelas::create($data);
         }
 
-        $this->command->info('Kelas seeder berhasil dijalankan!');
+        $this->command->info('KelasSeeder berhasil dijalankan.');
     }
 }
