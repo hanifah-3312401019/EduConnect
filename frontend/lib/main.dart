@@ -14,6 +14,7 @@ import 'orangtua/edit_profil_anak.dart';
 import 'orangtua/edit_profil_orangtua.dart';
 import 'orangtua/pembayaran.dart';
 import 'orangtua/agenda.dart';
+import 'orangtua/rekap_ketidakhadiran.dart';
 import 'admin/data_orangTua.dart';
 import 'admin/data_kelas.dart';
 import 'admin/data_guru.dart';
@@ -91,6 +92,8 @@ class EduConnectApp extends StatelessWidget {
         '/edit_profil_orangtua': (context) => EditOrangTuaPage(),
         '/agenda': (context) => const AgendaPage(),
         '/orangtua/perizinan': (context) => const PerizinanPage(),
+        '/orangtua/rekap-ketidakhadiran': (context) => const RekapKetidakhadiranPage(),
+
 
         //--- ADMIN ---
         '/admin/dashboard': (context) => DashboardAdminPage(),

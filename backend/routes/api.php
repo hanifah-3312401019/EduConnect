@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\PerizinanOrtuController;
 use App\Http\Controllers\Api\PerizinanGuruController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\JadwalPelajaranController;
+use App\Http\Controllers\Api\RekapKetidakhadiranApiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -154,13 +155,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/perizinan/anak', [PerizinanOrtuController::class, 'getAnak']);
         Route::get('/perizinan', [PerizinanOrtuController::class, 'index']);
         Route::post('/perizinan', [PerizinanOrtuController::class, 'store']);
+        
+        // Tambahkan di sini:
+        Route::get('/rekap-ketidakhadiran', [RekapKetidakhadiranApiController::class, 'index']);
+        Route::get('/rekap-ketidakhadiran/{bulan}', [RekapKetidakhadiranApiController::class, 'detail']);
     });
 
     // Guru
-    Route::middleware('auth:sanctum')->prefix('guru')->group(function () {
-    Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
-    Route::post('/perizinan/manual', [PerizinanGuruController::class, 'storeManual']);
-});
+    Route::prefix('guru')->group(function () {
+        Route::get('/perizinan', [PerizinanGuruController::class, 'index']);
+        Route::post('/perizinan/manual', [PerizinanGuruController::class, 'storeManual']);
+    });
 });
 
 // Handle OPTIONS request untuk CORS

@@ -15,7 +15,7 @@ use Carbon\Carbon;
 class PerizinanGuruController extends Controller
 {
     /**
-     * Ambil Guru_Id dari TOKEN (BUKAN HEADER)
+     * Ambil Guru_Id dari user login
      */
     private function getGuruId()
     {
@@ -28,17 +28,20 @@ class PerizinanGuruController extends Controller
             ], 401);
         }
 
-        // asumsi akun guru login punya kolom Guru_Id
-        $guruId = $user->Guru_Id ?? null;
-
-        if (!$guruId) {
+        /**
+         * ASUMSI SESUAI PRAKTIK UMUM:
+         * - users punya kolom Guru_Id
+         * - kelas.Guru_Utama_Id → FK ke guru.Guru_Id
+         */
+        if (!$user->Guru_Id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Akun ini bukan akun guru'
             ], 403);
         }
 
-        $guru = Guru::find($guruId);
+        $guru = Guru::where('Guru_Id', $user->Guru_Id)->first();
+
         if (!$guru) {
             return response()->json([
                 'success' => false,
@@ -46,7 +49,7 @@ class PerizinanGuruController extends Controller
             ], 404);
         }
 
-        return $guruId;
+        return $guru->Guru_Id;
     }
 
     /**
@@ -59,8 +62,8 @@ class PerizinanGuruController extends Controller
             return $guruId;
         }
 
-        // ambil kelas yang diampu guru
-        $kelasIds = Kelas::where('Guru_Id', $guruId)
+        // Ambil kelas yang diampu guru (SESUAI DB)
+        $kelasIds = Kelas::where('Guru_Utama_Id', $guruId)
             ->pluck('Kelas_Id')
             ->toArray();
 
@@ -71,7 +74,7 @@ class PerizinanGuruController extends Controller
             ], 400);
         }
 
-        // ambil perizinan siswa di kelas guru
+        // Ambil perizinan siswa di kelas guru
         $perizinan = Perizinan::with([
                 'siswa',
                 'siswa.kelas',
@@ -90,7 +93,9 @@ class PerizinanGuruController extends Controller
                     'Tanggal_Izin'        => optional($izin->Tanggal_Izin)->format('Y-m-d'),
                     'Tanggal_Pengajuan'   => optional($izin->Tanggal_Pengajuan)->format('Y-m-d H:i'),
                     'Status_Pembacaan'    => $izin->Status_Pembacaan,
-                    'Bukti'               => $izin->Bukti,
+                    'Bukti' => $izin->Bukti
+                    ? asset('storage/' . $izin->Bukti)
+                    : null,
 
                     // Siswa
                     'Nama_Siswa'          => $izin->siswa->Nama ?? '-',
@@ -118,7 +123,6 @@ class PerizinanGuruController extends Controller
 
     /**
      * POST /api/guru/perizinan/manual
-     * Tambah izin manual oleh guru
      */
     public function storeManual(Request $request)
     {
@@ -133,16 +137,6 @@ class PerizinanGuruController extends Controller
             'jenis'         => 'required|in:Sakit,Acara Keluarga,Lainnya',
             'tanggal_izin'  => 'required|date',
             'keterangan'    => 'required|string|min:10|max:500',
-        ], [
-            'nama_siswa.required'    => 'Nama siswa harus diisi',
-            'nama_siswa.min'         => 'Nama siswa minimal 3 karakter',
-            'jenis.required'         => 'Jenis izin harus dipilih',
-            'jenis.in'               => 'Jenis izin tidak valid',
-            'tanggal_izin.required'  => 'Tanggal izin harus diisi',
-            'tanggal_izin.date'      => 'Format tanggal tidak valid',
-            'keterangan.required'    => 'Keterangan harus diisi',
-            'keterangan.min'         => 'Keterangan minimal 10 karakter',
-            'keterangan.max'         => 'Keterangan maksimal 500 karakter',
         ]);
 
         if ($validator->fails()) {
@@ -154,7 +148,7 @@ class PerizinanGuruController extends Controller
         }
 
         // Ambil kelas yang diampu guru
-        $kelasIds = Kelas::where('Guru_Id', $guruId)
+        $kelasIds = Kelas::where('Guru_Utama_Id', $guruId)
             ->pluck('Kelas_Id')
             ->toArray();
 
@@ -165,9 +159,8 @@ class PerizinanGuruController extends Controller
             ], 400);
         }
 
-        // Cari siswa berdasarkan nama di kelas yang diampu guru
-        // PENTING: Load relasi orangTua untuk dapat OrangTua_Id
-        $siswa = Siswa::with('orangTua')
+        // Cari siswa di kelas guru
+        $siswa = Siswa::with(['kelas', 'orangTua'])
             ->whereIn('Kelas_Id', $kelasIds)
             ->where('Nama', 'LIKE', '%' . $request->nama_siswa . '%')
             ->first();
@@ -175,28 +168,27 @@ class PerizinanGuruController extends Controller
         if (!$siswa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Siswa dengan nama "' . $request->nama_siswa . '" tidak ditemukan di kelas yang Anda ampu'
+                'message' => 'Siswa tidak ditemukan di kelas yang Anda ampu'
             ], 404);
         }
 
-        // Cek apakah siswa punya OrangTua_Id
         if (!$siswa->OrangTua_Id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Siswa "' . $siswa->Nama . '" belum memiliki data orang tua. Hubungi admin untuk melengkapi data.'
+                'message' => 'Data orang tua siswa belum lengkap'
             ], 400);
         }
 
-        // Buat perizinan baru dengan OrangTua_Id dari siswa
+        // Simpan perizinan manual
         $perizinan = Perizinan::create([
             'Siswa_Id'          => $siswa->Siswa_Id,
-            'OrangTua_Id'       => $siswa->OrangTua_Id, // ⭐ INI YANG DITAMBAHKAN
+            'OrangTua_Id'       => $siswa->OrangTua_Id,
             'Jenis'             => $request->jenis,
             'Keterangan'        => $request->keterangan,
             'Tanggal_Izin'      => $request->tanggal_izin,
             'Tanggal_Pengajuan' => Carbon::now(),
-            'Status_Pembacaan'  => 'Sudah Dibaca', // Langsung dibaca karena guru yang input
-            'Bukti'             => null, // Tidak ada bukti untuk izin manual
+            'Status_Pembacaan'  => 'Sudah Dibaca',
+            'Bukti'             => null,
         ]);
 
         return response()->json([
@@ -208,7 +200,6 @@ class PerizinanGuruController extends Controller
                 'Kelas'             => $siswa->kelas->Nama_Kelas ?? '-',
                 'Jenis'             => $perizinan->Jenis,
                 'Tanggal_Izin'      => $perizinan->Tanggal_Izin->format('Y-m-d'),
-                'Keterangan'        => $perizinan->Keterangan,
                 'Tanggal_Pengajuan' => $perizinan->Tanggal_Pengajuan->format('Y-m-d H:i'),
             ]
         ], 201);

@@ -6,6 +6,8 @@ import 'package:frontend/orangtua/agenda.dart';
 import 'package:frontend/orangtua/pengumuman.dart';
 import 'package:frontend/orangtua/pembayaran.dart';
 import 'package:frontend/orangtua/profil.dart';
+import 'package:frontend/orangtua/perizinan.dart';
+import 'package:frontend/orangtua/rekap_ketidakhadiran.dart';
 import 'package:frontend/auth/login.dart';
 
 class sidebarOrangtua extends StatelessWidget {
@@ -86,6 +88,14 @@ class sidebarOrangtua extends StatelessWidget {
             index: 6,
           ),
 
+          _drawerItem(
+            context,
+            icon: Icons.fact_check,
+            title: "Rekap Ketidakhadiran",
+            targetPage: RekapKetidakhadiranPage(),
+            index: null, 
+          ),
+
           const Divider(),
 
           _drawerItem(
@@ -95,6 +105,7 @@ class sidebarOrangtua extends StatelessWidget {
             targetPage: LoginPage(),
             color: Colors.red,
           ),
+
         ],
       ),
     );
