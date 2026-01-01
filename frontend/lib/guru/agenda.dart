@@ -217,7 +217,7 @@ class MobileAgendaWithNav extends StatefulWidget {
 }
 
 class _MobileAgendaWithNavState extends State<MobileAgendaWithNav> {
-  int _currentIndex = 2;
+  int _currentIndex = 1; 
 
   @override
   Widget build(BuildContext context) {
@@ -249,9 +249,8 @@ class _MobileAgendaWithNavState extends State<MobileAgendaWithNav> {
             setState(() => _currentIndex = index);
             switch (index) {
               case 0: Navigator.pushReplacementNamed(context, '/guru/dashboard'); break;
-              case 1: Navigator.pushReplacementNamed(context, '/guru/absensi'); break;
-              case 2: break;
-              case 3: Navigator.pushReplacementNamed(context, '/guru/pengumuman'); break;
+              case 1: break; 
+              case 2: Navigator.pushReplacementNamed(context, '/guru/pengumuman'); break;
             }
           },
           type: BottomNavigationBarType.fixed,
@@ -262,7 +261,6 @@ class _MobileAgendaWithNavState extends State<MobileAgendaWithNav> {
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Utama'),
-            BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Absensi'),
             BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Agenda'),
             BottomNavigationBarItem(icon: Icon(Icons.announcement), label: 'Pengumuman'),
           ],

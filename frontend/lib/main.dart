@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:frontend/orangtua/perizinan.dart';
 import 'guru/dashboard_guru.dart';
 import 'guru/permohonan_izin.dart';
-import 'guru/absensi.dart';
 import 'guru/pengumuman.dart' as guru;
 import 'guru/agenda.dart';
 import 'orangtua/dashboard_orangtua.dart';
@@ -80,7 +79,6 @@ class EduConnectApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/guru/dashboard': (context) => const DashboardGuru(),
         '/guru/permohonan-izin': (context) => const PermohonanIzin(),
-        '/guru/absensi': (context) => const Absensi(),
         '/guru/pengumuman': (context) => const guru.PengumumanPage(),
         '/guru/agenda': (context) => const Agenda(),
         '/dashboard': (context) => DashboardPage(),

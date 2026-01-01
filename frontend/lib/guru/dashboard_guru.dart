@@ -108,12 +108,9 @@ class _NavigationBarMobileState extends State<NavigationBarMobile> {
               // Tetap di dashboard
               break;
             case 1:
-              Navigator.pushReplacementNamed(context, '/guru/absensi');
-              break;
-            case 2:
               Navigator.pushReplacementNamed(context, '/guru/agenda');
               break;
-            case 3:
+            case 2:
               Navigator.pushReplacementNamed(context, '/guru/pengumuman');
               break;
           }
@@ -129,7 +126,6 @@ class _NavigationBarMobileState extends State<NavigationBarMobile> {
         unselectedLabelStyle: const TextStyle(fontSize: 11),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Utama'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Absensi'),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
             label: 'Agenda',
