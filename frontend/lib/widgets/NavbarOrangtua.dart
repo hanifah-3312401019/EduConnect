@@ -32,8 +32,14 @@ class NavbarOrangtua extends StatelessWidget {
       type: BottomNavigationBarType.fixed,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Halaman Utama'),
-        BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Agenda'),
-        BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Jadwal'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_month),
+          label: 'Jadwal',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.campaign),
+          label: 'Pengumuman',
+        ),
         BottomNavigationBarItem(icon: Icon(Icons.payment), label: 'Pembayaran'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
       ],

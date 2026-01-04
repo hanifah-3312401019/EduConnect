@@ -35,9 +35,9 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
     'November',
     'Desember',
   ];
-  final List<String> years = List.generate(6, (i) => (2024 + i).toString());
   late String selectedMonth;
   late String selectedYear;
+  DateTime? selectedDate;
   List<_PaymentItem> items = [];
   int totalBayar = 0;
   bool loading = true;
@@ -48,6 +48,7 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
   void initState() {
     super.initState();
     final now = DateTime.now();
+    selectedDate = DateTime(now.year, now.month);
     selectedMonth = months[now.month - 1];
     selectedYear = now.year.toString();
     _initPembayaran();
@@ -97,6 +98,196 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
       loading = false;
       setState(() {});
     }
+  }
+
+  // ========== DATE PICKER ==========
+  Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        int tempYear = selectedDate?.year ?? now.year;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              height:
+                  MediaQuery.of(context).size.height * 0.5, // 50% dari layar
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Pilih Periode',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: greenColor,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Tahun Selector
+                  Container(
+                    decoration: BoxDecoration(
+                      color: greenColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: greenColor),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.chevron_left, color: greenColor),
+                          onPressed: () {
+                            setDialogState(() {
+                              tempYear--;
+                            });
+                          },
+                        ),
+                        Text(
+                          tempYear.toString(),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: greenColor,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.chevron_right, color: greenColor),
+                          onPressed: () {
+                            setDialogState(() {
+                              tempYear++;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Label Bulan
+                  Text(
+                    'Pilih Bulan:',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Grid Bulan - PAKAI EXPANDED DENGAN TEPAT
+                  Expanded(
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 1.8,
+                          ),
+                      itemCount: months.length,
+                      itemBuilder: (context, index) {
+                        final month = months[index];
+                        final isSelected =
+                            month == selectedMonth &&
+                            tempYear.toString() == selectedYear;
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              selectedDate = DateTime(tempYear, index + 1);
+                              selectedMonth = month;
+                              selectedYear = tempYear.toString();
+                            });
+                            fetchPembayaran();
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? greenColor : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isSelected
+                                    ? greenColor
+                                    : Colors.grey.shade300,
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                month,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Tombol
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: greenColor,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'SELESAI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _onItemTapped(int index) {
@@ -201,7 +392,7 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      drawer: const sidebarOrangtua(), // Gunakan widget sidebar yang sudah ada
+      drawer: const sidebarOrangtua(),
       appBar: AppBar(
         backgroundColor: backgroundColor,
         elevation: 0,
@@ -242,7 +433,7 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Judul & Filter
+            // ========== BAGIAN INI YANG DIUBAH ==========
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -254,103 +445,110 @@ class _RincianPembayaranPageState extends State<RincianPembayaranPage> {
                     color: Color(0xFF465940),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade400),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Color(0xFF465940),
-                      ),
-                      const SizedBox(width: 4),
-                      DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedMonth,
-                          icon: const Icon(
-                            Icons.arrow_drop_down,
-                            color: Color(0xFF465940),
-                            size: 18,
-                          ),
-                          items: months
-                              .map(
-                                (month) => DropdownMenuItem(
-                                  value: month,
-                                  child: Text(
-                                    month,
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => selectedMonth = value);
-                              fetchPembayaran();
-                            }
-                          },
+                // GANTI DROPDOWN LAMA DENGAN TOMBOL DATE PICKER
+                GestureDetector(
+                  onTap: () => _selectDate(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: greenColor, width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 3,
+                          offset: Offset(0, 1),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedYear,
-                          icon: const Icon(
-                            Icons.arrow_drop_down,
-                            color: Color(0xFF465940),
-                            size: 18,
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_month, size: 18, color: greenColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          "$selectedMonth $selectedYear",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: greenColor,
                           ),
-                          items: years
-                              .map(
-                                (year) => DropdownMenuItem(
-                                  value: year,
-                                  child: Text(
-                                    year,
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => selectedYear = value);
-                              fetchPembayaran();
-                            }
-                          },
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: greenColor,
+                          size: 20,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
+
+            // ========== SAMPAI SINI ==========
             const SizedBox(height: 16),
+
+            // Info periode
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: greenColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: greenColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: greenColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Menampilkan pembayaran untuk $selectedMonth $selectedYear",
+                      style: TextStyle(fontSize: 12, color: greenColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Kartu Pembayaran
             if (loading)
               const Center(child: CircularProgressIndicator())
+            else if (items.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(40),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.receipt_long,
+                      size: 60,
+                      color: greenColor.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Tidak ada data pembayaran\nuntuk $selectedMonth $selectedYear",
+                      style: TextStyle(color: greenColor, fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
             else
               _buildPaymentCard(
                 '$selectedMonth $selectedYear',
                 items,
                 'Rp $totalBayar',
               ),
+
             const SizedBox(height: 30),
+
             // Tata Cara Pembayaran
             Container(
               width: double.infinity,

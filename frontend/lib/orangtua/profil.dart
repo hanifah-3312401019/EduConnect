@@ -12,7 +12,6 @@ import 'agenda.dart';
 import 'package:frontend/auth/login.dart';
 import 'package:frontend/env/api_base_url.dart';
 import 'package:frontend/widgets/sidebarOrangtua.dart';
-import 'package:frontend/widgets/NavbarOrangtua.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/widgets/notifikasi_widgets.dart';
 
@@ -94,32 +93,35 @@ class _ProfilPageState extends State<ProfilPage> {
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
-    Widget? targetPage;
+
     switch (index) {
       case 0:
-        targetPage = DashboardPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => DashboardPage()),
+        );
         break;
       case 1:
-        targetPage = JadwalPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const JadwalPage()),
+        );
         break;
       case 2:
-        targetPage = PengumumanPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PengumumanPage()),
+        );
         break;
       case 3:
-        targetPage = RincianPembayaranPage();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RincianPembayaranPage()),
+        );
         break;
       case 4:
-        targetPage = ProfilPage();
+        // Tetap di halaman profil
         break;
-    }
-    if (targetPage != null && targetPage.runtimeType != runtimeType) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => targetPage!,
-          transitionDuration: Duration.zero,
-        ),
-      );
     }
   }
 
@@ -298,13 +300,38 @@ class _ProfilPageState extends State<ProfilPage> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
-      bottomNavigationBar: NavbarOrangtua(
-        selectedIndex: _selectedIndex,
+      // BOTTOM NAVIGATION BAR LANGSUNG (SAMA DENGAN RINCIAN PEMBAYARAN)
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        backgroundColor: greenColor,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white70,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Halaman Utama',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month),
+            label: 'Jadwal',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.campaign),
+            label: 'Pengumuman',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payment),
+            label: 'Pembayaran',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        ],
       ),
     );
   }
