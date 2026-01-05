@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
-String baseUrl = "http://localhost:8000/api";
+import 'package:frontend/env/api_base_url.dart';
 
 class EditOrangTuaPage extends StatefulWidget {
   final Map<String, dynamic>? data;
@@ -35,14 +34,37 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
     );
   }
 
+  // ======== VALIDATOR NOMOR TELEPON ========
+  String? _validatePhoneNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Nomor telepon harus diisi';
+    }
+
+    // Hapus spasi atau karakter non-digit
+    final cleanValue = value.replaceAll(RegExp(r'[^\d]'), '');
+
+    // Validasi hanya angka
+    if (!RegExp(r'^[0-9]+$').hasMatch(cleanValue)) {
+      return 'Nomor telepon hanya boleh mengandung angka';
+    }
+
+    // Validasi panjang 12-13 digit
+    if (cleanValue.length < 12 || cleanValue.length > 13) {
+      return 'Nomor telepon harus 12-13 angka';
+    }
+
+    return null;
+  }
+
   Future<void> saveOrtu() async {
     if (_formKey.currentState!.validate()) {
       try {
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('token');
 
+        // GUNAKAN ApiConfig.baseUrl
         final response = await http.post(
-          Uri.parse('$baseUrl/profil/update-ortu'),
+          Uri.parse('${ApiConfig.baseUrl}/api/profil/update-ortu'),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -58,6 +80,7 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
         );
 
         print("Save Response: ${response.statusCode} - ${response.body}");
+        print("Menggunakan URL: ${ApiConfig.baseUrl}/api/profil/update-ortu");
 
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -197,7 +220,10 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
                 _buildField("Nama Orang Tua", namaController, isRequired: true),
                 const SizedBox(height: 16),
 
-                _buildField("No Telepon", telpController, isRequired: true),
+                _buildPhoneField(
+                  "No Telepon",
+                  telpController,
+                ), // Field khusus telepon
                 const SizedBox(height: 16),
 
                 _buildField("Email", emailController, isRequired: true),
@@ -232,7 +258,7 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
     );
   }
 
-  // ======== FIELD FORM ========
+  // ======== FIELD FORM BIASA ========
   Widget _buildField(
     String hint,
     TextEditingController controller, {
@@ -253,6 +279,28 @@ class _EditOrangTuaPageState extends State<EditOrangTuaPage> {
         validator: isRequired
             ? (v) => v == null || v.isEmpty ? '$hint harus diisi' : null
             : null,
+      ),
+    );
+  }
+
+  // ======== FIELD FORM KHUSUS TELEPON ========
+  Widget _buildPhoneField(String hint, TextEditingController controller) {
+    const Color greenColor = Color(0xFF465940);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: greenColor, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.phone, // Keyboard khusus nomor telepon
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: hint,
+          hintStyle: const TextStyle(fontSize: 14),
+        ),
+        validator: _validatePhoneNumber, // Validator khusus telepon
       ),
     );
   }

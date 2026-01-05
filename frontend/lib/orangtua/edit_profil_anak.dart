@@ -2,9 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
-String baseUrl = "http://localhost:8000/api";
-String globalAuthToken = '';
+import 'package:frontend/env/api_base_url.dart';
 
 class EditAnakPage extends StatefulWidget {
   final Map<String, dynamic>? data; // nullable
@@ -41,7 +39,7 @@ class _EditAnakPageState extends State<EditAnakPage> {
 
     print(widget.data);
 
-    // 1. Format tanggal dulu
+    // Format tanggal
     String? rawDate = widget.data?['tgl_lahir']?.toString();
     String formattedDate = '';
 
@@ -55,11 +53,11 @@ class _EditAnakPageState extends State<EditAnakPage> {
           formattedDate = rawDate;
         }
       } else {
-        formattedDate = rawDate; // jika sudah format benar
+        formattedDate = rawDate;
       }
     }
 
-    // 2. Inisialisasi SEMUA controller SEKALI SAJA
+    // Inisialisasi SEMUA controller dengan data dari widget.data
     namaController = TextEditingController(
       text: widget.data?['nama_anak'] ?? '',
     );
@@ -69,12 +67,12 @@ class _EditAnakPageState extends State<EditAnakPage> {
     );
     tglController = TextEditingController(
       text: formattedDate,
-    ); // ← PAKAI formattedDate
+    ); // PAKAI formattedDate
     alamatController = TextEditingController(
       text: widget.data?['alamat_anak'] ?? '',
     );
 
-    // 3. Handle jenis kelamin
+    // Handle jenis kelamin
     String? jkFromData = widget.data?['jenis_kelamin']?.toString();
     if (jkFromData == 'L') {
       jenisKelamin = 'Laki-laki';
@@ -99,12 +97,13 @@ class _EditAnakPageState extends State<EditAnakPage> {
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('token');
 
+        // GUNAKAN ApiConfig.baseUrl DARI FILE api_base_url.dart
         final response = await http.post(
-          Uri.parse('$baseUrl/profil/update-anak'),
+          Uri.parse('${ApiConfig.baseUrl}/api/profil/update-anak'),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': 'Bearer $token', // <--- PENTING
+            'Authorization': 'Bearer $token',
           },
           body: jsonEncode({
             "OrangTua_Id": widget.data?['OrangTua_Id'],
@@ -118,6 +117,7 @@ class _EditAnakPageState extends State<EditAnakPage> {
         );
 
         print("Save Response: ${response.statusCode} - ${response.body}");
+        print("Menggunakan URL: ${ApiConfig.baseUrl}/api/profil/update-anak");
 
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(

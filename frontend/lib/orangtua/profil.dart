@@ -15,7 +15,6 @@ import 'package:frontend/widgets/sidebarOrangtua.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/widgets/notifikasi_widgets.dart';
 
-String baseUrl = "http://localhost:8000/api";
 const Color greenColor = Color(0xFF465940);
 const Color backgroundColor = Color(0xFFFDFBF0);
 
@@ -52,8 +51,9 @@ class _ProfilPageState extends State<ProfilPage> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
+      // GUNAKAN ApiConfig.baseUrl DARI FILE api_base_url.dart
       final response = await http.get(
-        Uri.parse("$baseUrl/profil-new"),
+        Uri.parse("${ApiConfig.baseUrl}/api/profil-new"),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -63,6 +63,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
       print("STATUS: ${response.statusCode}");
       print("BODY: ${response.body}");
+      print("Menggunakan URL: ${ApiConfig.baseUrl}/api/profil-new");
 
       if (response.statusCode == 200) {
         final jsonRes = jsonDecode(response.body);
