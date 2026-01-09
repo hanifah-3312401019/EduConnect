@@ -14,31 +14,24 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class PengumumanGuruController extends Controller
 {
-    // Helper method untuk mendapatkan Guru_Id dari header
-    private function getGuruId()
-    {
-        $guruId = request()->header('Guru_Id');
-        
-        if (!$guruId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Guru_ID header diperlukan'
-            ], 400);
-        }
+    private function getGuru()
+{
+    $guru = Auth::user();
 
-        $guru = Guru::find($guruId);
-        if (!$guru) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Guru tidak ditemukan'
-            ], 404);
-        }
-
-        return $guruId;
+    if (!$guru || !($guru instanceof \App\Models\Guru)) {
+        abort(401, 'Unauthenticated');
     }
+
+    if (!$guru->Guru_Id) {
+        throw new \Exception('Akun ini bukan akun guru', 403);
+    }
+
+    return $guru;
+}
 
     private function sendPengumumanNotification($pengumuman, $tipe)
     {
@@ -162,17 +155,22 @@ class PengumumanGuruController extends Controller
     }
 
     public function getKelasSaya()
-    {
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
-        }
+{
+    try {
+        $guru = Auth::user();
 
-        // Cari semua kelas di mana guru mengajar (baik sebagai utama atau pendamping)
+        if (!$guru || !($guru instanceof \App\Models\Guru)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+        
+        $guruId = $guru->Guru_Id;
+
         $kelas = Kelas::where('Guru_Utama_Id', $guruId)
-                      ->orWhere('Guru_Pendamping_Id', $guruId)
-                      ->get();
+            ->orWhere('Guru_Pendamping_Id', $guruId)
+            ->get();
 
         if ($kelas->isEmpty()) {
             return response()->json([
@@ -185,15 +183,29 @@ class PengumumanGuruController extends Controller
             'success' => true,
             'data' => $kelas
         ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], $e->getCode() ?: 500);
     }
+}
+
 
     public function getSiswaKelasSaya()
     {
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
+        $guru = Auth::user(); // Ganti dari $this->getGuru()
+    
+        if (!$guru || !($guru instanceof \App\Models\Guru)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
         }
+
+        $guruId = $guru->Guru_Id;
+
 
         // Cari semua kelas di mana guru mengajar
         $kelas = Kelas::where('Guru_Utama_Id', $guruId)
@@ -221,11 +233,17 @@ class PengumumanGuruController extends Controller
 
     public function index(Request $request)
     {
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
-        }
+    $guru = $this->getGuru();
+    
+    if (!$guru) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
+    }
+
+    $guruId = $guru->Guru_Id;
+
 
         $kelasGuru = Kelas::where('Guru_Utama_Id', $guruId)
                         ->orWhere('Guru_Pendamping_Id', $guruId)
@@ -259,11 +277,16 @@ class PengumumanGuruController extends Controller
 
     public function store(Request $request)
     {
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
+         $guru = Auth::user(); // Ganti dari $this->getGuru()
+    
+        if (!$guru || !($guru instanceof \App\Models\Guru)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
         }
+
+        $guruId = $guru->Guru_Id;
 
         // Cari semua kelas di mana guru mengajar
         $kelasGuruList = Kelas::where('Guru_Utama_Id', $guruId)
@@ -394,11 +417,16 @@ class PengumumanGuruController extends Controller
 
     public function update(Request $request, $id)
     {
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
+        $guru = Auth::user(); // Ganti dari $this->getGuru()
+    
+        if (!$guru || !($guru instanceof \App\Models\Guru)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
         }
+
+        $guruId = $guru->Guru_Id;
 
         $pengumuman = Pengumuman::where('Pengumuman_Id', $id)
             ->where('Guru_Id', $guruId)
@@ -532,11 +560,17 @@ class PengumumanGuruController extends Controller
 
     public function destroy($id)
     {
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
+         $guru = Auth::user(); // Ganti dari $this->getGuru()
+    
+        if (!$guru || !($guru instanceof \App\Models\Guru)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
         }
+
+        $guruId = $guru->Guru_Id;
+
 
         $pengumuman = Pengumuman::where('Pengumuman_Id', $id)
             ->where('Guru_Id', $guruId)
@@ -575,13 +609,17 @@ class PengumumanGuruController extends Controller
         }
     }
 
-    public function getDropdownData()
+      public function getDropdownData()
     {
-        $guruId = $this->getGuruId();
+        $guru = Auth::user();
         
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
+        if (!$guru || !($guru instanceof Guru)) { 
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated'
+            ], 401);
         }
+        $guruId = $guru->Guru_Id;
 
         Log::info('Getting dropdown data for guru_id: ' . $guruId);
         

@@ -1,12 +1,10 @@
 import 'dart:io';
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:typed_data';
+import 'package:frontend/env/api_base_url.dart';
 
 class PerizinanPage extends StatefulWidget {
   const PerizinanPage({super.key});
@@ -21,24 +19,17 @@ class _PerizinanPageState extends State<PerizinanPage> {
   DateTime? _tanggal;
   final _alasanController = TextEditingController();
   
-  // VARIABEL GAMBAR
-  File? _buktiFileMobile;
-  Uint8List? _buktiBytesWeb;
+  // VARIABEL FILE
+  File? _buktiFile;
   String? _buktiFileName;
   
-  final ImagePicker _picker = ImagePicker();
   bool _loading = false;
   bool _loadingAnak = false;
   List<dynamic> _listAnak = [];
   String? _selectedAnakId;
   
-  String get _baseUrl {
-    if (kIsWeb) {
-      return "http://localhost:8000/api";
-    } else {
-      return "http://10.0.2.2:8000/api";
-    }
-  }
+  // Menggunakan ApiBaseUrl.baseUrl yang sudah include /api
+  String get _baseUrl => ApiBaseUrl.baseUrl;
 
   @override
   void initState() {
@@ -60,6 +51,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
       
       print('Response Status: ${response.statusCode}');
       print('Response Body: ${response.body}');
+      print('URL: $_baseUrl/orangtua/perizinan/anak');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -91,42 +83,37 @@ class _PerizinanPageState extends State<PerizinanPage> {
     if (picked != null) setState(() => _tanggal = picked);
   }
 
-  Future<void> _pilihFotoGaleri() async {
-    if (kIsWeb) {
-      final html.InputElement input = html.InputElement(type: 'file')
-        ..accept = 'image/*,application/pdf';
-      
-      input.click();
-      
-      input.onChange.listen((e) {
-        final files = input.files;
-        if (files != null && files.isNotEmpty) {
-          final file = files[0];
-          final reader = html.FileReader();
-          
-          reader.readAsArrayBuffer(file);
-          reader.onLoadEnd.listen((e) {
-            if (reader.readyState == html.FileReader.DONE) {
-              setState(() {
-                _buktiBytesWeb = reader.result as Uint8List;
-                _buktiFileName = file.name;
-              });
-            }
-          });
-        }
-      });
-    } else {
-      final XFile? picked = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-        maxWidth: 1920,
+  Future<void> _pilihFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+        allowMultiple: false,
       );
-      if (picked != null) {
+
+      if (result != null) {
+        PlatformFile file = result.files.first;
+        
+        // Cek apakah file memiliki path
+        if (file.path == null) {
+          _showError('Gagal mengakses file');
+          return;
+        }
+        
+        // Cek ukuran file (maks 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          _showError('Ukuran file maksimal 5MB');
+          return;
+        }
+        
         setState(() {
-          _buktiFileMobile = File(picked.path);
-          _buktiFileName = picked.name;
+          _buktiFile = File(file.path!);
+          _buktiFileName = file.name;
         });
       }
+    } catch (e) {
+      print('Error picking file: $e');
+      _showError('Gagal memilih file');
     }
   }
 
@@ -146,7 +133,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
       return;
     }
     
-    if (kIsWeb ? _buktiBytesWeb == null : _buktiFileMobile == null) {
+    if (_buktiFile == null) {
       _showError('Upload bukti perizinan');
       return;
     }
@@ -170,22 +157,15 @@ class _PerizinanPageState extends State<PerizinanPage> {
       request.fields['Tanggal_Izin'] = _tanggal!.toIso8601String().split('T')[0];
       
       // File
-      if (kIsWeb && _buktiBytesWeb != null) {
-        request.files.add(http.MultipartFile.fromBytes(
-          'Bukti',
-          _buktiBytesWeb!,
-          filename: _buktiFileName ?? 'bukti.jpg',
-        ));
-      } else if (!kIsWeb && _buktiFileMobile != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'Bukti',
-          _buktiFileMobile!.path,
-          filename: _buktiFileName ?? 'bukti.jpg',
-        ));
-      }
+      request.files.add(await http.MultipartFile.fromPath(
+        'Bukti',
+        _buktiFile!.path,
+        filename: _buktiFileName ?? 'bukti.jpg',
+      ));
 
       print('Sending to: $_baseUrl/orangtua/perizinan');
       print('Fields: ${request.fields}');
+      print('File: ${_buktiFile!.path}');
       
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
@@ -225,8 +205,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
     _formKey.currentState!.reset();
     setState(() {
       _tanggal = null;
-      _buktiFileMobile = null;
-      _buktiBytesWeb = null;
+      _buktiFile = null;
       _buktiFileName = null;
       _jenisIzin = 'Sakit';
       // Jangan reset selectedAnakId karena sudah otomatis terpilih
@@ -260,84 +239,75 @@ class _PerizinanPageState extends State<PerizinanPage> {
   }
 
   Widget _buildImagePreview() {
-    if (kIsWeb) {
-      return _buktiBytesWeb != null
-          ? Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.memory(
-                      _buktiBytesWeb!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
+    return _buktiFile != null
+        ? Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Stack(
+              children: [
+                // Preview untuk PDF
+                if (_buktiFileName != null && _buktiFileName!.toLowerCase().endsWith('.pdf'))
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.picture_as_pdf,
+                          size: 60,
+                          color: Colors.red,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'File PDF',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(
-                        Icons.photo,
-                        size: 16,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : _buildEmptyUpload();
-    } else {
-      return _buktiFileMobile != null
-          ? Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Stack(
-                children: [
+                  )
+                // Preview untuk gambar
+                else
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.file(
-                      _buktiFileMobile!,
+                      _buktiFile!,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
                     ),
                   ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Icon(
-                        Icons.photo,
-                        size: 16,
-                        color: Colors.green,
-                      ),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Icon(
+                      _buktiFileName != null && _buktiFileName!.toLowerCase().endsWith('.pdf')
+                          ? Icons.picture_as_pdf
+                          : Icons.photo,
+                      size: 16,
+                      color: _buktiFileName != null && _buktiFileName!.toLowerCase().endsWith('.pdf')
+                          ? Colors.red
+                          : Colors.green,
                     ),
                   ),
-                ],
-              ),
-            )
-          : _buildEmptyUpload();
-    }
+                ),
+              ],
+            ),
+          )
+        : _buildEmptyUpload();
   }
 
   Widget _buildEmptyUpload() {
+    const greenColor = Color(0xFF465940);
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -346,12 +316,12 @@ class _PerizinanPageState extends State<PerizinanPage> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFF465940).withOpacity(0.1),
+              color: greenColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(30),
             ),
             child: const Icon(
               Icons.cloud_upload_outlined,
-              color: Color(0xFF465940),
+              color: greenColor,
               size: 32,
             ),
           ),
@@ -360,7 +330,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
             "Upload Bukti Perizinan",
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF465940),
+              color: greenColor,
               fontWeight: FontWeight.w600,
               fontSize: 14,
             ),
@@ -764,8 +734,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
                                       ),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Row(
                                           children: [
@@ -849,17 +818,14 @@ class _PerizinanPageState extends State<PerizinanPage> {
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: _pilihFotoGaleri,
+                                  onTap: _pilihFile,
                                   child: Container(
                                     height: 180,
                                     decoration: BoxDecoration(
                                       color: greenColor.withOpacity(0.05),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: (kIsWeb
-                                                ? _buktiBytesWeb
-                                                : _buktiFileMobile) ==
-                                            null
+                                        color: _buktiFile == null
                                             ? greenColor.withOpacity(0.2)
                                             : Colors.green.withOpacity(0.3),
                                         width: 2,
@@ -881,16 +847,19 @@ class _PerizinanPageState extends State<PerizinanPage> {
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
-                                          Icons.check_circle,
-                                          color: Colors.green,
+                                        Icon(
+                                          _buktiFileName!.toLowerCase().endsWith('.pdf')
+                                              ? Icons.picture_as_pdf
+                                              : Icons.image,
+                                          color: _buktiFileName!.toLowerCase().endsWith('.pdf')
+                                              ? Colors.red
+                                              : Colors.green,
                                           size: 18,
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 "File terpilih:",
@@ -918,8 +887,7 @@ class _PerizinanPageState extends State<PerizinanPage> {
                                           ),
                                           onPressed: () {
                                             setState(() {
-                                              _buktiFileMobile = null;
-                                              _buktiBytesWeb = null;
+                                              _buktiFile = null;
                                               _buktiFileName = null;
                                             });
                                           },

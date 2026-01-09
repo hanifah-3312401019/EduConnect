@@ -5,6 +5,7 @@ import '../widgets/navigation_bar_guru.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:frontend/env/api_base_url.dart';
 
 class DashboardGuru extends StatelessWidget {
   const DashboardGuru({super.key});
@@ -177,14 +178,14 @@ class _DashboardContentState extends State<DashboardContent> {
     // 1. Load kelas guru dari endpoint yang sudah ada
     try {
       final kelasResponse = await http.get(
-        Uri.parse('http://localhost:8000/api/guru/kelas-saya'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          if (guruId != null) 'Guru_Id': guruId.toString(),
-        },
-      );
+      Uri.parse('${ApiConfig.baseUrl}/api/guru/kelas-saya'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        if (guruId != null) 'Guru-ID': guruId.toString(),
+      },
+    );
 
       print('Kelas Response Status: ${kelasResponse.statusCode}');
       print('Kelas Response Body: ${kelasResponse.body}');
@@ -231,14 +232,15 @@ class _DashboardContentState extends State<DashboardContent> {
     // 2. Load pengumuman terbaru
     try {
       final pengumumanResponse = await http.get(
-        Uri.parse('http://localhost:8000/api/guru/pengumuman'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          if (guruId != null) 'Guru_Id': guruId.toString(),
-        },
-      );
+      Uri.parse('${ApiConfig.baseUrl}/api/guru/pengumuman'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        if (guruId != null) 'Guru-ID': guruId.toString(),
+      },
+    );
+
 
       print('Pengumuman Response Status: ${pengumumanResponse.statusCode}');
       
@@ -308,6 +310,145 @@ class _DashboardContentState extends State<DashboardContent> {
     }
   }
 
+  Widget _buildPerizinanSiswaSection({required bool isMobile}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.health_and_safety, 
+                   color: const Color(0xFF465940), 
+                   size: isMobile ? 20 : 24),
+              SizedBox(width: isMobile ? 8 : 12),
+              Text(
+                "Perizinan Siswa",
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: isMobile ? 16 : 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: isMobile ? 12 : 16),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _perizinanCard(
+                  Icons.favorite,
+                  "Sakit",
+                  "2",
+                  Colors.red.shade100,
+                  Colors.red,
+                  isMobile: isMobile,
+                ),
+              ),
+              SizedBox(width: isMobile ? 12 : 16),
+              Expanded(
+                child: _perizinanCard(
+                  Icons.timer,
+                  "Izin",
+                  "3",
+                  Colors.blue.shade100,
+                  Colors.blue,
+                  isMobile: isMobile,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _perizinanCard(
+    IconData icon, 
+    String title, 
+    String count, 
+    Color bgColor, 
+    Color iconColor,
+    {required bool isMobile}
+  ) {
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: iconColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: iconColor, size: isMobile ? 18 : 20),
+              ),
+              SizedBox(width: isMobile ? 8 : 10),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                  fontSize: isMobile ? 14 : 16,
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: isMobile ? 8 : 10),
+          
+          Text(
+            count,
+            style: TextStyle(
+              color: iconColor,
+              fontSize: isMobile ? 20 : 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: isMobile ? 4 : 6),
+          Text(
+            'siswa',
+            style: TextStyle(
+              color: iconColor.withOpacity(0.8),
+              fontSize: isMobile ? 12 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -326,57 +467,44 @@ class _DashboardContentState extends State<DashboardContent> {
           controller: _refreshController,
           onRefresh: _onRefresh,
           enablePullDown: true,
+          enablePullUp: false, // Tambahkan ini
+          physics: const AlwaysScrollableScrollPhysics(), // Tambahkan ini
           header: const ClassicHeader(
             completeText: 'Data diperbarui',
             refreshingText: 'Memuat...',
             releaseText: 'Lepas untuk refresh',
             idleText: 'Tarik ke bawah untuk refresh',
           ),
-          child: isMobile ? _buildMobileLayout() : _buildWebLayout(),
+          child: CustomScrollView( // Ganti dengan CustomScrollView
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 16 : 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeHeader(isMobile: isMobile),
+                      SizedBox(height: isMobile ? 20 : 24),
+                      _buildDateCard(isMobile: isMobile),
+                      SizedBox(height: isMobile ? 20 : 24),
+                      _buildPerizinanSiswaSection(isMobile: isMobile),
+                      SizedBox(height: isMobile ? 20 : 24),
+                      _buildAnnouncements(isMobile: isMobile),
+                      SizedBox(height: isMobile ? 20 : 40),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildMobileLayout() {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildWelcomeHeader(isMobile: true),
-          const SizedBox(height: 20),
-          _buildDateCard(isMobile: true),
-          const SizedBox(height: 20),
-          _buildAttendanceStats(isMobile: true),
-          const SizedBox(height: 20),
-          _buildAnnouncements(isMobile: true),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWebLayout() {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildWelcomeHeader(isMobile: false),
-          const SizedBox(height: 24),
-          _buildDateCard(isMobile: false),
-          const SizedBox(height: 24),
-          _buildAttendanceStats(isMobile: false),
-          const SizedBox(height: 24),
-          _buildAnnouncements(isMobile: false),
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
+  // Hapus method _buildMobileLayout() dan _buildWebLayout()
+  // Karena sudah digantikan oleh CustomScrollView di atas
 
   Widget _buildWelcomeHeader({required bool isMobile}) {
     return Container(
@@ -460,132 +588,6 @@ class _DashboardContentState extends State<DashboardContent> {
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF465940),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttendanceStats({required bool isMobile}) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(isMobile ? 16 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Statistik Kehadiran',
-            style: TextStyle(
-              fontSize: isMobile ? 18 : 20,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF465940),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatBox(
-                      '20',
-                      'Hadir',
-                      Colors.green,
-                      isMobile: isMobile,
-                    ),
-                  ),
-                  SizedBox(width: isMobile ? 12 : 16),
-                  Expanded(
-                    child: _buildStatBox(
-                      '1',
-                      'Sakit',
-                      Colors.orange,
-                      isMobile: isMobile,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: isMobile ? 12 : 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatBox(
-                      '0',
-                      'Izin',
-                      Colors.blue,
-                      isMobile: isMobile,
-                    ),
-                  ),
-                  SizedBox(width: isMobile ? 12 : 16),
-                  Expanded(
-                    child: _buildStatBox(
-                      '0',
-                      'Alfa',
-                      Colors.red,
-                      isMobile: isMobile,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatBox(
-    String value,
-    String label,
-    Color color, {
-    required bool isMobile,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 16 : 20),
-      decoration: BoxDecoration(
-        border: Border.all(color: color.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(12),
-        color: color.withOpacity(0.1),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isMobile ? 24 : 32,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          SizedBox(height: isMobile ? 6 : 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isMobile ? 14 : 16,
-              color: color,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ],

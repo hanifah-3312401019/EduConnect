@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../widgets/sidebar.dart';
+import 'package:frontend/env/api_base_url.dart';
+import 'package:frontend/env/api_image_url.dart';
 
 class PermohonanIzin extends StatefulWidget {
   const PermohonanIzin({super.key});
@@ -12,7 +14,8 @@ class PermohonanIzin extends StatefulWidget {
   State<PermohonanIzin> createState() => _PermohonanIzinState();
 }
 
-class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProviderStateMixin {
+class _PermohonanIzinState extends State<PermohonanIzin>
+    with SingleTickerProviderStateMixin {
   List<dynamic> _listPerizinan = [];
   List<dynamic> _filteredPerizinan = [];
   bool _loading = true;
@@ -20,7 +23,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
   String _filterJenis = 'Semua';
   String _searchQuery = '';
   late TabController _tabController;
-  
+
   String get _baseUrl {
     if (kIsWeb) {
       return "http://localhost:8000/api";
@@ -47,10 +50,18 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
     if (!_tabController.indexIsChanging) {
       setState(() {
         switch (_tabController.index) {
-          case 0: _filterJenis = 'Semua'; break;
-          case 1: _filterJenis = 'Sakit'; break;
-          case 2: _filterJenis = 'Acara Keluarga'; break;
-          case 3: _filterJenis = 'Lainnya'; break;
+          case 0:
+            _filterJenis = 'Semua';
+            break;
+          case 1:
+            _filterJenis = 'Sakit';
+            break;
+          case 2:
+            _filterJenis = 'Acara Keluarga';
+            break;
+          case 3:
+            _filterJenis = 'Lainnya';
+            break;
         }
         _applyFilter();
       });
@@ -60,53 +71,61 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
   void _applyFilter() {
     setState(() {
       _filteredPerizinan = _listPerizinan.where((izin) {
-        bool matchesJenis = _filterJenis == 'Semua' || izin['Jenis'] == _filterJenis;
-        bool matchesSearch = _searchQuery.isEmpty ||
-            (izin['Nama_Siswa'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            (izin['Kelas'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+        bool matchesJenis =
+            _filterJenis == 'Semua' || izin['Jenis'] == _filterJenis;
+        bool matchesSearch =
+            _searchQuery.isEmpty ||
+            (izin['Nama_Siswa'] ?? '').toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            ) ||
+            (izin['Kelas'] ?? '').toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            );
         return matchesJenis && matchesSearch;
       }).toList();
     });
   }
 
   Future<void> _loadPerizinan() async {
-    setState(() { 
-      _loading = true; 
-      _errorMessage = ''; 
+    setState(() {
+      _loading = true;
+      _errorMessage = '';
     });
-    
+
     try {
       final token = await _getToken();
-      
+
       print('🔍 Fetching from: $_baseUrl/guru/perizinan');
       print('🔑 Token: ${token.substring(0, 20)}...');
-      
-      final response = await http.get(
-        Uri.parse('$_baseUrl/guru/perizinan'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timeout - Server tidak merespon');
-        },
-      );
-      
+
+      final response = await http
+          .get(
+            Uri.parse('${ApiBaseUrl.baseUrl}/guru/perizinan'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timeout - Server tidak merespon');
+            },
+          );
+
       print('📊 Response Status: ${response.statusCode}');
       print('📄 Response Body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['success'] == true) {
           setState(() {
             _listPerizinan = data['data'] ?? [];
             _applyFilter();
           });
-          
+
           if (_listPerizinan.isEmpty) {
             setState(() {
               _errorMessage = 'Belum ada perizinan dari siswa Anda';
@@ -133,7 +152,8 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
       } else {
         final data = json.decode(response.body);
         setState(() {
-          _errorMessage = data['message'] ?? 'Gagal memuat data (${response.statusCode})';
+          _errorMessage =
+              data['message'] ?? 'Gagal memuat data (${response.statusCode})';
         });
       }
     } catch (e) {
@@ -142,7 +162,8 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
         if (e.toString().contains('timeout')) {
           _errorMessage = 'Server tidak merespon. Periksa koneksi Anda.';
         } else if (e.toString().contains('SocketException')) {
-          _errorMessage = 'Tidak dapat terhubung ke server.\nPastikan Laravel sudah running.';
+          _errorMessage =
+              'Tidak dapat terhubung ke server.\nPastikan Laravel sudah running.';
         } else {
           _errorMessage = 'Error: $e';
         }
@@ -171,7 +192,9 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               Container(
@@ -180,7 +203,11 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                   color: const Color(0xFF465940).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.add_circle, color: Color(0xFF465940), size: 24),
+                child: const Icon(
+                  Icons.add_circle,
+                  color: Color(0xFF465940),
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(
@@ -224,7 +251,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Nama Siswa
                   const Text(
                     'Nama Siswa',
@@ -239,7 +266,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     controller: namaController,
                     decoration: InputDecoration(
                       hintText: 'Masukkan nama lengkap siswa',
-                      prefixIcon: const Icon(Icons.person, color: Color(0xFF465940)),
+                      prefixIcon: const Icon(
+                        Icons.person,
+                        color: Color(0xFF465940),
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey[300]!),
@@ -250,7 +280,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF465940), width: 2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF465940),
+                          width: 2,
+                        ),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -270,7 +303,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     },
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Jenis Izin
                   const Text(
                     'Jenis Izin',
@@ -284,7 +317,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                   DropdownButtonFormField<String>(
                     value: selectedJenis,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.category, color: Color(0xFF465940)),
+                      prefixIcon: const Icon(
+                        Icons.category,
+                        color: Color(0xFF465940),
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey[300]!),
@@ -295,7 +331,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF465940), width: 2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF465940),
+                          width: 2,
+                        ),
                       ),
                       filled: true,
                       fillColor: Colors.grey[50],
@@ -305,7 +344,11 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                         value: 'Sakit',
                         child: Row(
                           children: [
-                            Icon(Icons.medical_services, size: 18, color: Colors.red[400]),
+                            Icon(
+                              Icons.medical_services,
+                              size: 18,
+                              color: Colors.red[400],
+                            ),
                             const SizedBox(width: 8),
                             const Text('Sakit'),
                           ],
@@ -315,7 +358,11 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                         value: 'Acara Keluarga',
                         child: Row(
                           children: [
-                            Icon(Icons.celebration, size: 18, color: Colors.orange[400]),
+                            Icon(
+                              Icons.celebration,
+                              size: 18,
+                              color: Colors.orange[400],
+                            ),
                             const SizedBox(width: 8),
                             const Text('Acara Keluarga'),
                           ],
@@ -325,7 +372,11 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                         value: 'Lainnya',
                         child: Row(
                           children: [
-                            Icon(Icons.more_horiz, size: 18, color: Colors.blue[400]),
+                            Icon(
+                              Icons.more_horiz,
+                              size: 18,
+                              color: Colors.blue[400],
+                            ),
                             const SizedBox(width: 8),
                             const Text('Lainnya'),
                           ],
@@ -339,7 +390,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     },
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Tanggal Izin
                   const Text(
                     'Tanggal Izin',
@@ -351,32 +402,34 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                   ),
                   const SizedBox(height: 8),
                   InkWell(
-                    onTap: isSubmitting ? null : () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2030),
-                        builder: (context, child) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              colorScheme: const ColorScheme.light(
-                                primary: Color(0xFF465940),
-                                onPrimary: Colors.white,
-                                surface: Colors.white,
-                                onSurface: Colors.black,
-                              ),
-                            ),
-                            child: child!,
-                          );
-                        },
-                      );
-                      if (picked != null) {
-                        setDialogState(() {
-                          selectedDate = picked;
-                        });
-                      }
-                    },
+                    onTap: isSubmitting
+                        ? null
+                        : () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2030),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: const ColorScheme.light(
+                                      primary: Color(0xFF465940),
+                                      onPrimary: Colors.white,
+                                      surface: Colors.white,
+                                      onSurface: Colors.black,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setDialogState(() {
+                                selectedDate = picked;
+                              });
+                            }
+                          },
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -386,7 +439,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: Color(0xFF465940)),
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Color(0xFF465940),
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
@@ -402,7 +458,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Keterangan
                   const Text(
                     'Keterangan',
@@ -431,7 +487,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF465940), width: 2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF465940),
+                          width: 2,
+                        ),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -462,9 +521,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
               onPressed: isSubmitting ? null : () => Navigator.pop(context),
               icon: const Icon(Icons.close),
               label: const Text('Batal'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey[600],
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.grey[600]),
             ),
             ElevatedButton.icon(
               onPressed: isSubmitting
@@ -482,19 +539,24 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                             selectedDate,
                             keteranganController.text.trim(),
                           );
-                          
+
                           if (mounted) {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Row(
                                   children: [
-                                    const Icon(Icons.check_circle, color: Colors.white),
+                                    const Icon(
+                                      Icons.check_circle,
+                                      color: Colors.white,
+                                    ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         'Izin ${namaController.text} berhasil ditambahkan',
-                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -518,7 +580,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                               SnackBar(
                                 content: Row(
                                   children: [
-                                    const Icon(Icons.error_outline, color: Colors.white),
+                                    const Icon(
+                                      Icons.error_outline,
+                                      color: Colors.white,
+                                    ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text('Gagal menambahkan izin: $e'),
@@ -550,7 +615,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF465940),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -571,34 +639,37 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
     String keterangan,
   ) async {
     final token = await _getToken();
-    
-    final formattedDate = '${tanggal.year}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}';
-    
+
+    final formattedDate =
+        '${tanggal.year}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}';
+
     print('📤 Submitting Manual Izin:');
     print('   Nama: $nama');
     print('   Jenis: $jenis');
     print('   Tanggal: $formattedDate');
     print('   Keterangan: $keterangan');
-    
-    final response = await http.post(
-      Uri.parse('$_baseUrl/guru/perizinan/manual'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'nama_siswa': nama,
-        'jenis': jenis,
-        'tanggal_izin': formattedDate,
-        'keterangan': keterangan,
-      }),
-    ).timeout(
-      const Duration(seconds: 30),
-      onTimeout: () {
-        throw Exception('Request timeout - Server tidak merespon');
-      },
-    );
+
+    final response = await http
+        .post(
+          Uri.parse('${ApiBaseUrl.baseUrl}/guru/perizinan/manual'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: json.encode({
+            'nama_siswa': nama,
+            'jenis': jenis,
+            'tanggal_izin': formattedDate,
+            'keterangan': keterangan,
+          }),
+        )
+        .timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw Exception('Request timeout - Server tidak merespon');
+          },
+        );
 
     print('📊 Submit Response Status: ${response.statusCode}');
     print('📄 Submit Response Body: ${response.body}');
@@ -610,7 +681,9 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
       }
     } else {
       final data = json.decode(response.body);
-      throw Exception(data['message'] ?? 'Gagal menambahkan izin (${response.statusCode})');
+      throw Exception(
+        data['message'] ?? 'Gagal menambahkan izin (${response.statusCode})',
+      );
     }
   }
 
@@ -622,10 +695,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
       appBar: AppBar(
         title: const Text(
           'Permohonan Izin',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: greenColor,
         elevation: 0,
@@ -649,7 +719,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
             children: [
               // Search Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: TextField(
                   onChanged: (value) {
                     setState(() {
@@ -664,7 +737,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     prefixIcon: const Icon(Icons.search, color: Colors.white70),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.white70),
+                            icon: const Icon(
+                              Icons.clear,
+                              color: Colors.white70,
+                            ),
                             onPressed: () {
                               setState(() {
                                 _searchQuery = '';
@@ -706,7 +782,9 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       children: [
                         const Icon(Icons.medical_services, size: 18),
                         const SizedBox(width: 6),
-                        Text('Sakit (${_listPerizinan.where((e) => e['Jenis'] == 'Sakit').length})'),
+                        Text(
+                          'Sakit (${_listPerizinan.where((e) => e['Jenis'] == 'Sakit').length})',
+                        ),
                       ],
                     ),
                   ),
@@ -715,7 +793,9 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       children: [
                         const Icon(Icons.celebration, size: 18),
                         const SizedBox(width: 6),
-                        Text('Acara (${_listPerizinan.where((e) => e['Jenis'] == 'Acara Keluarga').length})'),
+                        Text(
+                          'Acara (${_listPerizinan.where((e) => e['Jenis'] == 'Acara Keluarga').length})',
+                        ),
                       ],
                     ),
                   ),
@@ -724,7 +804,9 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       children: [
                         const Icon(Icons.more_horiz, size: 18),
                         const SizedBox(width: 6),
-                        Text('Lainnya (${_listPerizinan.where((e) => e['Jenis'] == 'Lainnya').length})'),
+                        Text(
+                          'Lainnya (${_listPerizinan.where((e) => e['Jenis'] == 'Lainnya').length})',
+                        ),
                       ],
                     ),
                   ),
@@ -743,10 +825,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
         icon: const Icon(Icons.add, size: 24),
         label: const Text(
           'Tambah Izin',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         elevation: 4,
       ),
@@ -765,16 +844,13 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
             SizedBox(height: 16),
             Text(
               'Memuat data...',
-              style: TextStyle(
-                color: Color(0xFF465940),
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Color(0xFF465940), fontSize: 14),
             ),
           ],
         ),
       );
     }
-    
+
     if (_errorMessage.isNotEmpty) {
       return Center(
         child: Padding(
@@ -782,19 +858,12 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 80,
-                color: Colors.orange[400],
-              ),
+              Icon(Icons.error_outline, size: 80, color: Colors.orange[400]),
               const SizedBox(height: 16),
               Text(
                 _errorMessage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.black87,
-                ),
+                style: const TextStyle(fontSize: 15, color: Colors.black87),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
@@ -815,17 +884,13 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
         ),
       );
     }
-    
+
     if (_filteredPerizinan.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 80,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             const Text(
               "Tidak ada data perizinan",
@@ -835,17 +900,14 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
               const SizedBox(height: 8),
               Text(
                 "untuk kategori $_filterJenis",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
             ],
           ],
         ),
       );
     }
-    
+
     return RefreshIndicator(
       onRefresh: _loadPerizinan,
       color: const Color(0xFF465940),
@@ -859,27 +921,27 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
 
   Widget _buildCard(Map<String, dynamic> izin) {
     const greenColor = Color(0xFF465940);
-    Color jenisColor = izin['Jenis'] == 'Sakit' 
-        ? Colors.red 
-        : izin['Jenis'] == 'Acara Keluarga' 
-            ? Colors.orange 
-            : Colors.blue;
-    
-    IconData jenisIcon = izin['Jenis'] == 'Sakit' 
-        ? Icons.medical_services 
-        : izin['Jenis'] == 'Acara Keluarga' 
-            ? Icons.celebration 
-            : Icons.more_horiz;
-    
+    Color jenisColor = izin['Jenis'] == 'Sakit'
+        ? Colors.red
+        : izin['Jenis'] == 'Acara Keluarga'
+        ? Colors.orange
+        : Colors.blue;
+
+    IconData jenisIcon = izin['Jenis'] == 'Sakit'
+        ? Icons.medical_services
+        : izin['Jenis'] == 'Acara Keluarga'
+        ? Icons.celebration
+        : Icons.more_horiz;
+
     bool isNew = izin['Status_Pembacaan'] == 'Belum Dibaca';
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isNew 
-            ? BorderSide(color: Colors.orange.withOpacity(0.3), width: 2) 
+        side: isNew
+            ? BorderSide(color: Colors.orange.withOpacity(0.3), width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -952,7 +1014,11 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.class_, size: 14, color: Colors.grey[600]),
+                            Icon(
+                              Icons.class_,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               izin['Kelas'] ?? '-',
@@ -962,7 +1028,11 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                            Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               izin['Tanggal_Pengajuan'] ?? '-',
@@ -979,12 +1049,15 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Jenis dan Tanggal
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: jenisColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -1008,7 +1081,10 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                   ),
                   const SizedBox(width: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: greenColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -1016,7 +1092,11 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.calendar_today, size: 14, color: greenColor),
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: greenColor,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           izin['Tanggal_Izin'] ?? '-',
@@ -1032,7 +1112,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Keterangan
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1049,17 +1129,14 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                         izin['Keterangan'] ?? '-',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               // Action Buttons
               Row(
                 children: [
@@ -1078,13 +1155,14 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                       ),
                     ),
                   ),
-                  if (izin['Bukti'] != null && izin['Bukti'] != 'null') ...[
+                  if (izin['BuktiUrl'] != null &&
+                      izin['BuktiUrl'] != 'null') ...[
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => _lihatBukti(
                           context,
-                          izin['Bukti'],
+                          izin['BuktiUrl'],
                           izin['Nama_Siswa'] ?? 'Siswa',
                         ),
                         icon: const Icon(Icons.attachment, size: 18),
@@ -1177,48 +1255,45 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                 const SizedBox(height: 20),
                 const Divider(),
                 const SizedBox(height: 16),
-                
+
                 // Data Siswa
-                _buildSection(
-                  'Data Siswa',
-                  Icons.person,
-                  [
-                    _buildRow('Nama', izin['Nama_Siswa'] ?? '-'),
-                    _buildRow('Kelas', izin['Kelas'] ?? '-'),
-                    _buildRow('Jenis Kelamin', izin['Jenis_Kelamin_Siswa'] ?? '-'),
-                    _buildRow('Tanggal Lahir', izin['Tanggal_Lahir_Siswa'] ?? '-'),
-                    _buildRow('Alamat', izin['Alamat_Siswa'] ?? '-'),
-                    _buildRow('Agama', izin['Agama_Siswa'] ?? '-'),
-                  ],
-                ),
+                _buildSection('Data Siswa', Icons.person, [
+                  _buildRow('Nama', izin['Nama_Siswa'] ?? '-'),
+                  _buildRow('Kelas', izin['Kelas'] ?? '-'),
+                  _buildRow(
+                    'Jenis Kelamin',
+                    izin['Jenis_Kelamin_Siswa'] ?? '-',
+                  ),
+                  _buildRow(
+                    'Tanggal Lahir',
+                    izin['Tanggal_Lahir_Siswa'] ?? '-',
+                  ),
+                  _buildRow('Alamat', izin['Alamat_Siswa'] ?? '-'),
+                  _buildRow('Agama', izin['Agama_Siswa'] ?? '-'),
+                ]),
                 const SizedBox(height: 20),
-                
+
                 // Data Orang Tua
-                _buildSection(
-                  'Data Orang Tua',
-                  Icons.family_restroom,
-                  [
-                    _buildRow('Nama', izin['Nama_OrangTua'] ?? '-'),
-                    _buildRow('Email', izin['Email_OrangTua'] ?? '-'),
-                    _buildRow('No. Telepon', izin['No_Telepon_OrangTua'] ?? '-'),
-                    _buildRow('Alamat', izin['Alamat_OrangTua'] ?? '-'),
-                  ],
-                ),
+                _buildSection('Data Orang Tua', Icons.family_restroom, [
+                  _buildRow('Nama', izin['Nama_OrangTua'] ?? '-'),
+                  _buildRow('Email', izin['Email_OrangTua'] ?? '-'),
+                  _buildRow('No. Telepon', izin['No_Telepon_OrangTua'] ?? '-'),
+                  _buildRow('Alamat', izin['Alamat_OrangTua'] ?? '-'),
+                ]),
                 const SizedBox(height: 20),
-                
+
                 // Data Perizinan
-                _buildSection(
-                  'Data Perizinan',
-                  Icons.description,
-                  [
-                    _buildRow('Jenis Izin', izin['Jenis'] ?? '-'),
-                    _buildRow('Tanggal Izin', izin['Tanggal_Izin'] ?? '-'),
-                    _buildRow('Tanggal Pengajuan', izin['Tanggal_Pengajuan'] ?? '-'),
-                    _buildRow('Status', izin['Status_Pembacaan'] ?? '-'),
-                  ],
-                ),
+                _buildSection('Data Perizinan', Icons.description, [
+                  _buildRow('Jenis Izin', izin['Jenis'] ?? '-'),
+                  _buildRow('Tanggal Izin', izin['Tanggal_Izin'] ?? '-'),
+                  _buildRow(
+                    'Tanggal Pengajuan',
+                    izin['Tanggal_Pengajuan'] ?? '-',
+                  ),
+                  _buildRow('Status', izin['Status_Pembacaan'] ?? '-'),
+                ]),
                 const SizedBox(height: 16),
-                
+
                 // Keterangan
                 Container(
                   width: double.infinity,
@@ -1253,7 +1328,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                     ],
                   ),
                 ),
-                
+
                 // Bukti Button
                 if (izin['Bukti'] != null && izin['Bukti'] != 'null') ...[
                   const SizedBox(height: 20),
@@ -1264,7 +1339,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
                         Navigator.pop(context);
                         _lihatBukti(
                           context,
-                          izin['Bukti'],
+                          izin['BuktiUrl'],
                           izin['Nama_Siswa'] ?? 'Siswa',
                         );
                       },
@@ -1342,10 +1417,7 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -1361,30 +1433,36 @@ class _PermohonanIzinState extends State<PermohonanIzin> with SingleTickerProvid
         content: SizedBox(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.6,
-          child: Image.network(
-            url,
-            fit: BoxFit.contain,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(Color(0xFF465940)),
+          child: (url == null || url.isEmpty || url == 'null')
+              ? const Center(child: Text('Tidak ada bukti'))
+              : Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(Color(0xFF465940)),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 50,
+                            color: Colors.red[400],
+                          ),
+                          const SizedBox(height: 10),
+                          const Text('Gagal memuat gambar'),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 50, color: Colors.red[400]),
-                    const SizedBox(height: 10),
-                    const Text('Gagal memuat gambar'),
-                  ],
-                ),
-              );
-            },
-          ),
         ),
         actions: [
           TextButton(

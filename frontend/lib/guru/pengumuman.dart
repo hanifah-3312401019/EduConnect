@@ -62,101 +62,79 @@ class PengumumanApiService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final guruId = prefs.getInt('Guru_Id');
-    
+
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
     
+    if (guruId != null) {
+      headers['Guru-ID'] = guruId.toString();
+    }
+
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
 
-    if (guruId != null) {
-      headers['Guru_Id'] = guruId.toString();
-    }
-    
     return headers;
   }
 
   static Future<List<PengumumanModel>> getPengumumanGuru() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/guru/pengumuman'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          return (data['data'] as List)
-              .map((json) => PengumumanModel.fromJson(json))
-              .toList();
-        }
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/guru/pengumuman'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        return (data['data'] as List)
+            .map((e) => PengumumanModel.fromJson(e))
+            .toList();
       }
-      return [];
-    } catch (e) {
-      return [];
     }
+    return [];
   }
 
-  static Future<Map<String, dynamic>> createPengumuman(Map<String, dynamic> data) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse('$baseUrl/guru/pengumuman'),
-        headers: headers,
-        body: json.encode(data),
-      );
-      return json.decode(response.body);
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
+  static Future<Map<String, dynamic>> createPengumuman(
+      Map<String, dynamic> data) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/guru/pengumuman'),
+      headers: headers,
+      body: json.encode(data),
+    );
+    return json.decode(response.body);
   }
 
-  static Future<Map<String, dynamic>> updatePengumuman(int id, Map<String, dynamic> data) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.put(
-        Uri.parse('$baseUrl/guru/pengumuman/$id'),
-        headers: headers,
-        body: json.encode(data),
-      );
-      return json.decode(response.body);
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
+  static Future<Map<String, dynamic>> updatePengumuman(
+      int id, Map<String, dynamic> data) async {
+    final headers = await _getHeaders();
+    final response = await http.put(
+      Uri.parse('$baseUrl/guru/pengumuman/$id'),
+      headers: headers,
+      body: json.encode(data),
+    );
+    return json.decode(response.body);
   }
 
   static Future<Map<String, dynamic>> deletePengumuman(int id) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.delete(
-        Uri.parse('$baseUrl/guru/pengumuman/$id'),
-        headers: headers,
-      );
-      return json.decode(response.body);
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
+    final headers = await _getHeaders();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/guru/pengumuman/$id'),
+      headers: headers,
+    );
+    return json.decode(response.body);
   }
 
   static Future<Map<String, dynamic>> getDropdownData() async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('$baseUrl/guru/pengumuman/dropdown-data'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {'success': false, 'message': 'Failed to load dropdown data'};
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/guru/pengumuman/dropdown-data'),
+      headers: headers,
+    );
+    return json.decode(response.body);
   }
 }
 

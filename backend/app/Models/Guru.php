@@ -25,6 +25,11 @@ class Guru extends Authenticatable
 
     protected $hidden = ['Kata_Sandi'];
 
+    public function getAuthPassword()
+    {
+        return $this->Kata_Sandi;
+    }
+
     // Cari kelas di mana guru ini mengajar (baik sebagai utama atau pendamping)
     public function kelas()
     {

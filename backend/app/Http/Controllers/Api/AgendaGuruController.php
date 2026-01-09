@@ -15,31 +15,23 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Auth;
 
 class AgendaGuruController extends Controller
 {
-    // Helper method untuk mendapatkan Guru_Id dari header
-    private function getGuruId()
-    {
-        $guruId = request()->header('Guru_Id');
-        
-        if (!$guruId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Guru_ID header diperlukan'
-            ], 400);
-        }
+private function getGuru()
+{
+    $guru = Auth::user(); // ini LANGSUNG model Guru
 
-        $guru = Guru::find($guruId);
-        if (!$guru) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Guru tidak ditemukan'
-            ], 404);
-        }
-
-        return $guruId;
+    if (!$guru || !($guru instanceof \App\Models\Guru)) {
+        abort(response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401));
     }
+
+    return $guru;
+}
 
     private function sendAgendaNotification($agenda, $tipe)
     {
@@ -150,11 +142,16 @@ class AgendaGuruController extends Controller
 
     public function index(Request $request)
 {
-    $guruId = $this->getGuruId();
-    
-    if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-        return $guruId;
+    $guru = Auth::user();
+
+    if (!$guru) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
     }
+
+    $guruId = $guru->Guru_Id;
     
     $kelasGuruList = Kelas::where('Guru_Utama_Id', $guruId)
                          ->orWhere('Guru_Pendamping_Id', $guruId)
@@ -193,14 +190,19 @@ class AgendaGuruController extends Controller
 }
 
     public function store(Request $request)
-    {
-        Log::info('Store request received', $request->all());
-        
-        $guruId = $this->getGuruId();
-        
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
-        }
+{
+    Log::info('Store request received', $request->all());
+
+    $guru = Auth::user(); // ← LANGSUNG Guru dari token
+
+    if (!$guru) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
+    }
+
+    $guruId = $guru->Guru_Id; 
 
         // Validasi
         $validator = Validator::make($request->all(), [
@@ -319,11 +321,16 @@ class AgendaGuruController extends Controller
     // Update agenda
     public function update(Request $request, $id)
     {
-        $guruId = $this->getGuruId();
+       $guru = Auth::user();
         
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
+        if (!$guru) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
         }
+
+        $guruId = $guru->Guru_Id;
 
         $agenda = Agenda::where('Agenda_Id', $id)
             ->where('Guru_Id', $guruId)
@@ -443,11 +450,16 @@ class AgendaGuruController extends Controller
 
     public function destroy($id)
     {
-        $guruId = $this->getGuruId();
+        $guru = Auth::user();
         
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
+         if (!$guru) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
         }
+
+        $guruId = $guru->Guru_Id;
 
         $agenda = Agenda::where('Agenda_Id', $id)
             ->where('Guru_Id', $guruId)
@@ -489,12 +501,17 @@ class AgendaGuruController extends Controller
 
     public function getDropdownData()
     {
-        $guruId = $this->getGuruId();
+        $guru = Auth::user();
         
-        if ($guruId instanceof \Illuminate\Http\JsonResponse) {
-            return $guruId;
-        }
+        if (!$guru) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated'
+        ], 401);
+    }
 
+    $guruId = $guru->Guru_Id;
+        
         Log::info('Getting dropdown data for agenda - guru_id: ' . $guruId);
         
         // Cari kelas di mana guru mengajar (ambil kelas pertama)

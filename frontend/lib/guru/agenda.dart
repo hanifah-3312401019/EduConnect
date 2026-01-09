@@ -73,28 +73,34 @@ class AgendaModel {
 
 class AgendaApiService {
   static String get baseUrl => ApiConfig.baseUrl + '/api';
-  
+
+  // =========================
+  // HEADERS (TOKEN ONLY)
+  // =========================
   static Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final guruId = prefs.getInt('Guru_Id');
-    
+
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    
+
+    if (guruId != null) {
+    headers['Guru-ID'] = guruId.toString();    
+  }
+
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
 
-    if (guruId != null) {
-      headers['Guru_Id'] = guruId.toString();
-    }
-    
     return headers;
   }
 
+  // =========================
+  // GET AGENDA GURU
+  // =========================
   static Future<List<AgendaModel>> getAgendaGuru() async {
     try {
       final headers = await _getHeaders();
@@ -102,7 +108,7 @@ class AgendaApiService {
         Uri.parse('$baseUrl/guru/agenda'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
@@ -117,21 +123,53 @@ class AgendaApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> createAgenda(Map<String, dynamic> data) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse('$baseUrl/guru/agenda'),
-        headers: headers,
-        body: json.encode(data),
-      );
-      return json.decode(response.body);
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
+  // =========================
+  // CREATE AGENDA
+  // =========================
+  // Di AgendaApiService, perbaiki method createAgenda:
+static Future<Map<String, dynamic>> createAgenda(
+    Map<String, dynamic> data) async {
+  try {
+    final headers = await _getHeaders();
+    
+    print('=== 🚀 CREATE AGENDA REQUEST ===');
+    print('🔗 URL: $baseUrl/guru/agenda');
+    print('📤 Headers: $headers');
+    print('📦 Data: $data');
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/guru/agenda'),
+      headers: headers,
+      body: json.encode(data),
+    );
+    
+    print('📥 Response Status: ${response.statusCode}');
+    print('📥 Response Headers: ${response.headers}');
+    print('📥 Response Body: ${response.body}');
+    
+    final responseData = json.decode(response.body);
+    
+    if (response.statusCode == 401) {
+      print('🔒 ERROR 401 - UNAUTHENTICATED');
+    } else if (response.statusCode == 400) {
+      print('⚠️ ERROR 400 - BAD REQUEST');
+      print('⚠️ Error message: ${responseData['message']}');
+      print('⚠️ Errors detail: ${responseData['errors']}');
     }
+    
+    return responseData;
+  } catch (e) {
+    print('❌ Error createAgenda: $e');
+    print('❌ Stack trace: ${e.toString()}');
+    return {'success': false, 'message': 'Error: $e'};
   }
+}
 
-  static Future<Map<String, dynamic>> updateAgenda(int id, Map<String, dynamic> data) async {
+  // =========================
+  // UPDATE AGENDA
+  // =========================
+  static Future<Map<String, dynamic>> updateAgenda(
+      int id, Map<String, dynamic> data) async {
     try {
       final headers = await _getHeaders();
       final response = await http.put(
@@ -145,6 +183,9 @@ class AgendaApiService {
     }
   }
 
+  // =========================
+  // DELETE AGENDA
+  // =========================
   static Future<Map<String, dynamic>> deleteAgenda(int id) async {
     try {
       final headers = await _getHeaders();
@@ -158,6 +199,9 @@ class AgendaApiService {
     }
   }
 
+  // =========================
+  // DROPDOWN DATA
+  // =========================
   static Future<Map<String, dynamic>> getDropdownData() async {
     try {
       final headers = await _getHeaders();
@@ -165,16 +209,23 @@ class AgendaApiService {
         Uri.parse('$baseUrl/guru/agenda/dropdown-data'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
-      return {'success': false, 'message': 'Failed to load dropdown data'};
+      return {
+        'success': false,
+        'message': 'Failed to load dropdown data',
+      };
     } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
     }
   }
 }
+
 
 class Agenda extends StatefulWidget {
   const Agenda({Key? key}) : super(key: key);
